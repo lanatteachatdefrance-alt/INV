@@ -15,6 +15,7 @@ export default function Dashboard() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [portfolioValue, setPortfolioValue] = useState(0);
   const [totalInvested, setTotalInvested] = useState(0);
+  const [sharesByStructure, setSharesByStructure] = useState<{ title: string; totalShares: number }[]>([]);
   const [showManagerPopup, setShowManagerPopup] = useState(false);
   const [showWithdrawPopup, setShowWithdrawPopup] = useState(false);
   const [withdrawMethod, setWithdrawMethod] = useState<'mobile_money' | 'bank_transfer'>('mobile_money');
@@ -38,6 +39,32 @@ export default function Dashboard() {
           .from('user_investments')
           .select('amount_invested, current_value, status')
           .eq('user_id', user.id);
+
+        const { data: positions } = await supabase
+          .from('user_investments')
+          .select('shares_bought, investment_offers(title)')
+          .eq('user_id', user.id)
+          .gt('shares_bought', 0);
+
+        if (positions) {
+          const groupedShares = (positions as any[]).reduce((acc, investment) => {
+            const offer = Array.isArray(investment.investment_offers)
+              ? investment.investment_offers[0]
+              : investment.investment_offers;
+            const title = offer?.title || 'Structure inconnue';
+            const shares = parseFloat(investment.shares_bought ?? 0) || 0;
+            if (shares > 0) {
+              acc[title] = (acc[title] || 0) + shares;
+            }
+            return acc;
+          }, {} as Record<string, number>);
+
+          setSharesByStructure(
+            Object.entries(groupedShares)
+              .map(([title, totalShares]) => ({ title, totalShares }))
+              .sort((a, b) => b.totalShares - a.totalShares)
+          );
+        }
 
         const { data: txs } = await supabase
           .from('transactions')
@@ -224,6 +251,36 @@ export default function Dashboard() {
                 Voir les offres <ChevronRight size={16} />
               </Link>
            </div>
+        </div>
+
+        <div className="bg-white rounded-xl p-6 border border-gray-100 shadow-sm overflow-x-auto">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-lg font-bold text-brand-dark">Mes actions</h2>
+              <p className="text-sm text-gray-500">Tableau des parts détenues par structure.</p>
+            </div>
+          </div>
+
+          {sharesByStructure.length === 0 ? (
+            <p className="text-sm text-gray-500">Aucune position active enregistrée.</p>
+          ) : (
+            <table className="min-w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-gray-200 text-gray-500 text-xs uppercase tracking-widest">
+                  <th className="py-3 px-4">Structure</th>
+                  <th className="py-3 px-4 text-right">Nombre d&apos;actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sharesByStructure.map((position) => (
+                  <tr key={position.title} className="border-b border-gray-100 hover:bg-gray-50">
+                    <td className="py-3 px-4 font-medium text-gray-700">{position.title}</td>
+                    <td className="py-3 px-4 text-right font-bold text-brand-dark">{position.totalShares.toLocaleString('fr-FR')}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
 
         {/* Main Content Area: Distribution & Recent Activity */}
