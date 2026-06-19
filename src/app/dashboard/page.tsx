@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import MarketSidebar from '@/components/MarketSidebar';
+import AccountDetails from '@/components/AccountDetails';
 import { Wallet, PieChart, Activity, ArrowUpRight, History, ShieldCheck, ChevronRight, AlertCircle, CheckCircle, PlusCircle, MinusCircle } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { submitWithdrawalRequest, syncMyPortfolioBalances } from './actions';
@@ -194,6 +195,8 @@ export default function Dashboard() {
            </div>
         </div>
         
+        <AccountDetails />
+
         <MarketSidebar />
       </aside>
 
