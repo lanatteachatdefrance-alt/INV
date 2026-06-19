@@ -52,7 +52,7 @@ export default function Dashboard() {
               ? investment.investment_offers[0]
               : investment.investment_offers;
             const title = offer?.title || 'Structure inconnue';
-            const shares = parseFloat(investment.shares_bought ?? 0) || 0;
+            const shares = parseFloat(String(investment.shares_bought ?? '0')) || 0;
             if (shares > 0) {
               acc[title] = (acc[title] || 0) + shares;
             }
@@ -61,13 +61,7 @@ export default function Dashboard() {
 
           setSharesByStructure(
             Object.entries(groupedShares)
-              .map(([title, totalShares]) => ({ title, totalShares }))
-              .sort((a, b) => b.totalShares - a.totalShares)
-          );
-        }
-
-        const { data: txs } = await supabase
-          .from('transactions')
+              .map(([title, totalShares]) => ({ title, totalShares: totalShares as number }))
           .select('*')
           .eq('user_id', user.id)
           .neq('type', 'admin_adjustment')
