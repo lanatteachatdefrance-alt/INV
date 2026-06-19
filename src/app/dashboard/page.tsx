@@ -25,7 +25,8 @@ export default function Dashboard() {
 
   const parsePurchaseDescription = (description?: string | null) => {
     if (!description) return null;
-    const match = description.match(/Achat de\s*([0-9]+)\s*titre(?:s)?\s*:\s*(.+)$/i);
+    // Support variants like "titre", "titres" and the literal "titre(s)" used elsewhere
+    const match = description.match(/Achat de\s*([0-9]+)\s*titre(?:s|\(s\))?\s*:\s*(.+)$/i);
     if (!match) return null;
     return {
       shares: parseInt(match[1], 10),
