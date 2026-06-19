@@ -37,17 +37,11 @@ export default function Dashboard() {
 
         const { data: investments } = await supabase
           .from('user_investments')
-          .select('amount_invested, current_value, status')
+          .select('amount_invested, current_value, shares_bought, offer_id, investment_offers(title), status')
           .eq('user_id', user.id);
 
-        const { data: positions } = await supabase
-          .from('user_investments')
-          .select('shares_bought, investment_offers(title)')
-          .eq('user_id', user.id)
-          .gt('shares_bought', 0);
-
-        if (positions) {
-          const groupedShares = (positions as any[]).reduce((acc, investment) => {
+        if (investments) {
+          const groupedShares = (investments as any[]).reduce((acc, investment) => {
             const offer = Array.isArray(investment.investment_offers)
               ? investment.investment_offers[0]
               : investment.investment_offers;
@@ -59,9 +53,16 @@ export default function Dashboard() {
             return acc;
           }, {} as Record<string, number>);
 
+          const shareEntries = Object.entries(groupedShares) as [string, number][];
           setSharesByStructure(
-            Object.entries(groupedShares)
-              .map(([title, totalShares]) => ({ title, totalShares: totalShares as number }))
+            shareEntries
+              .map(([title, totalShares]) => ({ title, totalShares }))
+              .sort((a, b) => b.totalShares - a.totalShares)
+          );
+        }
+
+        const { data: txs } = await supabase
+          .from('transactions')
           .select('*')
           .eq('user_id', user.id)
           .neq('type', 'admin_adjustment')
@@ -251,12 +252,12 @@ export default function Dashboard() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-lg font-bold text-brand-dark">Mes actions</h2>
-              <p className="text-sm text-gray-500">Tableau des parts détenues par structure.</p>
+              <p className="text-sm text-gray-500">Affichage du total d&apos;actions par structure détenues.</p>
             </div>
           </div>
 
           {sharesByStructure.length === 0 ? (
-            <p className="text-sm text-gray-500">Aucune position active enregistrée.</p>
+            <p className="text-sm text-gray-500">Aucune action enregistrée pour le moment.</p>
           ) : (
             <table className="min-w-full text-left text-sm">
               <thead>
@@ -269,7 +270,7 @@ export default function Dashboard() {
                 {sharesByStructure.map((position) => (
                   <tr key={position.title} className="border-b border-gray-100 hover:bg-gray-50">
                     <td className="py-3 px-4 font-medium text-gray-700">{position.title}</td>
-                    <td className="py-3 px-4 text-right font-bold text-brand-dark">{position.totalShares.toLocaleString('fr-FR')}</td>
+                    <td className="py-3 px-4 text-right font-black text-brand-dark">{position.totalShares.toLocaleString('fr-FR')}</td>
                   </tr>
                 ))}
               </tbody>
