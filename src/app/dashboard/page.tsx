@@ -23,6 +23,16 @@ export default function Dashboard() {
   const [withdrawError, setWithdrawError] = useState('');
   const [withdrawSuccess, setWithdrawSuccess] = useState(false);
 
+  const parsePurchaseDescription = (description?: string | null) => {
+    if (!description) return null;
+    const match = description.match(/Achat de\s*([0-9]+)\s*titre(?:s)?\s*:\s*(.+)$/i);
+    if (!match) return null;
+    return {
+      shares: parseInt(match[1], 10),
+      title: match[2].trim(),
+    };
+  };
+
   useEffect(() => {
     setCurrentDate(new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }));
     const supabase = createClient();
@@ -40,8 +50,10 @@ export default function Dashboard() {
           .select('amount_invested, current_value, shares_bought, offer_id, investment_offers(title), status')
           .eq('user_id', user.id);
 
+        let groupedShares: Record<string, number> = {};
+
         if (investments) {
-          const groupedShares = (investments as any[]).reduce((acc, investment) => {
+          groupedShares = (investments as any[]).reduce((acc, investment) => {
             const offer = Array.isArray(investment.investment_offers)
               ? investment.investment_offers[0]
               : investment.investment_offers;
@@ -52,14 +64,40 @@ export default function Dashboard() {
             }
             return acc;
           }, {} as Record<string, number>);
-
-          const shareEntries = Object.entries(groupedShares) as [string, number][];
-          setSharesByStructure(
-            shareEntries
-              .map(([title, totalShares]) => ({ title, totalShares }))
-              .sort((a, b) => b.totalShares - a.totalShares)
-          );
         }
+
+        const { data: purchaseTxs } = await supabase
+          .from('transactions')
+          .select('description')
+          .eq('user_id', user.id)
+          .eq('type', 'achat_investissement');
+
+        if (purchaseTxs) {
+          for (const tx of purchaseTxs as any[]) {
+            const parsed = parsePurchaseDescription(tx.description);
+            if (!parsed) continue;
+
+            if (groupedShares[parsed.title]) {
+              continue;
+            }
+
+            if (groupedShares['Structure inconnue']) {
+              groupedShares['Structure inconnue'] -= parsed.shares;
+              if (groupedShares['Structure inconnue'] <= 0) {
+                delete groupedShares['Structure inconnue'];
+              }
+            }
+
+            groupedShares[parsed.title] = (groupedShares[parsed.title] || 0) + parsed.shares;
+          }
+        }
+
+        const shareEntries = Object.entries(groupedShares) as [string, number][];
+        setSharesByStructure(
+          shareEntries
+            .map(([title, totalShares]) => ({ title, totalShares }))
+            .sort((a, b) => b.totalShares - a.totalShares)
+        );
 
         const { data: txs } = await supabase
           .from('transactions')
@@ -251,7 +289,7 @@ export default function Dashboard() {
         <div className="bg-white rounded-xl p-6 border border-gray-100 shadow-sm overflow-x-auto">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-lg font-bold text-brand-dark">Mes actions</h2>
+              <h2 className="text-lg font-bold text-brand-dark">Mes actions par structure</h2>
               <p className="text-sm text-gray-500">Affichage du total d&apos;actions par structure détenues.</p>
             </div>
           </div>
