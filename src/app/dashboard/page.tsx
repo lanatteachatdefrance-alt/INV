@@ -23,6 +23,8 @@ export default function Dashboard() {
   const [isWithdrawPending, setIsWithdrawPending] = useState(false);
   const [withdrawError, setWithdrawError] = useState('');
   const [withdrawSuccess, setWithdrawSuccess] = useState(false);
+  const [isSyncPending, setIsSyncPending] = useState(false);
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
 
   const parsePurchaseDescription = (description?: string | null) => {
     if (!description) return null;
@@ -49,7 +51,7 @@ export default function Dashboard() {
 
         const { data: investments } = await supabase
           .from('user_investments')
-          .select('amount_invested, current_value, shares_bought, offer_id, investment_offers(title), status')
+          .select('amount_invested, current_value, shares_bought, offer_id, investment_offers(title, price_per_share), status')
           .eq('user_id', user.id);
 
         let groupedShares: Record<string, number> = {};
@@ -168,6 +170,26 @@ export default function Dashboard() {
     return { sign: '+', color: 'text-green-600' };
   };
 
+  const handleSyncPrices = async () => {
+    setIsSyncPending(true);
+    setSyncMessage(null);
+    try {
+      const result = await syncMyPortfolioBalances();
+      if (result?.error) {
+        setSyncMessage(result.error);
+      } else if (result?.credited) {
+        setSyncMessage(`Prix synchronisés : ${result.credited.toLocaleString('fr-FR')} FCFA`);
+        router.refresh();
+      } else {
+        setSyncMessage('Rien à synchroniser pour le moment.');
+      }
+    } catch (error) {
+      setSyncMessage('Erreur de synchronisation.');
+    } finally {
+      setIsSyncPending(false);
+    }
+  };
+
   return (
     <div className="flex flex-col md:flex-row gap-8 max-w-7xl mx-auto py-8">
       
@@ -278,6 +300,15 @@ export default function Dashboard() {
                   <MinusCircle size={14} /> Retrait
                 </button>
               </div>
+              <button 
+                type="button"
+                onClick={handleSyncPrices}
+                disabled={isSyncPending}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm shadow-sm"
+              >
+                {isSyncPending ? 'Synchronisation...' : 'Actualiser les prix'}
+              </button>
+              {syncMessage && <div className="text-xs text-gray-500 mt-2">{syncMessage}</div>}
               <button 
                 onClick={() => document.location.href = '/dashboard/investments'}
                 className="w-full bg-brand-accent hover:bg-brand-accentHover text-brand-dark font-bold py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm shadow-sm"
