@@ -203,6 +203,9 @@ export default function Dashboard() {
               <Link href="/dashboard" className="px-5 py-3 border-b border-gray-50 flex items-center gap-3 bg-brand-dark/5 text-brand-dark font-bold hover:bg-gray-50 transition-colors">
                 <PieChart size={18} /> Vue d'ensemble
               </Link>
+              <Link href="/dashboard/profile" className="px-5 py-3 border-b border-gray-50 flex items-center gap-3 text-brand-dark bg-brand-dark/5 font-bold hover:bg-gray-50 transition-colors">
+                <User size={18} /> Mon profil
+              </Link>
               <Link href="/dashboard/investments" className="px-5 py-3 border-b border-gray-50 flex items-center gap-3 text-gray-600 hover:text-brand hover:bg-gray-50 transition-colors font-medium">
                 <Activity size={18} /> Opportunités
               </Link>

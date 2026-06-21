@@ -31,9 +31,9 @@ export default function Navbar({ userEmail }: { userEmail: string | undefined })
           <div className="hidden md:flex items-center gap-8">
             {userEmail ? (
               <>
-                <div className="flex items-center gap-2 text-xs font-bold text-gray-500 bg-gray-50 px-4 py-2 rounded-full border border-gray-200 uppercase tracking-widest">
-                  <User size={16} className="text-brand-accent" /> {userEmail.split('@')[0]}
-                </div>
+                <Link href="/dashboard/profile" className="flex items-center gap-2 text-sm font-bold bg-gray-50 hover:bg-gray-100 text-brand-dark px-4 py-2 rounded-xl border border-gray-200 transition-all shadow-sm">
+                  <User size={16} /> Mon profil
+                </Link>
                 <button 
                   onClick={handleLogout}
                   className="flex items-center gap-2 text-sm font-bold bg-white hover:bg-red-50 text-gray-600 hover:text-red-500 px-5 py-2.5 rounded-xl border border-gray-200 transition-all shadow-sm"
@@ -75,6 +75,7 @@ export default function Navbar({ userEmail }: { userEmail: string | undefined })
               {userEmail ? (
                 <>
                   <Link href="/dashboard" onClick={() => setIsOpen(false)} className="p-4 bg-gray-50 hover:bg-gray-100 rounded-xl font-black text-brand-dark uppercase tracking-widest text-sm">Tableau de Bord</Link>
+                  <Link href="/dashboard/profile" onClick={() => setIsOpen(false)} className="p-4 bg-gray-50 hover:bg-gray-100 rounded-xl font-black text-brand-dark uppercase tracking-widest text-sm">Mon profil</Link>
                   <Link href="/dashboard/investments" onClick={() => setIsOpen(false)} className="p-4 bg-gray-50 hover:bg-gray-100 rounded-xl font-black text-brand-dark uppercase tracking-widest text-sm">Marché Boursier</Link>
                   <Link href="/dashboard/active-investments" onClick={() => setIsOpen(false)} className="p-4 bg-gray-50 hover:bg-gray-100 rounded-xl font-black text-brand-dark uppercase tracking-widest text-sm">Mes Transactions</Link>
                   <hr className="border-gray-100 my-4" />
