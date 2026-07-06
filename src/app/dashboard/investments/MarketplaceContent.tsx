@@ -118,7 +118,7 @@ export default function MarketplaceContent({
         </span>
       </div>
       {/* Search and Filter Bar */}
-      <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-gray-100 dark:border-zinc-800 shadow-sm flex flex-col md:flex-row gap-4">
+      <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-gray-100 dark:border-zinc-800 shadow-sm flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
           <input 
@@ -148,7 +148,7 @@ export default function MarketplaceContent({
       </div>
 
       {/* Grid of Results */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
         {filteredOffers.length > 0 ? (
           filteredOffers.map(offer => (
             <ClientInvestmentCard 
