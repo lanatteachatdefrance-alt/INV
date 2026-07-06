@@ -43,8 +43,6 @@ export async function buyInvestment(formData: FormData) {
   if (debitError) return { error: 'Erreur lors du débit.' };
 
   // 2. Enregistrer l'investissement dans le portefeuille.
-  // Les offres de démonstration ont des IDs non-UUID : on stocke alors offer_id à null.
-  const sanitizedOfferId = UUID_REGEX.test(offerId) ? offerId : null;
   const investmentPayload: any = {
     user_id: user.id,
     amount_invested: totalCost,
@@ -52,8 +50,19 @@ export async function buyInvestment(formData: FormData) {
     status: 'actif',
     current_value: totalCost
   };
-  if (sanitizedOfferId) {
-    investmentPayload.offer_id = sanitizedOfferId;
+
+  if (UUID_REGEX.test(offerId)) {
+    investmentPayload.offer_id = offerId;
+  } else {
+    const { data: matchedOffer } = await supabase
+      .from('investment_offers')
+      .select('id')
+      .eq('title', title)
+      .single();
+
+    if (matchedOffer?.id) {
+      investmentPayload.offer_id = matchedOffer.id;
+    }
   }
 
   // Ne pas bloquer l'achat si l'offre n'est pas stockable dans user_investments.

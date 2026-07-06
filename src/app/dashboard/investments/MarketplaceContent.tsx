@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Filter, TrendingUp, TrendingDown, Layers, Activity } from 'lucide-react';
+import { Search, Filter, TrendingUp, TrendingDown, Layers, Activity, RefreshCw } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import ClientInvestmentCard from './ClientInvestmentCard';
 
@@ -17,7 +17,30 @@ export default function MarketplaceContent({
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('Tous');
   const [offers, setOffers] = useState(initialOffers);
+  const [isConnected, setIsConnected] = useState(false);
   const supabase = createClient();
+
+  // Fonction pour mettre à jour un prix localement (sans DB)
+  const updateOfferPrice = (offerId: string, newPrice: number) => {
+    setOffers((prev) =>
+      prev.map((offer) =>
+        offer.id === offerId 
+          ? { ...offer, price_per_share: newPrice }
+          : offer
+      )
+    );
+  };
+
+  // Fonction pour mettre à jour plusieurs prix
+  const updateOffersPrices = (priceUpdates: { [key: string]: number }) => {
+    setOffers((prev) =>
+      prev.map((offer) =>
+        priceUpdates[offer.id] 
+          ? { ...offer, price_per_share: priceUpdates[offer.id] }
+          : offer
+      )
+    );
+  };
 
   useEffect(() => {
     // S'abonner aux changements de prix en temps réel
@@ -27,6 +50,7 @@ export default function MarketplaceContent({
         'postgres_changes',
         { event: '*', schema: 'public', table: 'investment_offers' },
         (payload) => {
+          setIsConnected(true);
           // Quand une offre est modifiée, mettre à jour la liste locale
           if (payload.eventType === 'UPDATE') {
             setOffers((prev) =>
@@ -43,12 +67,22 @@ export default function MarketplaceContent({
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        setIsConnected(status === 'SUBSCRIBED');
+      });
+
+    // Exposer les fonctions globalement pour accès console (développement)
+    if (typeof window !== 'undefined') {
+      (window as any).updateOfferPrice = updateOfferPrice;
+      (window as any).updateOffersPrices = updateOffersPrices;
+      (window as any).getOffers = () => offers;
+      (window as any).testUpdatePrices = testUpdatePrices;
+    }
 
     return () => {
       channel.unsubscribe();
     };
-  }, [supabase]);
+  }, [supabase, offers]);
 
   const filteredOffers = offers.filter(offer => {
     const matchesSearch = offer.title.toLowerCase().includes(search.toLowerCase()) || 
@@ -57,8 +91,25 @@ export default function MarketplaceContent({
     return matchesSearch && matchesType;
   });
 
+  // Fonction de test : Augmenter aléatoirement les prix
+  const testUpdatePrices = () => {
+    const updates: { [key: string]: number } = {};
+    offers.forEach((offer) => {
+      const increase = (Math.random() * 1000 - 200); // -200 à +800 FCFA
+      updates[offer.id] = Math.max(100, offer.price_per_share + increase);
+    });
+    updateOffersPrices(updates);
+  };
+
   return (
     <div className="flex flex-col gap-6">
+      {/* Status Connection */}
+      <div className="flex items-center gap-2 text-xs font-medium">
+        <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+        <span className={isConnected ? 'text-green-600' : 'text-gray-500'}>
+          {isConnected ? 'Connecté en temps réel' : 'Mode local (sans DB)'}
+        </span>
+      </div>
       {/* Search and Filter Bar */}
       <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-gray-100 dark:border-zinc-800 shadow-sm flex flex-col md:flex-row gap-4">
         <div className="flex-1 relative">
@@ -87,6 +138,17 @@ export default function MarketplaceContent({
             </button>
           ))}
         </div>
+
+        {/* Test Update Button (visible when offline) */}
+        {!isConnected && (
+          <button
+            onClick={testUpdatePrices}
+            className="px-4 py-2 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg text-xs font-bold text-amber-700 transition-all flex items-center gap-2"
+          >
+            <RefreshCw size={14} />
+            Tester mise à jour
+          </button>
+        )}
       </div>
 
       {/* Grid of Results */}
