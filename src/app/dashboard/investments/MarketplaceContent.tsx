@@ -1,9 +1,72 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { Search, Filter, TrendingUp, TrendingDown, Layers, Activity } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import ClientInvestmentCard from './ClientInvestmentCard';
+
+const fallbackOffers = [
+  {
+    id: 'fallback-abjc',
+    title: 'ABJC - Air Liquide CI',
+    description: 'Air Liquide Côte d’Ivoire. Secteur chimie et gaz industriel.',
+    type: 'Action',
+    roi_percentage: 5.2,
+    price_per_share: 3200,
+    minimum_investment: 3200,
+    is_active: true
+  },
+  {
+    id: 'fallback-boac',
+    title: 'BOAC - Bank of Africa Côte d’Ivoire',
+    description: 'Groupe Bank of Africa - filiale Côte d’Ivoire.',
+    type: 'Action',
+    roi_percentage: 7.8,
+    price_per_share: 9100,
+    minimum_investment: 9100,
+    is_active: true
+  },
+  {
+    id: 'fallback-orac',
+    title: 'ORAC - Orange Côte d’Ivoire',
+    description: 'Orange Côte d’Ivoire. Secteur télécoms.',
+    type: 'Action',
+    roi_percentage: 7.2,
+    price_per_share: 16750,
+    minimum_investment: 16750,
+    is_active: true
+  },
+  {
+    id: 'fallback-sgbc',
+    title: 'SGBC - Société Générale Côte d’Ivoire',
+    description: 'Secteur bancaire majeur avec forte liquidité.',
+    type: 'Action',
+    roi_percentage: 9.1,
+    price_per_share: 37000,
+    minimum_investment: 37000,
+    is_active: true
+  },
+  {
+    id: 'fallback-snts',
+    title: 'SNTS - Sonatel',
+    description: 'Sonatel Sénégal. Grande capitalisation du marché BRVM.',
+    type: 'Action',
+    roi_percentage: 8.5,
+    price_per_share: 29495,
+    minimum_investment: 29495,
+    is_active: true
+  },
+  {
+    id: 'fallback-palc',
+    title: 'PALC - Palm Côte d’Ivoire',
+    description: 'Agro-industrie huile de palme avec fort potentiel.',
+    type: 'Action',
+    roi_percentage: 12,
+    price_per_share: 8835,
+    minimum_investment: 8835,
+    is_active: true
+  }
+];
 
 export default function MarketplaceContent({ 
   initialOffers, 
@@ -18,7 +81,49 @@ export default function MarketplaceContent({
   const [filterType, setFilterType] = useState('Tous');
   const [offers, setOffers] = useState(initialOffers);
   const [isConnected, setIsConnected] = useState(false);
-  const supabase = createClient();
+  const [isLoading, setIsLoading] = useState(initialOffers.length === 0);
+  const supabase = useMemo(() => createClient(), []);
+
+  useEffect(() => {
+    if (initialOffers && initialOffers.length > 0) {
+      setOffers(initialOffers);
+      setIsLoading(false);
+      return;
+    }
+
+    let isMounted = true;
+    const loadOffers = async () => {
+      setIsLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('investment_offers')
+          .select('*')
+          .eq('is_active', true)
+          .order('title', { ascending: true })
+          .limit(50);
+
+        if (!error && data && data.length > 0 && isMounted) {
+          setOffers(data as any[]);
+        } else if (isMounted) {
+          setOffers(fallbackOffers as any[]);
+        }
+      } catch {
+        if (isMounted) {
+          setOffers(fallbackOffers as any[]);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadOffers();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [initialOffers, supabase]);
 
   // Fonction pour mettre à jour un prix localement (sans DB)
   const updateOfferPrice = (offerId: string, newPrice: number) => {
@@ -99,9 +204,10 @@ export default function MarketplaceContent({
     return () => clearInterval(interval);
   }, [offers, isConnected, updateOffersPrices]);
 
-  const filteredOffers = offers.filter(offer => {
-    const matchesSearch = offer.title.toLowerCase().includes(search.toLowerCase()) || 
-                         offer.description.toLowerCase().includes(search.toLowerCase());
+  const filteredOffers = offers.filter((offer) => {
+    const searchTerm = search.toLowerCase();
+    const matchesSearch = (offer.title || '').toLowerCase().includes(searchTerm) ||
+      (offer.description || '').toLowerCase().includes(searchTerm);
     const matchesType = filterType === 'Tous' || offer.type === filterType;
     return matchesSearch && matchesType;
   });
@@ -148,6 +254,11 @@ export default function MarketplaceContent({
       </div>
 
       {/* Grid of Results */}
+      {isLoading ? (
+        <div className="rounded-2xl border border-gray-100 bg-white p-8 text-center text-sm text-gray-500">
+          Chargement des opportunités…
+        </div>
+      ) : (
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
         {filteredOffers.length > 0 ? (
           filteredOffers.map(offer => (
@@ -168,6 +279,7 @@ export default function MarketplaceContent({
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }

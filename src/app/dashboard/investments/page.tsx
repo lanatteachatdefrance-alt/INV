@@ -2,8 +2,70 @@ import { createClient } from '@/utils/supabase/server';
 import Link from 'next/link';
 import { Activity, ShieldCheck } from 'lucide-react';
 import MarketSidebar from '@/components/MarketSidebar';
-import ClientInvestmentCard from './ClientInvestmentCard';
 import MarketplaceContent from './MarketplaceContent';
+
+const fallbackOffers = [
+  {
+    id: 'fallback-abjc',
+    title: 'ABJC - Air Liquide CI',
+    description: 'Air Liquide Côte d’Ivoire. Secteur chimie et gaz industriel.',
+    type: 'Action',
+    roi_percentage: 5.2,
+    price_per_share: 3200,
+    minimum_investment: 3200,
+    is_active: true
+  },
+  {
+    id: 'fallback-boac',
+    title: 'BOAC - Bank of Africa Côte d’Ivoire',
+    description: 'Groupe Bank of Africa - filiale Côte d’Ivoire.',
+    type: 'Action',
+    roi_percentage: 7.8,
+    price_per_share: 9100,
+    minimum_investment: 9100,
+    is_active: true
+  },
+  {
+    id: 'fallback-orac',
+    title: 'ORAC - Orange Côte d’Ivoire',
+    description: 'Orange Côte d’Ivoire. Secteur télécoms.',
+    type: 'Action',
+    roi_percentage: 7.2,
+    price_per_share: 16750,
+    minimum_investment: 16750,
+    is_active: true
+  },
+  {
+    id: 'fallback-sgbc',
+    title: 'SGBC - Société Générale Côte d’Ivoire',
+    description: 'Secteur bancaire majeur avec forte liquidité.',
+    type: 'Action',
+    roi_percentage: 9.1,
+    price_per_share: 37000,
+    minimum_investment: 37000,
+    is_active: true
+  },
+  {
+    id: 'fallback-snts',
+    title: 'SNTS - Sonatel',
+    description: 'Sonatel Sénégal. Grande capitalisation du marché BRVM.',
+    type: 'Action',
+    roi_percentage: 8.5,
+    price_per_share: 29495,
+    minimum_investment: 29495,
+    is_active: true
+  },
+  {
+    id: 'fallback-palc',
+    title: 'PALC - Palm Côte d’Ivoire',
+    description: 'Agro-industrie huile de palme avec fort potentiel.',
+    type: 'Action',
+    roi_percentage: 12,
+    price_per_share: 8835,
+    minimum_investment: 8835,
+    is_active: true
+  }
+];
 
 export default async function InvestmentsPage() {
   const supabase = createClient();
@@ -12,7 +74,7 @@ export default async function InvestmentsPage() {
   // Récupérer toutes les offres actives du marché
   const { data: dbOffers } = await supabase.from('investment_offers').select('*').eq('is_active', true).order('title', { ascending: true });
 
-  const offers = dbOffers || [];
+  const offers = (dbOffers && dbOffers.length > 0 ? dbOffers : fallbackOffers) as any[];
   
   // Récupérer le statut du client pour sécuriser les transactions
   const { data: userData } = await supabase.from('users').select('balance, kyc_status').eq('id', user?.id).single();
