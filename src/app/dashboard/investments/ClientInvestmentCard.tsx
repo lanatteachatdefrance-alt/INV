@@ -83,16 +83,16 @@ export default function ClientInvestmentCard({
         {offer.description}
       </p>
 
-      <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6 bg-gray-50 dark:bg-zinc-800/30 p-4 rounded-xl border border-gray-100 dark:border-zinc-800/50">
+      <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6 bg-gradient-to-br from-brand/10 to-brand-accent/10 dark:from-zinc-800 dark:to-zinc-700 p-4 rounded-xl border border-brand/20 dark:border-zinc-700">
          <div className="flex-1">
-           <div className="text-[10px] text-gray-400 uppercase font-black tracking-widest mb-1">Prix du titre</div>
-           <div className="font-black text-gray-900 dark:text-white text-2xl">
-             {parseFloat(offer.price_per_share).toLocaleString('fr-FR')} <span className="text-xs font-bold text-gray-400">FCFA</span>
+           <div className="text-[10px] text-gray-500 uppercase font-black tracking-[0.25em] mb-2">Prix du titre</div>
+           <div className="font-black text-brand-dark dark:text-white text-3xl leading-none">
+             {parseFloat(offer.price_per_share).toLocaleString('fr-FR')} <span className="text-sm font-bold text-gray-500">FCFA</span>
            </div>
          </div>
          <div className="text-right sm:text-right">
-           <div className="text-[10px] text-gray-400 uppercase font-black tracking-widest mb-1">Cote</div>
-           <div className="text-xs font-bold text-green-500 flex items-center justify-end gap-1">Stable</div>
+           <div className="text-[10px] text-gray-500 uppercase font-black tracking-[0.25em] mb-2">Cote</div>
+           <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-green-100 text-green-700 text-xs font-black">● En hausse</div>
          </div>
       </div>
 

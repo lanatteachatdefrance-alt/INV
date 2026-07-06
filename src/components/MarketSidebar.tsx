@@ -11,11 +11,11 @@ export default function MarketSidebar() {
              <span className="text-[10px] font-normal">Variation</span>
            </div>
            <div className="bg-white text-sm">
-             <div className="flex justify-between p-2 border-b"><span className="font-bold">SICC</span><span>4 610</span><span className="text-green-600 font-bold">7,38% ▲</span></div>
-             <div className="flex justify-between p-2 border-b"><span className="font-bold">BOAN</span><span>3 700</span><span className="text-green-600 font-bold">6,67% ▲</span></div>
-             <div className="flex justify-between p-2 border-b"><span className="font-bold">SPHC</span><span>6 895</span><span className="text-green-600 font-bold">4,66% ▲</span></div>
-             <div className="flex justify-between p-2 border-b"><span className="font-bold">SNTS</span><span>28 700</span><span className="text-green-600 font-bold">3,62% ▲</span></div>
-             <div className="flex justify-between p-2 border-b"><span className="font-bold">ECOC</span><span>16 000</span><span className="text-green-600 font-bold">3,44% ▲</span></div>
+             <div className="flex justify-between items-center p-2.5 border-b"><span className="font-bold text-gray-800">SICC</span><span className="font-black text-brand-dark">4 610</span><span className="text-green-600 font-bold">+7,38%</span></div>
+             <div className="flex justify-between items-center p-2.5 border-b"><span className="font-bold text-gray-800">BOAN</span><span className="font-black text-brand-dark">3 700</span><span className="text-green-600 font-bold">+6,67%</span></div>
+             <div className="flex justify-between items-center p-2.5 border-b"><span className="font-bold text-gray-800">SPHC</span><span className="font-black text-brand-dark">6 895</span><span className="text-green-600 font-bold">+4,66%</span></div>
+             <div className="flex justify-between items-center p-2.5 border-b"><span className="font-bold text-gray-800">SNTS</span><span className="font-black text-brand-dark">28 700</span><span className="text-green-600 font-bold">+3,62%</span></div>
+             <div className="flex justify-between items-center p-2.5"><span className="font-bold text-gray-800">ECOC</span><span className="font-black text-brand-dark">16 000</span><span className="text-green-600 font-bold">+3,44%</span></div>
            </div>
         </div>
 
@@ -28,11 +28,11 @@ export default function MarketSidebar() {
              </div>
            </div>
            <div className="bg-white text-sm">
-             <div className="flex justify-between p-2 border-b"><span className="font-bold">SAFC</span><span>3 710</span><span className="text-red-600 font-bold">-7,42% ▼</span></div>
-             <div className="flex justify-between p-2 border-b"><span className="font-bold">ETIT</span><span>30</span><span className="text-red-600 font-bold">-7,14% ▼</span></div>
-             <div className="flex justify-between p-2 border-b"><span className="font-bold">SEMC</span><span>1 495</span><span className="text-red-600 font-bold">-7,14% ▼</span></div>
-             <div className="flex justify-between p-2 border-b"><span className="font-bold">STAC</span><span>2 840</span><span className="text-red-600 font-bold">-6,61% ▼</span></div>
-             <div className="flex justify-between p-2 border-b"><span className="font-bold">SHEC</span><span>1 940</span><span className="text-red-600 font-bold">-5,03% ▼</span></div>
+             <div className="flex justify-between items-center p-2.5 border-b"><span className="font-bold text-gray-800">SAFC</span><span className="font-black text-brand-dark">3 710</span><span className="text-red-600 font-bold">-7,42%</span></div>
+             <div className="flex justify-between items-center p-2.5 border-b"><span className="font-bold text-gray-800">ETIT</span><span className="font-black text-brand-dark">30</span><span className="text-red-600 font-bold">-7,14%</span></div>
+             <div className="flex justify-between items-center p-2.5 border-b"><span className="font-bold text-gray-800">SEMC</span><span className="font-black text-brand-dark">1 495</span><span className="text-red-600 font-bold">-7,14%</span></div>
+             <div className="flex justify-between items-center p-2.5 border-b"><span className="font-bold text-gray-800">STAC</span><span className="font-black text-brand-dark">2 840</span><span className="text-red-600 font-bold">-6,61%</span></div>
+             <div className="flex justify-between items-center p-2.5"><span className="font-bold text-gray-800">SHEC</span><span className="font-black text-brand-dark">1 940</span><span className="text-red-600 font-bold">-5,03%</span></div>
            </div>
         </div>
 
