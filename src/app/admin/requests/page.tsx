@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
 
 export default function AdminRequestsPage() {
@@ -8,11 +8,7 @@ export default function AdminRequestsPage() {
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
 
-  useEffect(() => {
-    fetchRequests();
-  }, []);
-
-  const fetchRequests = async () => {
+  const fetchRequests = useCallback(async () => {
     const { data, error } = await supabase
       .from('contact_requests')
       .select('*')
@@ -22,7 +18,7 @@ export default function AdminRequestsPage() {
       setRequests(data);
     }
     setLoading(false);
-  };
+  }, [supabase]);
 
   const updateStatus = async (id: string, newStatus: string) => {
     const { error } = await supabase

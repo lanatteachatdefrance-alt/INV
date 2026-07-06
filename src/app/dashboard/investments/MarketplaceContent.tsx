@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Search, Filter, TrendingUp, TrendingDown, Layers, Activity } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import ClientInvestmentCard from './ClientInvestmentCard';
@@ -32,7 +32,7 @@ export default function MarketplaceContent({
   };
 
   // Fonction pour mettre à jour plusieurs prix
-  const updateOffersPrices = (priceUpdates: { [key: string]: number }) => {
+  const updateOffersPrices = useCallback((priceUpdates: { [key: string]: number }) => {
     setOffers((prev) =>
       prev.map((offer) =>
         priceUpdates[offer.id] 
@@ -40,7 +40,7 @@ export default function MarketplaceContent({
           : offer
       )
     );
-  };
+  }, []);
 
   useEffect(() => {
     // S'abonner aux changements de prix en temps réel
