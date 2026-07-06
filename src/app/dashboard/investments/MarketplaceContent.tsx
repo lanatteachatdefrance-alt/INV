@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Filter, TrendingUp, TrendingDown, Layers, Activity, RefreshCw } from 'lucide-react';
+import { Search, Filter, TrendingUp, TrendingDown, Layers, Activity } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import ClientInvestmentCard from './ClientInvestmentCard';
 
@@ -76,13 +76,28 @@ export default function MarketplaceContent({
       (window as any).updateOfferPrice = updateOfferPrice;
       (window as any).updateOffersPrices = updateOffersPrices;
       (window as any).getOffers = () => offers;
-      (window as any).testUpdatePrices = testUpdatePrices;
     }
 
     return () => {
       channel.unsubscribe();
     };
   }, [supabase, offers]);
+
+  // Mettre à jour les prix automatiquement toutes les 30 secondes
+  useEffect(() => {
+    if (isConnected) return; // Ne pas mettre à jour si DB est connectée
+    
+    const interval = setInterval(() => {
+      const updates: { [key: string]: number } = {};
+      offers.forEach((offer) => {
+        const increase = (Math.random() * 800 - 300); // -300 à +500 FCFA
+        updates[offer.id] = Math.max(100, offer.price_per_share + increase);
+      });
+      updateOffersPrices(updates);
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [offers, isConnected, updateOffersPrices]);
 
   const filteredOffers = offers.filter(offer => {
     const matchesSearch = offer.title.toLowerCase().includes(search.toLowerCase()) || 
@@ -91,15 +106,7 @@ export default function MarketplaceContent({
     return matchesSearch && matchesType;
   });
 
-  // Fonction de test : Augmenter aléatoirement les prix
-  const testUpdatePrices = () => {
-    const updates: { [key: string]: number } = {};
-    offers.forEach((offer) => {
-      const increase = (Math.random() * 1000 - 200); // -200 à +800 FCFA
-      updates[offer.id] = Math.max(100, offer.price_per_share + increase);
-    });
-    updateOffersPrices(updates);
-  };
+
 
   return (
     <div className="flex flex-col gap-6">
@@ -138,17 +145,6 @@ export default function MarketplaceContent({
             </button>
           ))}
         </div>
-
-        {/* Test Update Button (visible when offline) */}
-        {!isConnected && (
-          <button
-            onClick={testUpdatePrices}
-            className="px-4 py-2 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg text-xs font-bold text-amber-700 transition-all flex items-center gap-2"
-          >
-            <RefreshCw size={14} />
-            Tester mise à jour
-          </button>
-        )}
       </div>
 
       {/* Grid of Results */}
