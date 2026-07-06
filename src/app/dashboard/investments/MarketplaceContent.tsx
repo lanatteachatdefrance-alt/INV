@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, Filter, TrendingUp, TrendingDown, Layers, Activity } from 'lucide-react';
+import { createClient } from '@/utils/supabase/client';
 import ClientInvestmentCard from './ClientInvestmentCard';
 
 export default function MarketplaceContent({ 
@@ -15,8 +16,41 @@ export default function MarketplaceContent({
 }) {
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('Tous');
+  const [offers, setOffers] = useState(initialOffers);
+  const supabase = createClient();
 
-  const filteredOffers = initialOffers.filter(offer => {
+  useEffect(() => {
+    // S'abonner aux changements de prix en temps réel
+    const channel = supabase
+      .channel('price_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'investment_offers' },
+        (payload) => {
+          // Quand une offre est modifiée, mettre à jour la liste locale
+          if (payload.eventType === 'UPDATE') {
+            setOffers((prev) =>
+              prev.map((offer) =>
+                offer.id === payload.new.id ? payload.new : offer
+              )
+            );
+          } else if (payload.eventType === 'INSERT') {
+            // Nouvelle offre insérée
+            setOffers((prev) => [...prev, payload.new]);
+          } else if (payload.eventType === 'DELETE') {
+            // Offre supprimée
+            setOffers((prev) => prev.filter((offer) => offer.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      channel.unsubscribe();
+    };
+  }, [supabase]);
+
+  const filteredOffers = offers.filter(offer => {
     const matchesSearch = offer.title.toLowerCase().includes(search.toLowerCase()) || 
                          offer.description.toLowerCase().includes(search.toLowerCase());
     const matchesType = filterType === 'Tous' || offer.type === filterType;
