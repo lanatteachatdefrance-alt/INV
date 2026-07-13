@@ -12,8 +12,8 @@ const fallbackOffers = [
     description: 'Air Liquide Côte d’Ivoire. Secteur chimie et gaz industriel.',
     type: 'Action',
     roi_percentage: 5.2,
-    price_per_share: 3200,
-    minimum_investment: 3200,
+    price_per_share: 3150,
+    minimum_investment: 3150,
     is_active: true
   },
   {
@@ -22,8 +22,8 @@ const fallbackOffers = [
     description: 'Groupe Bank of Africa - filiale Côte d’Ivoire.',
     type: 'Action',
     roi_percentage: 7.8,
-    price_per_share: 9100,
-    minimum_investment: 9100,
+    price_per_share: 9500,
+    minimum_investment: 9500,
     is_active: true
   },
   {
@@ -32,8 +32,8 @@ const fallbackOffers = [
     description: 'Orange Côte d’Ivoire. Secteur télécoms.',
     type: 'Action',
     roi_percentage: 7.2,
-    price_per_share: 16750,
-    minimum_investment: 16750,
+    price_per_share: 11500,
+    minimum_investment: 11500,
     is_active: true
   },
   {
@@ -42,8 +42,8 @@ const fallbackOffers = [
     description: 'Secteur bancaire majeur avec forte liquidité.',
     type: 'Action',
     roi_percentage: 9.1,
-    price_per_share: 37000,
-    minimum_investment: 37000,
+    price_per_share: 16500,
+    minimum_investment: 16500,
     is_active: true
   },
   {
@@ -52,8 +52,8 @@ const fallbackOffers = [
     description: 'Sonatel Sénégal. Grande capitalisation du marché BRVM.',
     type: 'Action',
     roi_percentage: 8.5,
-    price_per_share: 29495,
-    minimum_investment: 29495,
+    price_per_share: 16000,
+    minimum_investment: 16000,
     is_active: true
   },
   {
@@ -62,8 +62,8 @@ const fallbackOffers = [
     description: 'Agro-industrie huile de palme avec fort potentiel.',
     type: 'Action',
     roi_percentage: 12,
-    price_per_share: 8835,
-    minimum_investment: 8835,
+    price_per_share: 10000,
+    minimum_investment: 10000,
     is_active: true
   }
 ];

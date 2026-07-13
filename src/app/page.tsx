@@ -14,19 +14,19 @@ export default function Home() {
   });
 
   const [topActive, setTopActive] = useState([
-    { ticker: 'SNTS', name: 'SONATEL SN', cours: 28700, var: 1.20 },
-    { ticker: 'ORAC', name: 'ORANGE CI', cours: 15650, var: 0.85 },
-    { ticker: 'SGBC', name: 'SOCIÉTÉ GÉNÉRALE CI', cours: 36200, var: 0.50 },
-    { ticker: 'ECOC', name: 'ECOBANK CI', cours: 16000, var: 1.10 },
-    { ticker: 'CBIBF', name: 'CORIS BANK INT.', cours: 20700, var: 2.30 }
+    { ticker: 'SNTS', name: 'SONATEL SN', cours: 16000, var: 1.20 },
+    { ticker: 'ORAC', name: 'ORANGE CI', cours: 11500, var: 0.85 },
+    { ticker: 'SGBC', name: 'SOCIÉTÉ GÉNÉRALE CI', cours: 16500, var: 0.50 },
+    { ticker: 'ECOC', name: 'ECOBANK CI', cours: 7000, var: 1.10 },
+    { ticker: 'CBIBF', name: 'CORIS BANK INT.', cours: 29610, var: 2.30 }
   ]);
 
   const [flopActive, setFlopActive] = useState([
-    { ticker: 'ONTBF', name: 'ONATEL BF', cours: 2855, var: -2.30 },
-    { ticker: 'NTLC', name: 'NESTLÉ TOGO', cours: 13425, var: -1.50 },
-    { ticker: 'FTSC', name: 'FILTISAC CI', cours: 2300, var: -3.42 },
-    { ticker: 'SCRC', name: 'SUCRIVOIRE CI', cours: 2645, var: -4.10 },
-    { ticker: 'ETIT', name: 'ECOBANK TG', cours: 30, var: -7.14 }
+    { ticker: 'ONTBF', name: 'ONATEL BF', cours: 2450, var: -2.30 },
+    { ticker: 'NTLC', name: 'NESTLÉ TOGO', cours: 8500, var: -1.50 },
+    { ticker: 'FTSC', name: 'FILTISAC CI', cours: 3200, var: -3.42 },
+    { ticker: 'SCRC', name: 'SUCRIVOIRE CI', cours: 15000, var: -4.10 },
+    { ticker: 'ETIT', name: 'ECOBANK TG', cours: 64, var: -7.14 }
   ]);
 
   useEffect(() => {
