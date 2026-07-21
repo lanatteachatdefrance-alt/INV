@@ -10,9 +10,9 @@ import { PerformanceChart } from '@/components/fintech/PerformanceChart'
 export default function Home() {
   const [indice, setIndice] = useState(228.45)
   const [topActive, setTopActive] = useState([
-    { ticker: 'SNTS', name: 'SONATEL SN', cours: 16000, var: 1.2 },
-    { ticker: 'ORAC', name: 'ORANGE CI', cours: 11500, var: 0.85 },
-    { ticker: 'SGBC', name: 'SG CI', cours: 16500, var: 0.5 },
+    { ticker: 'SNTS', name: 'SONATEL SN', cours: 32450, var: 1.2 },
+    { ticker: 'ORAC', name: 'ORANGE CI', cours: 16165, var: 0.85 },
+    { ticker: 'SGBC', name: 'SG CI', cours: 38200, var: 0.5 },
   ])
 
   useEffect(() => {

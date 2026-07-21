@@ -8,11 +8,11 @@ export default function MarketSidebar() {
           <span className="text-[10px] font-normal">Variation</span>
         </div>
         <div className="text-sm divide-y divide-slate-100">
-          <div className="flex justify-between p-3"><span className="font-bold text-slate-900">SICC</span><span>7 000</span><span className="text-emerald-600 font-bold">7,38% ▲</span></div>
-          <div className="flex justify-between p-3"><span className="font-bold text-slate-900">BOAN</span><span>4 790</span><span className="text-emerald-600 font-bold">6,67% ▲</span></div>
-          <div className="flex justify-between p-3"><span className="font-bold text-slate-900">SPHC</span><span>7 550</span><span className="text-emerald-600 font-bold">4,66% ▲</span></div>
-          <div className="flex justify-between p-3"><span className="font-bold text-slate-900">SNTS</span><span>16 000</span><span className="text-emerald-600 font-bold">3,62% ▲</span></div>
-          <div className="flex justify-between p-3"><span className="font-bold text-slate-900">ECOC</span><span>7 000</span><span className="text-emerald-600 font-bold">3,44% ▲</span></div>
+          <div className="flex justify-between p-3"><span className="font-bold text-slate-900">SICC</span><span>5 100</span><span className="text-emerald-600 font-bold">7,38% ▲</span></div>
+          <div className="flex justify-between p-3"><span className="font-bold text-slate-900">BOAN</span><span>5 350</span><span className="text-emerald-600 font-bold">6,67% ▲</span></div>
+          <div className="flex justify-between p-3"><span className="font-bold text-slate-900">SPHC</span><span>7 500</span><span className="text-emerald-600 font-bold">4,66% ▲</span></div>
+          <div className="flex justify-between p-3"><span className="font-bold text-slate-900">SNTS</span><span>32 450</span><span className="text-emerald-600 font-bold">3,62% ▲</span></div>
+          <div className="flex justify-between p-3"><span className="font-bold text-slate-900">ECOC</span><span>15 700</span><span className="text-emerald-600 font-bold">3,44% ▲</span></div>
         </div>
       </div>
 
@@ -23,11 +23,11 @@ export default function MarketSidebar() {
           <span className="text-[10px] font-normal">Variation</span>
         </div>
         <div className="text-sm divide-y divide-slate-100">
-          <div className="flex justify-between p-3"><span className="font-bold text-slate-900">SAFC</span><span>4 200</span><span className="text-rose-600 font-bold">-7,42% ▼</span></div>
-          <div className="flex justify-between p-3"><span className="font-bold text-slate-900">ETIT</span><span>64</span><span className="text-rose-600 font-bold">-7,14% ▼</span></div>
-          <div className="flex justify-between p-3"><span className="font-bold text-slate-900">SEMC</span><span>1 500</span><span className="text-rose-600 font-bold">-7,14% ▼</span></div>
-          <div className="flex justify-between p-3"><span className="font-bold text-slate-900">STAC</span><span>4 000</span><span className="text-rose-600 font-bold">-6,61% ▼</span></div>
-          <div className="flex justify-between p-3"><span className="font-bold text-slate-900">SHEC</span><span>1 210</span><span className="text-rose-600 font-bold">-5,03% ▼</span></div>
+          <div className="flex justify-between p-3"><span className="font-bold text-slate-900">SAFC</span><span>4 550</span><span className="text-rose-600 font-bold">-7,42% ▼</span></div>
+          <div className="flex justify-between p-3"><span className="font-bold text-slate-900">ETIT</span><span>63</span><span className="text-rose-600 font-bold">-7,14% ▼</span></div>
+          <div className="flex justify-between p-3"><span className="font-bold text-slate-900">SEMC</span><span>1 535</span><span className="text-rose-600 font-bold">-7,14% ▼</span></div>
+          <div className="flex justify-between p-3"><span className="font-bold text-slate-900">STAC</span><span>3 185</span><span className="text-rose-600 font-bold">-6,61% ▼</span></div>
+          <div className="flex justify-between p-3"><span className="font-bold text-slate-900">VIVO</span><span>1 800</span><span className="text-rose-600 font-bold">-5,03% ▼</span></div>
         </div>
       </div>
 
