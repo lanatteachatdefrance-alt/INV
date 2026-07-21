@@ -10,9 +10,9 @@ import { PerformanceChart } from '@/components/fintech/PerformanceChart'
 export default function Home() {
   const [indice, setIndice] = useState(228.45)
   const [topActive, setTopActive] = useState([
-    { ticker: 'SNTS', name: 'SONATEL SN', cours: 28700, var: 1.2 },
-    { ticker: 'ORAC', name: 'ORANGE CI', cours: 15650, var: 0.85 },
-    { ticker: 'SGBC', name: 'SG CI', cours: 36200, var: 0.5 },
+    { ticker: 'SNTS', name: 'SONATEL SN', cours: 16000, var: 1.2 },
+    { ticker: 'ORAC', name: 'ORANGE CI', cours: 11500, var: 0.85 },
+    { ticker: 'SGBC', name: 'SG CI', cours: 16500, var: 0.5 },
   ])
 
   useEffect(() => {
@@ -37,10 +37,10 @@ export default function Home() {
   return (
     <div className="fin-page fin-section">
       <GlassCard hover={false} className="relative overflow-hidden bg-card-shine">
-        <div className="absolute inset-0 bg-gradient-to-br from-fin-primary/20 via-transparent to-fin-success/10 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-br from-fin-primary/10 via-transparent to-fin-success/10 pointer-events-none" />
         <div className="relative max-w-2xl">
           <p className="text-fin-primary text-xs font-bold uppercase tracking-[0.2em] mb-3">Investir Bourse</p>
-          <h1 className="text-3xl md:text-5xl font-bold tracking-tight leading-[1.05]">
+          <h1 className="text-3xl md:text-5xl font-bold tracking-tight leading-[1.05] text-slate-900">
             Investissez avec la précision d&apos;une banque digitale
           </h1>
           <p className="text-fin-mute mt-4 text-sm md:text-base max-w-lg">
@@ -74,20 +74,20 @@ export default function Home() {
         </div>
         <div className="lg:col-span-2">
           <GlassCard padding="none" hover={false}>
-            <div className="px-5 pt-5 pb-3 flex items-center justify-between">
-              <h2 className="font-bold flex items-center gap-2">
+            <div className="px-5 pt-5 pb-3 flex items-center justify-between border-b border-slate-200">
+              <h2 className="font-bold flex items-center gap-2 text-slate-900">
                 <TrendingUp size={16} className="text-fin-success" /> Top actifs
               </h2>
             </div>
-            <div className="divide-y divide-white/5">
+            <div className="divide-y divide-slate-200">
               {topActive.map((s) => (
                 <div key={s.ticker} className="px-5 py-3.5 flex items-center justify-between gap-3">
                   <div>
-                    <p className="font-semibold text-sm">{s.ticker}</p>
+                    <p className="font-semibold text-sm text-slate-900">{s.ticker}</p>
                     <p className="text-[11px] text-fin-mute">{s.name}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-semibold">{s.cours.toLocaleString('fr-FR')}</p>
+                    <p className="text-sm font-semibold text-slate-900">{s.cours.toLocaleString('fr-FR')} FCFA</p>
                     <p className={`text-xs font-semibold ${s.var >= 0 ? 'text-fin-success' : 'text-fin-danger'}`}>
                       {s.var >= 0 ? '+' : ''}
                       {s.var}%
@@ -98,7 +98,7 @@ export default function Home() {
             </div>
             <Link
               href="/register"
-              className="flex items-center justify-center gap-1 py-3.5 text-xs font-bold text-fin-primary border-t border-white/5 hover:bg-fin-hover/50"
+              className="flex items-center justify-center gap-1 py-3.5 text-xs font-bold text-fin-primary border-t border-slate-200 hover:bg-slate-50"
             >
               Commencer à investir <ArrowUpRight size={14} />
             </Link>

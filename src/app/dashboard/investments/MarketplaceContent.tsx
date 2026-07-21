@@ -44,7 +44,7 @@ export default function MarketplaceContent({
                 'px-4 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap transition-all',
                 filterType === type
                   ? 'bg-fin-primary text-white shadow-glow'
-                  : 'bg-fin-surface text-fin-mute border border-white/5 hover:text-white'
+                  : 'bg-white text-slate-600 border border-slate-200 hover:text-slate-900'
               )}
             >
               {type === 'Tous' ? 'Tout' : `${type}s`}

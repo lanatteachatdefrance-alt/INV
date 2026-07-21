@@ -4,6 +4,7 @@ import { ShieldCheck } from 'lucide-react'
 import MarketplaceContent from './MarketplaceContent'
 import { GlassCard } from '@/components/ui/GlassCard'
 import { formatFcfa } from '@/lib/utils'
+import { BRVM_OFFERS } from '@/lib/brvmOffersData'
 
 export default async function InvestmentsPage() {
   const supabase = createClient()
@@ -17,16 +18,7 @@ export default async function InvestmentsPage() {
     .eq('is_active', true)
     .order('created_at', { ascending: true })
 
-  const DEMO_OFFERS = [
-    { id: 'snts', title: 'Sonatel (SNTS)', description: 'Secteur des Télécoms - Sénégal.', type: 'Action', roi_percentage: 8.5, price_per_share: 28700, minimum_investment: 28700, is_active: true },
-    { id: 'orac', title: "Orange Côte d'Ivoire (ORAC)", description: 'Secteur des Télécoms - CI.', type: 'Action', roi_percentage: 7.2, price_per_share: 15650, minimum_investment: 15650, is_active: true },
-    { id: 'sgbc', title: 'Société Générale CI (SGBC)', description: 'Secteur Bancaire.', type: 'Action', roi_percentage: 9.1, price_per_share: 36200, minimum_investment: 36200, is_active: true },
-    { id: 'ecoc', title: 'Ecobank CI (ECOC)', description: 'Secteur Bancaire - Côte d\'Ivoire.', type: 'Action', roi_percentage: 8.0, price_per_share: 16000, minimum_investment: 16000, is_active: true },
-    { id: 'cbibf', title: 'Coris Bank Int. (CBIBF)', description: 'Banque à fort taux de croissance.', type: 'Action', roi_percentage: 9.0, price_per_share: 20700, minimum_investment: 20700, is_active: true },
-    { id: 'etit', title: 'Ecobank Trans. Inc. (ETIT)', description: 'Action holding ETI.', type: 'Action', roi_percentage: 5.5, price_per_share: 30, minimum_investment: 3000, is_active: true },
-  ]
-
-  const offers = dbOffers && dbOffers.length > 0 ? dbOffers : DEMO_OFFERS
+  const offers = dbOffers && dbOffers.length > 0 ? dbOffers : BRVM_OFFERS
   const { data: userData } = await supabase.from('users').select('balance, kyc_status').eq('id', user?.id).single()
   const userBalance = parseFloat(userData?.balance || 0)
   const isKycValid = userData?.kyc_status === 'validé'

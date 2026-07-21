@@ -44,13 +44,13 @@ export function TransactionCard({
   return (
     <GlassCard padding="none" hover={false}>
       <div className="flex items-center justify-between px-5 pt-5 pb-3">
-        <h2 className="text-base font-bold text-white">{title}</h2>
+        <h2 className="text-base font-bold text-slate-900">{title}</h2>
         <Link href={href} className="text-sm font-semibold text-fin-primary hover:text-blue-400">
           Voir tout
         </Link>
       </div>
 
-      <div className="divide-y divide-white/5">
+      <div className="divide-y divide-slate-200">
         {items.length === 0 ? (
           <p className="px-5 py-10 text-center text-sm text-fin-mute">Aucun ordre pour le moment.</p>
         ) : (
@@ -58,13 +58,13 @@ export function TransactionCard({
             <Link
               key={item.id}
               href={href}
-              className="flex items-center gap-3 px-5 py-4 hover:bg-fin-hover/60 transition-colors"
+              className="flex items-center gap-3 px-5 py-4 hover:bg-slate-50 transition-colors"
             >
-              <div className="w-11 h-11 rounded-full bg-fin-surface border border-white/10 flex items-center justify-center text-xs font-bold text-fin-primary shrink-0">
+              <div className="w-11 h-11 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center text-xs font-bold text-fin-primary shrink-0">
                 {initialsFromTitle(item.title)}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-sm text-white truncate">{item.title}</p>
+                <p className="font-semibold text-sm text-slate-900 truncate">{item.title}</p>
                 <p className="text-xs text-fin-mute mt-0.5">
                   <span className={item.side === 'achat' ? 'text-fin-success' : 'text-fin-danger'}>
                     {item.side === 'achat' ? 'Achat' : 'Vente'}
@@ -76,7 +76,7 @@ export function TransactionCard({
                 <StatusBadge status={statusTone(item.status)} className="mb-1">
                   {statusLabel(item.status)}
                 </StatusBadge>
-                <p className="text-sm font-semibold text-white">{formatFcfa(item.amount)}</p>
+                <p className="text-sm font-semibold text-slate-900">{formatFcfa(item.amount)}</p>
               </div>
               <ChevronRight size={16} className="text-fin-mute shrink-0" />
             </Link>

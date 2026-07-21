@@ -68,7 +68,15 @@ export default function Dashboard() {
 
       const { data: investments } = await supabase
         .from('user_investments')
-        .select('id, amount_invested, current_value, status, shares, offer_id')
+        .select(`
+          id,
+          amount_invested,
+          current_value,
+          status,
+          shares,
+          offer_id,
+          investment_offers ( title )
+        `)
         .eq('user_id', user.id)
 
       const { data: txs } = await supabase
@@ -103,9 +111,13 @@ export default function Dashboard() {
         const current = parseFloat(inv.current_value ?? invested)
         const qty = parseInt(inv.shares || '1', 10) || 1
         const changePct = invested > 0 ? ((current - invested) / invested) * 100 : 0
+        const offer = Array.isArray(inv.investment_offers)
+          ? inv.investment_offers[0]
+          : inv.investment_offers
+        const title = offer?.title || `Position ${idx + 1}`
         return {
           id: inv.id,
-          title: `Position ${idx + 1}`,
+          title,
           quantity: qty,
           price: Math.round(current / qty) || invested,
           changePct,
@@ -188,14 +200,14 @@ export default function Dashboard() {
       {userData.kyc_status !== 'validé' && (
         <Link
           href="/dashboard/kyc"
-          className="flex items-center gap-3 rounded-[20px] border border-fin-warning/30 bg-fin-warning/10 px-4 py-3.5 hover:bg-fin-warning/15 transition-colors"
+          className="flex items-center gap-3 rounded-[20px] border border-fin-warning/30 bg-amber-500/10 px-4 py-3.5 hover:bg-amber-500/15 transition-colors"
         >
-          <ShieldCheck className="text-fin-warning shrink-0" size={22} />
+          <ShieldCheck className="text-amber-600 shrink-0" size={22} />
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-white">Finalisez votre vérification KYC</p>
+            <p className="text-sm font-semibold text-slate-900">Finalisez votre vérification KYC</p>
             <p className="text-xs text-fin-mute">Requise pour placer des ordres sur le marché.</p>
           </div>
-          <span className="text-xs font-bold text-fin-warning">Continuer</span>
+          <span className="text-xs font-bold text-amber-600">Continuer</span>
         </Link>
       )}
 
@@ -249,9 +261,9 @@ export default function Dashboard() {
 
       {showManagerPopup && (
         <div className="fixed inset-0 z-[80] flex items-end md:items-center justify-center p-0 md:p-4">
-          <button type="button" aria-label="Fermer" onClick={() => setShowManagerPopup(false)} className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
-          <div className="relative w-full max-w-sm rounded-t-[24px] md:rounded-[20px] bg-fin-card border border-white/10 shadow-glass p-6 text-center pb-[calc(1.5rem+env(safe-area-inset-bottom))] md:pb-6">
-            <h3 className="text-lg font-bold mb-2">Dépôt</h3>
+          <button type="button" aria-label="Fermer" onClick={() => setShowManagerPopup(false)} className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+          <div className="relative w-full max-w-sm rounded-t-[24px] md:rounded-[20px] bg-white border border-slate-200 shadow-glass p-6 text-center pb-[calc(1.5rem+env(safe-area-inset-bottom))] md:pb-6">
+            <h3 className="text-lg font-bold text-slate-900 mb-2">Dépôt</h3>
             <p className="text-sm text-fin-mute mb-5">Contactez votre gestionnaire pour créditer votre compte.</p>
             <PrimaryButton fullWidth onClick={() => setShowManagerPopup(false)}>
               Fermer
@@ -266,10 +278,10 @@ export default function Dashboard() {
             type="button"
             aria-label="Fermer"
             onClick={() => !isWithdrawPending && setShowWithdrawPopup(false)}
-            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
           />
-          <div className="relative w-full max-w-lg rounded-t-[24px] md:rounded-[20px] bg-fin-card border border-white/10 shadow-glass p-6 max-h-[90dvh] overflow-y-auto pb-[calc(1.5rem+env(safe-area-inset-bottom))] md:pb-6">
-            <h3 className="text-xl font-bold">Demande de retrait</h3>
+          <div className="relative w-full max-w-lg rounded-t-[24px] md:rounded-[20px] bg-white border border-slate-200 shadow-glass p-6 max-h-[90dvh] overflow-y-auto pb-[calc(1.5rem+env(safe-area-inset-bottom))] md:pb-6">
+            <h3 className="text-xl font-bold text-slate-900">Demande de retrait</h3>
             <p className="text-xs text-fin-mute mt-1 mb-4">
               Solde: {formatFcfa(userData.balance)}
             </p>
@@ -305,8 +317,8 @@ export default function Dashboard() {
                     onClick={() => setWithdrawMethod('mobile_money')}
                     className={`rounded-2xl border px-3 py-2.5 text-xs font-bold ${
                       withdrawMethod === 'mobile_money'
-                        ? 'bg-fin-primary/20 text-fin-primary border-fin-primary/40'
-                        : 'bg-fin-surface text-fin-mute border-white/10'
+                        ? 'bg-blue-50 text-blue-600 border-blue-200'
+                        : 'bg-white text-slate-600 border-slate-200'
                     }`}
                   >
                     Mobile Money
@@ -316,8 +328,8 @@ export default function Dashboard() {
                     onClick={() => setWithdrawMethod('bank_transfer')}
                     className={`rounded-2xl border px-3 py-2.5 text-xs font-bold ${
                       withdrawMethod === 'bank_transfer'
-                        ? 'bg-fin-primary/20 text-fin-primary border-fin-primary/40'
-                        : 'bg-fin-surface text-fin-mute border-white/10'
+                        ? 'bg-blue-50 text-blue-600 border-blue-200'
+                        : 'bg-white text-slate-600 border-slate-200'
                     }`}
                   >
                     Virement
