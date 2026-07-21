@@ -1,108 +1,143 @@
-'use client';
+'use client'
 
-import { createClient } from '@/utils/supabase/client';
-import { useRouter } from 'next/navigation';
-import { LogOut, User, Menu, X, Bell } from 'lucide-react';
-import Link from 'next/link';
-import { useState } from 'react';
+import Link from 'next/link'
+import { usePathname, useRouter } from 'next/navigation'
+import { Bell, ChevronLeft, LogOut, Menu, X } from 'lucide-react'
+import { useState } from 'react'
+import { createClient } from '@/utils/supabase/client'
+import { PrimaryButton, SecondaryButton } from '@/components/ui/Buttons'
+import { cn } from '@/lib/utils'
 
-export default function Navbar({ userEmail }: { userEmail: string | undefined }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const router = useRouter();
-  const supabase = createClient();
+const titles: Record<string, string> = {
+  '/': 'Investir Bourse',
+  '/dashboard': 'Accueil',
+  '/dashboard/investments': 'Marché',
+  '/dashboard/active-investments': 'Ordres',
+  '/dashboard/kyc': 'Conformité',
+  '/login': 'Connexion',
+  '/register': 'Inscription',
+  '/admin': 'Administration',
+  '/admin/users': 'Clients',
+  '/admin/offers': 'Offres',
+  '/admin/requests': 'Demandes',
+}
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.push('/login');
-    router.refresh();
-  };
+export default function Navbar({ userEmail }: { userEmail?: string }) {
+  const pathname = usePathname() || '/'
+  const router = useRouter()
+  const [open, setOpen] = useState(false)
+  const supabase = createClient()
+
+  const title =
+    titles[pathname] ||
+    (pathname.startsWith('/admin') ? 'Admin' : pathname.startsWith('/dashboard') ? 'Espace client' : 'Investir Bourse')
+
+  const showBack = pathname.startsWith('/dashboard/') || (pathname.startsWith('/admin/') && pathname !== '/admin')
+
+  const logout = async () => {
+    await supabase.auth.signOut()
+    router.push('/login')
+    router.refresh()
+  }
 
   return (
-    <nav className="bg-white text-brand-dark sticky top-0 z-50 shadow-sm border-b border-gray-100">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-20 items-center">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="bg-brand-dark text-white px-2.5 py-2 rounded-xl font-black text-lg group-hover:bg-brand transition-colors shadow-sm">IB</div>
-            <span className="font-black text-xl tracking-tight hidden sm:block text-brand-dark">Investir <span className="text-brand-accent">Bourse</span></span>
+    <header
+      className="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur-xl"
+      style={{ paddingTop: 'env(safe-area-inset-top)' }}
+    >
+      {/* Mobile */}
+      <div className="lg:hidden flex items-center justify-between h-14 px-4 gap-2">
+        {showBack ? (
+          <button 
+            type="button"
+            onClick={() => router.back()}
+            className="w-10 h-10 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-slate-700 shadow-sm"
+            aria-label="Retour"
+          >
+            <ChevronLeft size={20} />
+          </button>
+        ) : (
+          <Link href={userEmail ? '/dashboard' : '/'} className="w-10 h-10 rounded-2xl bg-primary-gradient flex items-center justify-center font-black text-xs text-white shadow-glow">
+            IB
           </Link>
-
-          {/* Desktop Nav */}
-          <div className="hidden md:flex items-center gap-8">
-            {userEmail ? (
-              <>
-                <Link href="/dashboard/profile" className="flex items-center gap-2 text-sm font-bold bg-gray-50 hover:bg-gray-100 text-brand-dark px-4 py-2 rounded-xl border border-gray-200 transition-all shadow-sm">
-                  <User size={16} /> Mon profil
-                </Link>
-                <button 
-                  onClick={handleLogout}
-                  className="flex items-center gap-2 text-sm font-bold bg-white hover:bg-red-50 text-gray-600 hover:text-red-500 px-5 py-2.5 rounded-xl border border-gray-200 transition-all shadow-sm"
-                >
-                  <LogOut size={16} /> Déconnexion
-                </button>
-              </>
-            ) : (
-              <>
-                <Link href="/login" className="text-sm font-black text-gray-500 hover:text-brand-dark transition-colors uppercase tracking-widest">Se connecter</Link>
-                <Link href="/register" className="bg-brand-dark text-white text-sm font-black px-6 py-3 rounded-xl hover:bg-brand transition-all shadow-md uppercase tracking-widest">Créer un compte</Link>
-              </>
-            )}
-          </div>
-
-          {/* Mobile Menu Button */}
-          <div className="md:hidden flex items-center gap-3">
-             {!userEmail && (
-               <Link href="/register" className="bg-brand-accent text-brand-dark text-[10px] font-black px-4 py-2.5 rounded-lg hover:bg-brand-accentHover transition-all uppercase tracking-widest shadow-sm">
-                 S'inscrire
-               </Link>
-             )}
-             {userEmail && <button className="text-gray-400 hover:text-brand-dark transition-colors"><Bell size={22} /></button>}
-             <button 
-               onClick={() => setIsOpen(!isOpen)}
-               className="p-2 rounded-xl bg-gray-50 text-brand-dark border border-gray-100 hover:bg-gray-100"
-             >
-               {isOpen ? <X size={24} /> : <Menu size={24} />}
-             </button>
-          </div>
+        )}
+        <div className="flex-1 text-center min-w-0">
+          <p className="font-bold text-sm text-slate-900 truncate">{title}</p>
+          {userEmail && (
+            <p className="text-[10px] text-fin-mute truncate">{userEmail.split('@')[0]}</p>
+          )}
+        </div>
+        <div className="w-10 flex justify-end">
+          {userEmail ? (
+            <button type="button" className="w-10 h-10 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-slate-600 shadow-sm" aria-label="Notifications">
+              <Bell size={18} />
+            </button>
+          ) : (
+            <button type="button" onClick={() => setOpen((v) => !v)} className="w-10 h-10 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-slate-700 shadow-sm">
+              {open ? <X size={18} /> : <Menu size={18} />}
+            </button>
+          )}
         </div>
       </div>
 
-       {/* Mobile Drawer */}
-      {isOpen && (
-        <div className="md:hidden bg-white border-t border-gray-100 p-6 animate-in slide-in-from-top-4 duration-200 shadow-xl absolute w-full">
-           <div className="flex flex-col gap-3">
-              <Link href="/" onClick={() => setIsOpen(false)} className="p-4 bg-gray-50 hover:bg-gray-100 rounded-xl font-black text-brand-dark uppercase tracking-widest text-sm">Accueil</Link>
-              {userEmail ? (
-                <>
-                  <Link href="/dashboard" onClick={() => setIsOpen(false)} className="p-4 bg-gray-50 hover:bg-gray-100 rounded-xl font-black text-brand-dark uppercase tracking-widest text-sm">Tableau de Bord</Link>
-                  <Link href="/dashboard/profile" onClick={() => setIsOpen(false)} className="p-4 bg-gray-50 hover:bg-gray-100 rounded-xl font-black text-brand-dark uppercase tracking-widest text-sm">Mon profil</Link>
-                  <Link href="/dashboard/investments" onClick={() => setIsOpen(false)} className="p-4 bg-gray-50 hover:bg-gray-100 rounded-xl font-black text-brand-dark uppercase tracking-widest text-sm">Marché Boursier</Link>
-                  <Link href="/dashboard/active-investments" onClick={() => setIsOpen(false)} className="p-4 bg-gray-50 hover:bg-gray-100 rounded-xl font-black text-brand-dark uppercase tracking-widest text-sm">Mes Transactions</Link>
-                  <hr className="border-gray-100 my-4" />
-                  <div className="px-4 py-3 text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                     <User size={16} /> {userEmail}
-                  </div>
-                  <button 
-                    onClick={handleLogout}
-                    className="w-full text-left p-4 text-red-500 font-black bg-red-50 hover:bg-red-100 rounded-xl flex items-center gap-2 mt-2 uppercase tracking-widest text-sm"
-                  >
-                    <LogOut size={18} /> Se déconnecter
-                  </button>
-                </>
-              ) : (
-                <>
-                  <hr className="border-gray-100 my-4" />
-                  <Link href="/login" onClick={() => setIsOpen(false)} className="p-4 text-center rounded-xl font-black text-gray-500 bg-gray-50 hover:bg-gray-100 transition-colors uppercase tracking-widest text-sm">
-                    Se connecter
-                  </Link>
-                  <Link href="/register" onClick={() => setIsOpen(false)} className="p-4 text-center rounded-xl font-black bg-brand-dark text-white hover:bg-brand transition-colors shadow-md uppercase tracking-widest text-sm">
-                    Créer un compte
-                  </Link>
-                </>
-              )}
-           </div>
+      {/* Desktop top bar */}
+      <div className="hidden lg:flex items-center justify-between h-16 px-6">
+        <div>
+          <p className="text-sm font-bold text-slate-900">{title}</p>
+          <p className="text-[11px] text-fin-mute">Marchés régionaux · Temps réel</p>
+        </div>
+        <div className="flex items-center gap-3">
+          {userEmail ? (
+            <>
+              <button type="button" className="w-10 h-10 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-slate-600 hover:text-slate-900 shadow-sm transition-colors">
+                <Bell size={18} />
+              </button>
+              <div className="px-4 py-2 rounded-2xl bg-slate-100 border border-slate-200 text-xs font-semibold text-slate-700">
+                {userEmail}
+              </div>
+              <SecondaryButton size="sm" onClick={logout}>
+                <LogOut size={14} /> Déconnexion
+              </SecondaryButton>
+            </>
+          ) : (
+            <>
+              <Link href="/login" className="text-sm font-semibold text-slate-600 hover:text-slate-900">
+                Se connecter
+              </Link>
+              <Link href="/register">
+                <PrimaryButton size="sm">Créer un compte</PrimaryButton>
+              </Link>
+            </>
+          )}
+        </div>
+      </div>
+
+      {open && !userEmail && (
+        <div className={cn('lg:hidden border-t border-slate-200 p-4 space-y-2 bg-white')}>
+          <Link href="/login" onClick={() => setOpen(false)} className="block p-4 rounded-2xl bg-slate-100 text-slate-900 text-sm font-semibold text-center">
+            Se connecter
+          </Link>
+          <Link href="/register" onClick={() => setOpen(false)} className="block p-4 rounded-2xl bg-primary-gradient text-white text-sm font-semibold text-center">
+            Créer un compte
+          </Link>
         </div>
       )}
-    </nav>
-  );
+    </header>
+  )
+}
+
+export function NotificationButton() {
+  return (
+    <button type="button" className="w-10 h-10 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-slate-600 hover:text-slate-900 shadow-sm" aria-label="Notifications">
+      <Bell size={18} />
+    </button>
+  )
+}
+
+export function UserDropdown({ email }: { email: string }) {
+  return (
+    <div className="px-4 py-2 rounded-2xl bg-slate-100 border border-slate-200 text-xs font-semibold text-slate-700">
+      {email}
+    </div>
+  )
 }

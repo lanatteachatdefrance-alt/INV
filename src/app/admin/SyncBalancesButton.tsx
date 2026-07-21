@@ -29,17 +29,17 @@ export default function SyncBalancesButton() {
   };
 
   return (
-    <div className="flex flex-col items-center gap-3">
+    <div className="flex flex-col items-end gap-2">
       <button
         type="button"
         onClick={handleSync}
         disabled={isPending}
-        className="bg-brand hover:bg-brand-dark text-white px-6 py-2 rounded font-bold transition-colors shadow-sm uppercase text-xs tracking-wider flex items-center gap-2 disabled:opacity-60"
+        className="bg-primary-gradient text-white px-5 py-2.5 rounded-2xl font-semibold text-xs flex items-center gap-2 disabled:opacity-60 shadow-glow"
       >
         {isPending ? <Loader2 size={16} className="animate-spin" /> : <TrendingUp size={16} />}
-        Ajuster les soldes (nouveaux cours)
+        Sync soldes
       </button>
-      {message && <p className="text-sm text-gray-600 max-w-md text-center">{message}</p>}
+      {message && <p className="text-xs text-fin-mute max-w-xs text-right">{message}</p>}
     </div>
   );
 }

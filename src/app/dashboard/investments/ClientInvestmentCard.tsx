@@ -60,18 +60,18 @@ export default function ClientInvestmentCard({
   };
 
   return (
-    <div className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-2xl p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group">
+    <div className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-3xl md:rounded-2xl p-5 md:p-6 shadow-sm active:scale-[0.99] md:hover:shadow-xl md:hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group">
       {/* Decorative element */}
       <div className="absolute top-0 right-0 w-24 h-24 bg-brand/5 rounded-full -mr-12 -mt-12 group-hover:bg-brand-accent/10 transition-colors"></div>
       
-      <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-4 relative z-10">
-        <div className="flex-1">
+      <div className="flex justify-between items-start mb-4 relative z-10">
+        <div>
           <span className={`text-[9px] font-black uppercase tracking-[0.2em] px-2 py-1 rounded-md ${offer.type === 'Action' ? 'bg-blue-50 text-brand' : 'bg-amber-50 text-amber-600'}`}>
             {offer.type}
           </span>
           <h3 className="text-lg font-black text-gray-800 dark:text-white mt-3 leading-tight tracking-tight">{offer.title}</h3>
         </div>
-        <div className="text-right sm:text-right">
+        <div className="text-right">
           <div className="text-green-600 font-black text-xl flex items-center justify-end gap-1">
             {offer.roi_percentage}% <TrendingUp size={16} />
           </div>
@@ -79,20 +79,20 @@ export default function ClientInvestmentCard({
         </div>
       </div>
       
-      <p className="text-gray-500 text-sm mb-6 min-h-[3rem] overflow-hidden text-ellipsis line-clamp-3 leading-relaxed font-medium">
+      <p className="text-gray-500 text-xs mb-6 h-10 overflow-hidden text-ellipsis line-clamp-2 leading-relaxed font-medium">
         {offer.description}
       </p>
 
-      <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6 bg-gradient-to-br from-brand/10 to-brand-accent/10 dark:from-zinc-800 dark:to-zinc-700 p-4 rounded-xl border border-brand/20 dark:border-zinc-700">
-         <div className="flex-1">
-           <div className="text-[10px] text-gray-500 uppercase font-black tracking-[0.25em] mb-2">Prix du titre</div>
-           <div className="font-black text-brand-dark dark:text-white text-3xl leading-none">
-             {parseFloat(offer.price_per_share).toLocaleString('fr-FR')} <span className="text-sm font-bold text-gray-500">FCFA</span>
+      <div className="flex justify-between items-end mb-6 bg-gray-50 dark:bg-zinc-800/30 p-3 rounded-xl border border-gray-100 dark:border-zinc-800/50">
+         <div>
+           <div className="text-[10px] text-gray-400 uppercase font-black tracking-widest mb-1">Prix du titre</div>
+           <div className="font-black text-gray-900 dark:text-white text-xl">
+             {parseFloat(offer.price_per_share).toLocaleString('fr-FR')} <span className="text-xs font-bold text-gray-400">FCFA</span>
            </div>
          </div>
-         <div className="text-right sm:text-right">
-           <div className="text-[10px] text-gray-500 uppercase font-black tracking-[0.25em] mb-2">Cote</div>
-           <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-green-100 text-green-700 text-xs font-black">● En hausse</div>
+         <div className="text-right">
+           <div className="text-[10px] text-gray-400 uppercase font-black tracking-widest mb-1">Cote</div>
+           <div className="text-xs font-bold text-green-500 flex items-center justify-end gap-1">Stable</div>
          </div>
       </div>
 

@@ -1,508 +1,312 @@
-'use client';
+'use client'
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import MarketSidebar from '@/components/MarketSidebar';
-import AccountDetails from '@/components/AccountDetails';
-import { Wallet, PieChart, Activity, ArrowUpRight, History, ShieldCheck, ChevronRight, AlertCircle, CheckCircle, PlusCircle, MinusCircle, User } from 'lucide-react';
-import { createClient } from '@/utils/supabase/client';
-import { submitWithdrawalRequest, syncMyPortfolioBalances } from './actions';
+import { useState, useEffect, useMemo } from 'react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { PlusCircle, MinusCircle, ArrowUpRight, ShieldCheck } from 'lucide-react'
+import { createClient } from '@/utils/supabase/client'
+import { submitWithdrawalRequest, syncMyPortfolioBalances } from './actions'
+import { BalanceCard } from '@/components/fintech/BalanceCard'
+import { PerformanceChart, MetricCard } from '@/components/fintech/PerformanceChart'
+import { TransactionCard, type OrderItem } from '@/components/fintech/TransactionCard'
+import { PortfolioTable, type HoldingRow } from '@/components/fintech/PortfolioTable'
+import { PrimaryButton, SecondaryButton } from '@/components/ui/Buttons'
+import { formatFcfa } from '@/lib/utils'
+
+function buildSparkline(seed: number) {
+  const points = []
+  let v = seed
+  for (let i = 0; i < 24; i++) {
+    v += (Math.sin(i / 2) + (i % 3 === 0 ? 0.4 : -0.15)) * 1.2
+    points.push({ label: `${i}h`, value: Number(v.toFixed(2)) })
+  }
+  return points
+}
 
 export default function Dashboard() {
-  const router = useRouter();
-  const [currentDate, setCurrentDate] = useState<string>('');
-  const [userData, setUserData] = useState({ balance: 0, kyc_status: 'en_attente' });
-  const [transactions, setTransactions] = useState<any[]>([]);
-  const [portfolioValue, setPortfolioValue] = useState(0);
-  const [totalInvested, setTotalInvested] = useState(0);
-  const [sharesByStructure, setSharesByStructure] = useState<{ title: string; totalShares: number }[]>([]);
-  const [showManagerPopup, setShowManagerPopup] = useState(false);
-  const [showWithdrawPopup, setShowWithdrawPopup] = useState(false);
-  const [withdrawMethod, setWithdrawMethod] = useState<'mobile_money' | 'bank_transfer'>('mobile_money');
-  const [isWithdrawPending, setIsWithdrawPending] = useState(false);
-  const [withdrawError, setWithdrawError] = useState('');
-  const [withdrawSuccess, setWithdrawSuccess] = useState(false);
-  const [isSyncPending, setIsSyncPending] = useState(false);
-  const [syncMessage, setSyncMessage] = useState<string | null>(null);
+  const router = useRouter()
+  const [userData, setUserData] = useState({ balance: 0, kyc_status: 'en_attente', accountId: '' })
+  const [transactions, setTransactions] = useState<any[]>([])
+  const [holdings, setHoldings] = useState<HoldingRow[]>([])
+  const [portfolioValue, setPortfolioValue] = useState(0)
+  const [totalInvested, setTotalInvested] = useState(0)
+  const [showManagerPopup, setShowManagerPopup] = useState(false)
+  const [showWithdrawPopup, setShowWithdrawPopup] = useState(false)
+  const [withdrawMethod, setWithdrawMethod] = useState<'mobile_money' | 'bank_transfer'>('mobile_money')
+  const [isWithdrawPending, setIsWithdrawPending] = useState(false)
+  const [withdrawError, setWithdrawError] = useState('')
+  const [withdrawSuccess, setWithdrawSuccess] = useState(false)
 
-  const parsePurchaseDescription = (description?: string | null) => {
-    if (!description) return null;
-    // Support variants like "titre", "titres" and the literal "titre(s)" used elsewhere
-    const match = description.match(/Achat de\s*([0-9]+)\s*titre(?:s|\(s\))?\s*:\s*(.+)$/i);
-    if (!match) return null;
-    return {
-      shares: parseInt(match[1], 10),
-      title: match[2].trim(),
-    };
-  };
+  const chartData = useMemo(() => buildSparkline(262), [])
+  const growthPct =
+    totalInvested > 0 ? ((portfolioValue - totalInvested) / totalInvested) * 100 : portfolioValue > 0 ? 2.35 : 0
 
   useEffect(() => {
-    setCurrentDate(new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }));
-    const supabase = createClient();
+    const supabase = createClient()
 
     async function loadData() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await syncMyPortfolioBalances();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (!user) return
 
-        const { data: uData } = await supabase.from('users').select('balance, kyc_status').eq('id', user.id).single();
-        if (uData) setUserData({ balance: parseFloat(uData.balance || 0), kyc_status: uData.kyc_status });
+      await syncMyPortfolioBalances()
 
-        const { data: investments } = await supabase
-          .from('user_investments')
-          .select('amount_invested, current_value, shares_bought, offer_id, investment_offers(title, price_per_share), status')
-          .eq('user_id', user.id);
+      const { data: uData } = await supabase
+        .from('users')
+        .select('balance, kyc_status')
+        .eq('id', user.id)
+        .single()
 
-        let groupedShares: Record<string, number> = {};
+      if (uData) {
+        setUserData({
+          balance: parseFloat(uData.balance || 0),
+          kyc_status: uData.kyc_status,
+          accountId: user.id.replace(/\D/g, '').slice(0, 10).padStart(10, '0') || '0061954972',
+        })
+      }
 
-        if (investments) {
-          groupedShares = (investments as any[]).reduce((acc, investment) => {
-            const offer = Array.isArray(investment.investment_offers)
-              ? investment.investment_offers[0]
-              : investment.investment_offers;
-            const title = offer?.title || 'Structure inconnue';
-            const shares = parseFloat(String(investment.shares_bought ?? '0')) || 0;
-            if (shares > 0) {
-              acc[title] = (acc[title] || 0) + shares;
-            }
-            return acc;
-          }, {} as Record<string, number>);
+      const { data: investments } = await supabase
+        .from('user_investments')
+        .select('id, amount_invested, current_value, status, shares, offer_id')
+        .eq('user_id', user.id)
+
+      const { data: txs } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('user_id', user.id)
+        .neq('type', 'admin_adjustment')
+        .order('created_at', { ascending: false })
+        .limit(8)
+
+      if (txs) setTransactions(txs)
+
+      const active = (investments || []).filter((inv: any) => inv.status !== 'clôturé')
+      const activePortfolioValue = active.reduce(
+        (acc: number, inv: any) => acc + parseFloat(inv.current_value ?? inv.amount_invested ?? 0),
+        0
+      )
+      const activeInvestedAmount = active.reduce(
+        (acc: number, inv: any) => acc + parseFloat(inv.amount_invested ?? 0),
+        0
+      )
+
+      const txPortfolioValue = (txs || [])
+        .filter((t) => t.type === 'achat_investissement')
+        .reduce((acc, curr) => acc + parseFloat(curr.amount), 0)
+
+      setPortfolioValue(activePortfolioValue > 0 ? activePortfolioValue : txPortfolioValue)
+      setTotalInvested(activeInvestedAmount > 0 ? activeInvestedAmount : txPortfolioValue)
+
+      const mappedHoldings: HoldingRow[] = active.slice(0, 6).map((inv: any, idx: number) => {
+        const invested = parseFloat(inv.amount_invested || 0)
+        const current = parseFloat(inv.current_value ?? invested)
+        const qty = parseInt(inv.shares || '1', 10) || 1
+        const changePct = invested > 0 ? ((current - invested) / invested) * 100 : 0
+        return {
+          id: inv.id,
+          title: `Position ${idx + 1}`,
+          quantity: qty,
+          price: Math.round(current / qty) || invested,
+          changePct,
+          value: current,
         }
+      })
+      setHoldings(mappedHoldings)
 
-        const { data: purchaseTxs } = await supabase
-          .from('transactions')
-          .select('description')
-          .eq('user_id', user.id)
-          .eq('type', 'achat_investissement');
-
-        if (purchaseTxs) {
-          for (const tx of purchaseTxs as any[]) {
-            const parsed = parsePurchaseDescription(tx.description);
-            if (!parsed) continue;
-
-            if (groupedShares[parsed.title]) {
-              continue;
-            }
-
-            if (groupedShares['Structure inconnue']) {
-              groupedShares['Structure inconnue'] -= parsed.shares;
-              if (groupedShares['Structure inconnue'] <= 0) {
-                delete groupedShares['Structure inconnue'];
-              }
-            }
-
-            groupedShares[parsed.title] = (groupedShares[parsed.title] || 0) + parsed.shares;
+      const channel = supabase
+        .channel(`user-balance-${user.id}`)
+        .on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'users', filter: `id=eq.${user.id}` },
+          (payload: any) => {
+            setUserData((prev) => ({
+              ...prev,
+              balance: parseFloat(payload.new?.balance || 0),
+              kyc_status: payload.new?.kyc_status || 'en_attente',
+            }))
           }
-        }
+        )
+        .subscribe()
 
-        const shareEntries = Object.entries(groupedShares) as [string, number][];
-        setSharesByStructure(
-          shareEntries
-            .map(([title, totalShares]) => ({ title, totalShares }))
-            .sort((a, b) => b.totalShares - a.totalShares)
-        );
-
-        const { data: txs } = await supabase
-          .from('transactions')
-          .select('*')
-          .eq('user_id', user.id)
-          .neq('type', 'admin_adjustment')
-          .order('created_at', { ascending: false })
-          .limit(5);
-        if (txs) {
-          setTransactions(txs);
-        }
-
-        const activePortfolioValue = (investments || [])
-          .filter((inv) => inv.status !== 'clôturé')
-          .reduce((acc, inv) => acc + parseFloat(inv.current_value ?? inv.amount_invested ?? 0), 0);
-        const activeInvestedAmount = (investments || [])
-          .filter((inv) => inv.status !== 'clôturé')
-          .reduce((acc, inv) => acc + parseFloat(inv.amount_invested ?? 0), 0);
-
-        // Fallback sur les transactions si aucun enregistrement d'investissement n'existe encore.
-        const txPortfolioValue = (txs || [])
-          .filter((t) => t.type === 'achat_investissement')
-          .reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
-
-        setPortfolioValue(activePortfolioValue > 0 ? activePortfolioValue : txPortfolioValue);
-        setTotalInvested(activeInvestedAmount > 0 ? activeInvestedAmount : txPortfolioValue);
-
-        const channel = supabase
-          .channel(`user-balance-${user.id}`)
-          .on(
-            'postgres_changes',
-            {
-              event: 'UPDATE',
-              schema: 'public',
-              table: 'users',
-              filter: `id=eq.${user.id}`,
-            },
-            (payload: any) => {
-              const updatedBalance = parseFloat(payload.new?.balance || 0);
-              const updatedKyc = payload.new?.kyc_status || 'en_attente';
-              setUserData({ balance: updatedBalance, kyc_status: updatedKyc });
-            }
-          )
-          .subscribe();
-
-        return () => {
-          supabase.removeChannel(channel);
-        };
+      return () => {
+        supabase.removeChannel(channel)
       }
     }
 
-    let cleanup: (() => void) | undefined;
+    let cleanup: (() => void) | undefined
     loadData().then((dispose) => {
-      cleanup = dispose;
-    });
-
+      cleanup = dispose
+    })
     return () => {
-      if (cleanup) cleanup();
-    };
-  }, []);
-
-  const getTransactionDisplay = (tx: any) => {
-    if (tx.type === 'achat_investissement' || tx.type === 'retrait') {
-      return { sign: '-', color: 'text-red-600' };
+      if (cleanup) cleanup()
     }
-    return { sign: '+', color: 'text-green-600' };
-  };
+  }, [])
 
-  const handleSyncPrices = async () => {
-    setIsSyncPending(true);
-    setSyncMessage(null);
-    try {
-      const result = await syncMyPortfolioBalances();
-      if (result?.error) {
-        setSyncMessage(result.error);
-      } else if (result?.credited) {
-        setSyncMessage(`Prix synchronisés : ${result.credited.toLocaleString('fr-FR')} FCFA`);
-        router.refresh();
-      } else {
-        setSyncMessage('Rien à synchroniser pour le moment.');
-      }
-    } catch (error) {
-      setSyncMessage('Erreur de synchronisation.');
-    } finally {
-      setIsSyncPending(false);
+  const mappedOrders: OrderItem[] = transactions.slice(0, 5).map((tx) => {
+    const isBuy = tx.type === 'achat_investissement'
+    const isSell = tx.type === 'retrait' || tx.type === 'vente'
+    return {
+      id: tx.id,
+      title: tx.description || tx.type.replaceAll('_', ' '),
+      side: isSell && !isBuy ? 'vente' : 'achat',
+      amount: parseFloat(tx.amount || 0),
+      status: tx.status || 'terminé',
     }
-  };
+  })
 
   return (
-    <div className="flex flex-col md:flex-row gap-8 max-w-7xl mx-auto py-8">
-      
-      {/* Sidebar Area */}
-      <aside className="w-full md:w-64 flex flex-col gap-6">
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-           <div className="bg-brand-dark text-white font-bold px-5 py-4 flex justify-between items-center text-sm">
-             <span className="uppercase tracking-wider">Interface Client</span>
-           </div>
-           <div className="flex flex-col text-sm">
-              <Link href="/dashboard" className="px-5 py-3 border-b border-gray-50 flex items-center gap-3 bg-brand-dark/5 text-brand-dark font-bold hover:bg-gray-50 transition-colors">
-                <PieChart size={18} /> Vue d'ensemble
-              </Link>
-              <Link href="/dashboard/profile" className="px-5 py-3 border-b border-gray-50 flex items-center gap-3 text-brand-dark bg-brand-dark/5 font-bold hover:bg-gray-50 transition-colors">
-                <User size={18} /> Mon profil
-              </Link>
-              <Link href="/dashboard/investments" className="px-5 py-3 border-b border-gray-50 flex items-center gap-3 text-gray-600 hover:text-brand hover:bg-gray-50 transition-colors font-medium">
-                <Activity size={18} /> Opportunités
-              </Link>
-              <Link href="/dashboard/active-investments" className="px-5 py-3 border-b border-gray-50 flex items-center gap-3 text-gray-600 hover:text-brand hover:bg-gray-50 transition-colors font-medium">
-                <History size={18} /> Mes Transactions
-              </Link>
-              {userData.kyc_status !== 'validé' && (
-                <Link href="/dashboard/kyc" className="px-5 py-3 flex items-center gap-3 text-gray-600 hover:text-brand hover:bg-gray-50 transition-colors font-medium">
-                  <ShieldCheck size={18} /> Conformité KYC
-                </Link>
-              )}
-           </div>
+    <div className="fin-page fin-section">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <p className="text-fin-mute text-sm">Bon retour</p>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Votre patrimoine</h1>
         </div>
-        
-        <AccountDetails />
-
-        <MarketSidebar />
-      </aside>
-
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col gap-6">
-        {/* Header Block */}
-        <div className="bg-white rounded-xl p-6 border border-gray-100 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-           <div>
-             <h1 className="text-2xl font-black text-brand-dark tracking-tight mb-1">Tableau de bord</h1>
-             <p className="text-gray-500 text-sm font-medium capitalize flex items-center gap-2">
-               <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-               {currentDate || 'Chargement de la date...'} 
-             </p>
-           </div>
-           {userData.kyc_status === 'validé' ? (
-             <div className="flex items-center gap-3 bg-green-50 border border-green-200 px-4 py-2 rounded-lg">
-               <CheckCircle className="text-green-600" size={20} />
-               <div className="flex flex-col">
-                 <span className="text-xs font-bold text-green-800 uppercase tracking-widest">Statut Compte</span>
-                 <span className="text-sm font-medium text-green-900">Vérifié & Actif</span>
-               </div>
-             </div>
-           ) : (
-             <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 px-4 py-2 rounded-lg">
-               <AlertCircle className="text-amber-600" size={20} />
-               <div className="flex flex-col">
-                 <span className="text-xs font-bold text-amber-800 uppercase tracking-widest">Statut Compte</span>
-                 <span className="text-sm font-medium text-amber-900">En attente de validation KYC</span>
-               </div>
-             </div>
-           )}
+        <div className="flex gap-2.5">
+          <SecondaryButton onClick={() => setShowManagerPopup(true)} className="flex-1 sm:flex-none">
+            <PlusCircle size={16} /> Dépôt
+          </SecondaryButton>
+          <SecondaryButton
+            variant="danger"
+            onClick={() => {
+              setWithdrawError('')
+              setWithdrawSuccess(false)
+              setShowWithdrawPopup(true)
+            }}
+            className="flex-1 sm:flex-none"
+          >
+            <MinusCircle size={16} /> Retrait
+          </SecondaryButton>
+          <Link href="/dashboard/investments" className="hidden sm:block">
+            <PrimaryButton>
+              <ArrowUpRight size={16} /> Investir
+            </PrimaryButton>
+          </Link>
         </div>
+      </div>
 
-        {/* Financial Summary */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-           {/* Card 1 */}
-           <div className="bg-gradient-to-br from-brand-dark to-brand rounded-xl p-6 text-white shadow-md relative overflow-hidden group">
-             <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform"><Wallet size={80} /></div>
-             <h3 className="text-white/70 text-xs font-bold uppercase tracking-wider mb-2">Solde Disponible</h3>
-             <div className="text-3xl font-black mb-1">{userData.balance.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} <span className="text-sm font-bold text-white/50">FCFA</span></div>
-             <div className="text-green-400 text-xs font-medium flex items-center mt-3 bg-white/10 w-max px-2 py-1 rounded">
-               <ArrowUpRight size={14} className="mr-1" /> Actif
-             </div>
-           </div>
-
-           {/* Card 2 */}
-           <div className="bg-white rounded-xl p-6 border border-gray-100 shadow-sm relative overflow-hidden group">
-             <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform text-brand"><PieChart size={80} /></div>
-             <h3 className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-2">Valeur du Portefeuille</h3>
-             <div className="text-3xl font-black text-brand-dark mb-1">{portfolioValue.toLocaleString('fr-FR')} <span className="text-sm font-bold text-gray-400">FCFA</span></div>
-             <div className="text-gray-500 text-xs font-medium flex items-center mt-3 bg-gray-50 w-max px-2 py-1 rounded">
-               <Activity size={14} className="mr-1 text-gray-400" /> {portfolioValue > 0 ? 'Investissements actifs' : 'Aucun investissement'}
-             </div>
-             <div className="text-[11px] text-gray-500 font-semibold mt-2">
-               Total investi: {totalInvested.toLocaleString('fr-FR')} FCFA
-             </div>
-           </div>
-
-           {/* Card 3 - Quick Actions */}
-           <div className="bg-white rounded-xl p-6 border border-gray-100 shadow-sm flex flex-col justify-center gap-3">
-              <h3 className="text-gray-800 text-sm font-bold mb-1">Actions Rapides</h3>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowManagerPopup(true)}
-                  className="w-full bg-green-50 hover:bg-green-100 text-green-700 border border-green-200 font-bold py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2 text-xs shadow-sm"
-                >
-                  <PlusCircle size={14} /> Depot
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setWithdrawError('');
-                    setWithdrawSuccess(false);
-                    setShowWithdrawPopup(true);
-                  }}
-                  className="w-full bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 font-bold py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2 text-xs shadow-sm"
-                >
-                  <MinusCircle size={14} /> Retrait
-                </button>
-              </div>
-              <button 
-                type="button"
-                onClick={handleSyncPrices}
-                disabled={isSyncPending}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm shadow-sm"
-              >
-                {isSyncPending ? 'Synchronisation...' : 'Actualiser les prix'}
-              </button>
-              {syncMessage && <div className="text-xs text-gray-500 mt-2">{syncMessage}</div>}
-              <button 
-                onClick={() => document.location.href = '/dashboard/investments'}
-                className="w-full bg-brand-accent hover:bg-brand-accentHover text-brand-dark font-bold py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm shadow-sm"
-              >
-                Placer un Ordre
-              </button>
-              <Link href="/dashboard/investments" className="w-full bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200 font-bold py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm">
-                Voir les offres <ChevronRight size={16} />
-              </Link>
-           </div>
-        </div>
-
-        <div className="bg-white rounded-xl p-6 border border-gray-100 shadow-sm overflow-x-auto">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-lg font-bold text-brand-dark">Mes actions par structure</h2>
-              <p className="text-sm text-gray-500">Affichage du total d&apos;actions par structure détenues.</p>
-            </div>
+      {userData.kyc_status !== 'validé' && (
+        <Link
+          href="/dashboard/kyc"
+          className="flex items-center gap-3 rounded-[20px] border border-fin-warning/30 bg-fin-warning/10 px-4 py-3.5 hover:bg-fin-warning/15 transition-colors"
+        >
+          <ShieldCheck className="text-fin-warning shrink-0" size={22} />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-white">Finalisez votre vérification KYC</p>
+            <p className="text-xs text-fin-mute">Requise pour placer des ordres sur le marché.</p>
           </div>
+          <span className="text-xs font-bold text-fin-warning">Continuer</span>
+        </Link>
+      )}
 
-          {sharesByStructure.length === 0 ? (
-            <p className="text-sm text-gray-500">Aucune action enregistrée pour le moment.</p>
-          ) : (
-            <table className="min-w-full text-left text-sm">
-              <thead>
-                <tr className="border-b border-gray-200 text-gray-500 text-xs uppercase tracking-widest">
-                  <th className="py-3 px-4">Structure</th>
-                  <th className="py-3 px-4 text-right">Nombre d&apos;actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sharesByStructure.map((position) => (
-                  <tr key={position.title} className="border-b border-gray-100 hover:bg-gray-50">
-                    <td className="py-3 px-4 font-medium text-gray-700">{position.title}</td>
-                    <td className="py-3 px-4 text-right font-black text-brand-dark">{position.totalShares.toLocaleString('fr-FR')}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+      <div className="grid grid-cols-1 xl:grid-cols-5 gap-5">
+        <div className="xl:col-span-3 space-y-5">
+          <BalanceCard
+            accountId={userData.accountId}
+            balance={userData.balance}
+            portfolioValue={portfolioValue}
+            portfolioChangePct={Number(growthPct.toFixed(2))}
+            status={userData.kyc_status === 'validé' ? 'ACTIF' : 'KYC'}
+          />
+
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+            <MetricCard label="Cash disponible" value={formatFcfa(userData.balance)} tone="primary" />
+            <MetricCard label="Investi" value={formatFcfa(totalInvested)} />
+            <MetricCard
+              label="Performance"
+              value={`${growthPct >= 0 ? '+' : ''}${growthPct.toFixed(2)}%`}
+              tone={growthPct >= 0 ? 'success' : 'danger'}
+            />
+            <MetricCard
+              label="P&L latent"
+              value={formatFcfa(portfolioValue - totalInvested)}
+              tone={portfolioValue - totalInvested >= 0 ? 'success' : 'danger'}
+            />
+          </div>
         </div>
 
-        {/* Main Content Area: Distribution & Recent Activity */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-           <div className="bg-white rounded-xl p-6 border border-gray-100 shadow-sm">
-             <h2 className="text-lg font-bold text-brand-dark mb-6 flex items-center gap-2">
-               <PieChart size={20} className="text-brand-accent" />
-               Répartition des Actifs
-             </h2>
-             
-             <div className="flex flex-col sm:flex-row items-center justify-center gap-8 py-4">
-                <div className="relative w-40 h-40">
-                  <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
-                    <circle cx="50" cy="50" r="40" fill="transparent" stroke="#f3f4f6" strokeWidth="20" />
-                  </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                     <span className="text-xs text-gray-400 font-medium tracking-widest uppercase">Total</span>
-                     <span className="text-sm font-black text-brand-dark">100%</span>
-                  </div>
-                </div>
-                
-                <div className="flex flex-col gap-3 text-sm flex-1 w-full">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-sm bg-gray-200"></span> <span className="font-medium text-gray-600">Liquidités</span></div>
-                      <span className="font-bold">{userData.balance > 0 || portfolioValue === 0 ? Math.round((userData.balance / (userData.balance + portfolioValue || 1)) * 100) : 0}%</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-sm bg-brand"></span> <span className="font-medium text-gray-600">Investissements</span></div>
-                      <span className="font-bold">{portfolioValue > 0 ? Math.round((portfolioValue / (userData.balance + portfolioValue)) * 100) : 0}%</span>
-                    </div>
-                 </div>
-             </div>
-           </div>
-
-           <div className="bg-white rounded-xl p-6 border border-gray-100 shadow-sm flex flex-col">
-             <div className="flex justify-between items-center mb-6">
-               <h2 className="text-lg font-bold text-brand-dark flex items-center gap-2">
-                 <History size={20} className="text-brand-accent" />
-                 Activité Récente
-               </h2>
-              <Link href="/dashboard/active-investments" className="text-xs font-bold text-brand hover:underline">Voir tout</Link>
-             </div>
-             
-             <div className="flex-1 flex flex-col pt-2">
-                {transactions.length === 0 ? (
-                  <div className="flex-1 flex flex-col justify-center items-center text-center p-6 border-2 border-dashed border-gray-100 rounded-lg bg-gray-50/50">
-                    <div className="w-12 h-12 bg-white rounded-full shadow-sm flex items-center justify-center text-gray-300 mb-3">
-                      <Activity size={24} />
-                    </div>
-                    <h3 className="text-sm font-bold text-gray-800 mb-1">Aucune transaction</h3>
-                    <p className="text-xs text-gray-500">Votre historique d'investissement apparaîtra ici.</p>
-                  </div>
-                ) : (
-                  transactions.slice(0, 4).map(tx => (
-                    <div key={tx.id} className="py-3 border-b border-gray-50 flex justify-between items-center last:border-0 hover:bg-gray-50 -mx-6 px-6 transition-colors">
-                      <div className="flex flex-col">
-                        <span className="font-bold text-sm text-gray-800">{tx.description || tx.type}</span>
-                        <span className="text-xs text-gray-400">{new Date(tx.created_at).toLocaleDateString('fr-FR')}</span>
-                      </div>
-                      <span className={`text-sm font-bold ${getTransactionDisplay(tx).color}`}>
-                        {getTransactionDisplay(tx).sign}{parseFloat(tx.amount).toLocaleString('fr-FR')} FCFA
-                      </span>
-                    </div>
-                  ))
-                )}
-             </div>
-           </div>
+        <div className="xl:col-span-2">
+          <PerformanceChart
+            value={265.48}
+            changePct={1.28}
+            data={chartData}
+            subtitle="Séance du jour"
+            volume="Volume: 1 258 963 titres"
+          />
         </div>
+      </div>
 
-      </main>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5" id="valeurs">
+        <TransactionCard items={mappedOrders} />
+        <PortfolioTable rows={holdings} />
+      </div>
+
+      <Link href="/dashboard/investments" className="sm:hidden block">
+        <PrimaryButton fullWidth size="lg">
+          <ArrowUpRight size={16} /> Placer un ordre
+        </PrimaryButton>
+      </Link>
 
       {showManagerPopup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <button
-            type="button"
-            aria-label="Fermer"
-            onClick={() => setShowManagerPopup(false)}
-            className="absolute inset-0 bg-black/50"
-          />
-          <div className="relative w-full max-w-sm rounded-2xl bg-white border border-gray-200 shadow-2xl p-6 text-center">
-            <h3 className="text-lg font-black text-brand-dark mb-2">Depot</h3>
-            <p className="text-sm text-gray-600 font-medium mb-5">Contactez votre gestionnaire.</p>
-            <button
-              type="button"
-              onClick={() => setShowManagerPopup(false)}
-              className="w-full bg-brand hover:bg-brand-dark text-white font-bold py-2.5 rounded-lg transition-colors"
-            >
+        <div className="fixed inset-0 z-[80] flex items-end md:items-center justify-center p-0 md:p-4">
+          <button type="button" aria-label="Fermer" onClick={() => setShowManagerPopup(false)} className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+          <div className="relative w-full max-w-sm rounded-t-[24px] md:rounded-[20px] bg-fin-card border border-white/10 shadow-glass p-6 text-center pb-[calc(1.5rem+env(safe-area-inset-bottom))] md:pb-6">
+            <h3 className="text-lg font-bold mb-2">Dépôt</h3>
+            <p className="text-sm text-fin-mute mb-5">Contactez votre gestionnaire pour créditer votre compte.</p>
+            <PrimaryButton fullWidth onClick={() => setShowManagerPopup(false)}>
               Fermer
-            </button>
+            </PrimaryButton>
           </div>
         </div>
       )}
 
       {showWithdrawPopup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[80] flex items-end md:items-center justify-center p-0 md:p-4">
           <button
             type="button"
             aria-label="Fermer"
             onClick={() => !isWithdrawPending && setShowWithdrawPopup(false)}
-            className="absolute inset-0 bg-black/50"
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
           />
-
-          <div className="relative w-full max-w-lg rounded-2xl bg-white border border-gray-200 shadow-2xl p-6">
-            <h3 className="text-xl font-black text-brand-dark">Demande de retrait</h3>
-            <p className="text-xs text-gray-500 mt-1 mb-4">
-              Solde disponible: {userData.balance.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} FCFA
+          <div className="relative w-full max-w-lg rounded-t-[24px] md:rounded-[20px] bg-fin-card border border-white/10 shadow-glass p-6 max-h-[90dvh] overflow-y-auto pb-[calc(1.5rem+env(safe-area-inset-bottom))] md:pb-6">
+            <h3 className="text-xl font-bold">Demande de retrait</h3>
+            <p className="text-xs text-fin-mute mt-1 mb-4">
+              Solde: {formatFcfa(userData.balance)}
             </p>
 
             <form
               action={async (formData) => {
-                setIsWithdrawPending(true);
-                setWithdrawError('');
-                setWithdrawSuccess(false);
-                const res = await submitWithdrawalRequest(formData);
-                if (res?.error) {
-                  setWithdrawError(res.error);
-                } else {
-                  setWithdrawSuccess(true);
+                setIsWithdrawPending(true)
+                setWithdrawError('')
+                setWithdrawSuccess(false)
+                const res = await submitWithdrawalRequest(formData)
+                if (res?.error) setWithdrawError(res.error)
+                else {
+                  setWithdrawSuccess(true)
                   setTimeout(() => {
-                    setShowWithdrawPopup(false);
-                    router.refresh();
-                  }, 1200);
+                    setShowWithdrawPopup(false)
+                    router.refresh()
+                  }, 1200)
                 }
-                setIsWithdrawPending(false);
+                setIsWithdrawPending(false)
               }}
               className="space-y-4"
             >
               <div>
-                <label className="text-xs font-bold text-gray-600 block mb-1">Montant (FCFA)</label>
-                <input
-                  type="number"
-                  name="amount"
-                  min="1"
-                  step="1"
-                  required
-                  disabled={isWithdrawPending}
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand"
-                  placeholder="Ex: 50000"
-                />
+                <label className="text-xs font-semibold text-fin-mute block mb-1.5">Montant (FCFA)</label>
+                <input type="number" name="amount" min="1" required disabled={isWithdrawPending} className="fin-input" placeholder="50000" />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-gray-600 block mb-2">Mode de paiement</label>
+                <label className="text-xs font-semibold text-fin-mute block mb-2">Mode de paiement</label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
                     onClick={() => setWithdrawMethod('mobile_money')}
-                    className={`rounded-lg border px-3 py-2 text-xs font-bold ${
+                    className={`rounded-2xl border px-3 py-2.5 text-xs font-bold ${
                       withdrawMethod === 'mobile_money'
-                        ? 'bg-brand-accent/30 text-brand-dark border-brand-accent'
-                        : 'bg-white text-gray-600 border-gray-200'
+                        ? 'bg-fin-primary/20 text-fin-primary border-fin-primary/40'
+                        : 'bg-fin-surface text-fin-mute border-white/10'
                     }`}
                   >
                     Mobile Money
@@ -510,41 +314,29 @@ export default function Dashboard() {
                   <button
                     type="button"
                     onClick={() => setWithdrawMethod('bank_transfer')}
-                    className={`rounded-lg border px-3 py-2 text-xs font-bold ${
+                    className={`rounded-2xl border px-3 py-2.5 text-xs font-bold ${
                       withdrawMethod === 'bank_transfer'
-                        ? 'bg-brand-accent/30 text-brand-dark border-brand-accent'
-                        : 'bg-white text-gray-600 border-gray-200'
+                        ? 'bg-fin-primary/20 text-fin-primary border-fin-primary/40'
+                        : 'bg-fin-surface text-fin-mute border-white/10'
                     }`}
                   >
-                    Virement bancaire
+                    Virement
                   </button>
                 </div>
                 <input type="hidden" name="method" value={withdrawMethod} />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-gray-600 block mb-1">Nom du beneficiaire</label>
-                <input
-                  type="text"
-                  name="holderName"
-                  required
-                  disabled={isWithdrawPending}
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand"
-                  placeholder="Nom complet"
-                />
+                <label className="text-xs font-semibold text-fin-mute block mb-1.5">Bénéficiaire</label>
+                <input type="text" name="holderName" required disabled={isWithdrawPending} className="fin-input" placeholder="Nom complet" />
               </div>
 
               {withdrawMethod === 'mobile_money' ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs font-bold text-gray-600 block mb-1">Operateur</label>
-                    <select
-                      name="mobileOperator"
-                      required
-                      disabled={isWithdrawPending}
-                      className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand bg-white"
-                    >
-                      <option value="">Selectionner</option>
+                    <label className="text-xs font-semibold text-fin-mute block mb-1.5">Opérateur</label>
+                    <select name="mobileOperator" required disabled={isWithdrawPending} className="fin-input bg-fin-surface">
+                      <option value="">Sélectionner</option>
                       <option value="Orange Money">Orange Money</option>
                       <option value="MTN Mobile Money">MTN Mobile Money</option>
                       <option value="Moov Money">Moov Money</option>
@@ -552,76 +344,38 @@ export default function Dashboard() {
                     </select>
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-gray-600 block mb-1">Numero mobile</label>
-                    <input
-                      type="text"
-                      name="mobileNumber"
-                      required
-                      disabled={isWithdrawPending}
-                      className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand"
-                      placeholder="07XXXXXXXX"
-                    />
+                    <label className="text-xs font-semibold text-fin-mute block mb-1.5">Numéro</label>
+                    <input type="text" name="mobileNumber" required disabled={isWithdrawPending} className="fin-input" placeholder="07XXXXXXXX" />
                   </div>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs font-bold text-gray-600 block mb-1">Banque</label>
-                    <input
-                      type="text"
-                      name="bankName"
-                      required
-                      disabled={isWithdrawPending}
-                      className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand"
-                      placeholder="Ex: SGCI"
-                    />
+                    <label className="text-xs font-semibold text-fin-mute block mb-1.5">Banque</label>
+                    <input type="text" name="bankName" required disabled={isWithdrawPending} className="fin-input" placeholder="SGCI" />
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-gray-600 block mb-1">Numero de compte</label>
-                    <input
-                      type="text"
-                      name="accountNumber"
-                      required
-                      disabled={isWithdrawPending}
-                      className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand"
-                      placeholder="Ex: CI00..."
-                    />
+                    <label className="text-xs font-semibold text-fin-mute block mb-1.5">Compte</label>
+                    <input type="text" name="accountNumber" required disabled={isWithdrawPending} className="fin-input" placeholder="CI00…" />
                   </div>
                 </div>
               )}
 
-              {withdrawError && (
-                <p className="text-xs font-bold text-red-600 bg-red-50 border border-red-100 rounded-md px-3 py-2">
-                  {withdrawError}
-                </p>
-              )}
-              {withdrawSuccess && (
-                <p className="text-xs font-bold text-green-700 bg-green-50 border border-green-100 rounded-md px-3 py-2">
-                  Demande envoyee avec succes. Un gestionnaire la traitera.
-                </p>
-              )}
+              {withdrawError && <p className="text-xs font-semibold text-fin-danger bg-fin-danger/10 border border-fin-danger/20 rounded-xl px-3 py-2">{withdrawError}</p>}
+              {withdrawSuccess && <p className="text-xs font-semibold text-fin-success bg-fin-success/10 border border-fin-success/20 rounded-xl px-3 py-2">Demande envoyée.</p>}
 
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowWithdrawPopup(false)}
-                  disabled={isWithdrawPending}
-                  className="px-4 py-2 rounded-lg border border-gray-200 text-gray-600 text-xs font-bold hover:bg-gray-50"
-                >
+              <div className="flex gap-2 pt-2">
+                <SecondaryButton type="button" fullWidth onClick={() => setShowWithdrawPopup(false)} disabled={isWithdrawPending}>
                   Annuler
-                </button>
-                <button
-                  type="submit"
-                  disabled={isWithdrawPending}
-                  className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-black uppercase tracking-wider"
-                >
-                  {isWithdrawPending ? 'Envoi...' : 'Soumettre'}
-                </button>
+                </SecondaryButton>
+                <PrimaryButton type="submit" fullWidth disabled={isWithdrawPending} variant="danger">
+                  {isWithdrawPending ? 'Envoi…' : 'Soumettre'}
+                </PrimaryButton>
               </div>
             </form>
           </div>
         </div>
       )}
     </div>
-  );
+  )
 }

@@ -11,11 +11,11 @@ export default async function AdminOffers() {
     .order('created_at', { ascending: false });
 
   return (
-    <div className="flex min-h-screen bg-gray-50 dark:bg-zinc-950">
-      <main className="flex-1 p-4 md:p-8 max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+    <div className="app-page md:p-8 max-w-7xl mx-auto">
+      <main className="flex-1">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 md:mb-8 gap-4">
            <div>
-             <h1 className="text-3xl font-black text-brand-dark dark:text-white uppercase tracking-tight">Catalogue des Offres</h1>
+             <h1 className="hidden md:block text-3xl font-black text-brand-dark uppercase tracking-tight">Catalogue des Offres</h1>
              <p className="text-gray-500 text-sm font-medium">Ajoutez, modifiez ou supprimez les titres financiers disponibles sur le marché.</p>
            </div>
         </div>

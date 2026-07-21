@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
 
 export default function AdminRequestsPage() {
@@ -8,7 +8,11 @@ export default function AdminRequestsPage() {
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
 
-  const fetchRequests = useCallback(async () => {
+  useEffect(() => {
+    fetchRequests();
+  }, []);
+
+  const fetchRequests = async () => {
     const { data, error } = await supabase
       .from('contact_requests')
       .select('*')
@@ -18,7 +22,7 @@ export default function AdminRequestsPage() {
       setRequests(data);
     }
     setLoading(false);
-  }, [supabase]);
+  };
 
   const updateStatus = async (id: string, newStatus: string) => {
     const { error } = await supabase
@@ -34,11 +38,11 @@ export default function AdminRequestsPage() {
   if (loading) return <div className="p-8 text-center bg-gray-50 flex-1"><div className="animate-spin h-8 w-8 border-4 border-brand border-t-transparent rounded-full mx-auto"></div></div>;
 
   return (
-    <div className="p-8 max-w-7xl mx-auto flex-1">
-      <div className="flex justify-between items-center mb-8">
+    <div className="app-page md:p-8 max-w-7xl mx-auto flex-1">
+      <div className="flex justify-between items-center mb-6 md:mb-8">
         <div>
-          <h1 className="text-3xl font-black text-brand-dark uppercase tracking-tight">Demandes & Contacts</h1>
-          <p className="text-gray-500 mt-1">Gérez les demandes de contact et les formulaires soumis sur la plateforme.</p>
+          <h1 className="hidden md:block text-3xl font-black text-brand-dark uppercase tracking-tight">Demandes & Contacts</h1>
+          <p className="text-gray-500 mt-0 md:mt-1 text-sm">Gérez les demandes de contact et les formulaires soumis sur la plateforme.</p>
         </div>
       </div>
 
