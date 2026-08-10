@@ -2,24 +2,57 @@
 @tailwind components;
 @tailwind utilities;
 
+/* =========================================================
+   IOGF — IDENTITÉ VISUELLE
+   ========================================================= */
+
 :root {
-  --fin-bg: #f8fafc;
+  /* Couleurs principales */
+  --fin-bg: #f0f4f8;
   --fin-surface: #ffffff;
   --fin-card: #ffffff;
-  --fin-hover: #f1f5f9;
-  --fin-primary: #2563eb;
+  --fin-hover: #eaf2ff;
+
+  /* Bleu institutionnel */
+  --fin-primary: #007bff;
+  --fin-primary-dark: #0056b3;
+  --fin-primary-light: #e8f2ff;
+
+  /* Orange accent */
+  --fin-accent: #ff6b00;
+  --fin-accent-dark: #e65f00;
+  --fin-accent-light: #fff1e8;
+
+  /* États */
   --fin-success: #16a34a;
+  --fin-success-light: #eaf8ef;
+
   --fin-warning: #d97706;
+  --fin-warning-light: #fff7e6;
+
   --fin-danger: #dc2626;
+  --fin-danger-light: #fef0f0;
+
+  /* Textes */
   --fin-text: #0f172a;
+  --fin-text-secondary: #334155;
   --fin-mute: #64748b;
+  --fin-placeholder: #94a3b8;
+
+  /* Bordures */
   --fin-border: #e2e8f0;
+  --fin-border-strong: #cbd5e1;
 }
+
+/* =========================================================
+   BASE
+   ========================================================= */
 
 html {
   -webkit-tap-highlight-color: transparent;
   -webkit-text-size-adjust: 100%;
   color-scheme: light;
+  scroll-behavior: smooth;
 }
 
 body {
@@ -27,35 +60,144 @@ body {
   color: var(--fin-text);
   overscroll-behavior-y: none;
   min-height: 100dvh;
+  margin: 0;
 }
+
+/* =========================================================
+   SÉLECTION DU TEXTE
+   ========================================================= */
+
+::selection {
+  background: rgba(0, 123, 255, 0.18);
+  color: var(--fin-text);
+}
+
+/* =========================================================
+   CARTES
+   ========================================================= */
 
 .glass-card {
   border-radius: 20px;
-  border: 1px solid #e2e8f0;
-  background: #ffffff;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--fin-border);
+  background: var(--fin-surface);
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05);
+  transition:
+    box-shadow 0.2s ease,
+    transform 0.2s ease,
+    border-color 0.2s ease;
 }
+
+.glass-card:hover {
+  border-color: rgba(0, 123, 255, 0.2);
+  box-shadow: 0 8px 28px rgba(15, 23, 42, 0.08);
+}
+
+/* =========================================================
+   INPUTS
+   ========================================================= */
 
 .fin-input {
   width: 100%;
   border-radius: 1rem;
-  border: 1px solid #cbd5e1;
-  background: #ffffff;
+  border: 1px solid var(--fin-border-strong);
+  background: var(--fin-surface);
   padding: 0.875rem 1rem;
   font-size: 0.875rem;
-  color: #0f172a;
+  color: var(--fin-text);
   outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background-color 0.2s ease;
+  box-sizing: border-box;
 }
 
 .fin-input::placeholder {
-  color: #94a3b8;
+  color: var(--fin-placeholder);
+}
+
+.fin-input:hover {
+  border-color: #94a3b8;
 }
 
 .fin-input:focus {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+  border-color: var(--fin-primary);
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.15);
 }
+
+/* =========================================================
+   BOUTONS
+   ========================================================= */
+
+.fin-button-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+
+  border: none;
+  border-radius: 0.875rem;
+
+  background: var(--fin-primary);
+  color: #ffffff;
+
+  padding: 0.75rem 1.25rem;
+
+  font-size: 0.875rem;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.fin-button-primary:hover {
+  background: var(--fin-primary-dark);
+  box-shadow: 0 6px 18px rgba(0, 123, 255, 0.22);
+  transform: translateY(-1px);
+}
+
+.fin-button-primary:active {
+  transform: translateY(0);
+}
+
+.fin-button-accent {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+
+  border: none;
+  border-radius: 0.875rem;
+
+  background: var(--fin-accent);
+  color: #ffffff;
+
+  padding: 0.75rem 1.25rem;
+
+  font-size: 0.875rem;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.fin-button-accent:hover {
+  background: var(--fin-accent-dark);
+  box-shadow: 0 6px 18px rgba(255, 107, 0, 0.22);
+  transform: translateY(-1px);
+}
+
+/* =========================================================
+   SECTIONS
+   ========================================================= */
 
 .fin-section > * + * {
   margin-top: 1.25rem;
@@ -67,13 +209,19 @@ body {
   }
 }
 
+/* =========================================================
+   PAGES
+   ========================================================= */
+
 .fin-page {
+  width: 100%;
+  box-sizing: border-box;
   padding: 1rem 1rem 1.5rem;
 }
 
 @media (min-width: 768px) {
   .fin-page {
-    padding: 1.5rem 1.5rem 1.5rem;
+    padding: 1.5rem;
   }
 }
 
@@ -84,21 +232,186 @@ body {
   }
 }
 
+/* =========================================================
+   BADGES
+   ========================================================= */
+
+.fin-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 999px;
+
+  padding: 0.35rem 0.7rem;
+
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.fin-badge-primary {
+  background: var(--fin-primary-light);
+  color: var(--fin-primary-dark);
+}
+
+.fin-badge-success {
+  background: var(--fin-success-light);
+  color: var(--fin-success);
+}
+
+.fin-badge-warning {
+  background: var(--fin-warning-light);
+  color: var(--fin-warning);
+}
+
+.fin-badge-danger {
+  background: var(--fin-danger-light);
+  color: var(--fin-danger);
+}
+
+/* =========================================================
+   TEXTE FINTECH
+   ========================================================= */
+
+.fin-title {
+  color: var(--fin-text);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.fin-subtitle {
+  color: var(--fin-mute);
+  line-height: 1.6;
+}
+
+.fin-muted {
+  color: var(--fin-mute);
+}
+
+/* =========================================================
+   CARTES DE VALEURS
+   ========================================================= */
+
+.fin-value-card {
+  border: 1px solid var(--fin-border);
+  border-radius: 1.5rem;
+  background: var(--fin-card);
+  padding: 1.25rem;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.fin-value-card:hover {
+  border-color: rgba(0, 123, 255, 0.25);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.07);
+  transform: translateY(-2px);
+}
+
+/* =========================================================
+   ACTIONS / TITRES DE VALEURS
+   ========================================================= */
+
+.fin-stock-symbol {
+  color: var(--fin-primary);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.fin-stock-name {
+  color: var(--fin-text);
+  font-weight: 700;
+}
+
+.fin-stock-sector {
+  color: var(--fin-mute);
+  font-size: 0.875rem;
+}
+
+/* =========================================================
+   PERFORMANCE
+   ========================================================= */
+
+.fin-positive {
+  color: var(--fin-success);
+}
+
+.fin-negative {
+  color: var(--fin-danger);
+}
+
+.fin-neutral {
+  color: var(--fin-mute);
+}
+
+/* =========================================================
+   SCROLLBAR
+   ========================================================= */
+
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
 
+/* =========================================================
+   GRAPHIQUES
+   ========================================================= */
+
 .recharts-cartesian-grid-horizontal line,
 .recharts-cartesian-grid-vertical line {
-  stroke: rgba(0, 0, 0, 0.06);
+  stroke: rgba(15, 23, 42, 0.06);
 }
+
+.recharts-text {
+  fill: var(--fin-mute);
+}
+
+/* =========================================================
+   FOCUS ACCESSIBLE
+   ========================================================= */
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid rgba(0, 123, 255, 0.25);
+  outline-offset: 2px;
+}
+
+/* =========================================================
+   MODE APPLICATION / PWA
+   ========================================================= */
 
 @media all and (display-mode: standalone) {
   body {
-    background: #f8fafc;
+    background: var(--fin-bg);
+  }
+}
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 767px) {
+  .fin-page {
+    padding: 0.875rem 0.875rem 1.25rem;
+  }
+
+  .glass-card {
+    border-radius: 16px;
+  }
+
+  .fin-value-card {
+    border-radius: 1.25rem;
   }
 }
