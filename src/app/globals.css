@@ -415,3 +415,11 @@ textarea:focus-visible {
     border-radius: 1.25rem;
   }
 }
+/* TEST */
+body {
+  background: #0f172a !important;
+}
+
+.fin-page {
+  background: #0f172a !important;
+}
