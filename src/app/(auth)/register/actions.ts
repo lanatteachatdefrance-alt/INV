@@ -26,24 +26,25 @@ export async function register(formData: FormData) {
       data: {
         first_name: firstName,
         last_name: lastName,
-        phone: phone,
+        phone,
         date_of_birth: dateOfBirth,
-        nationality: nationality,
-        address: address,
-      }
-    }
+        nationality,
+        address,
+      },
+    },
   })
 
   if (error) {
     redirect('/register?error=' + encodeURIComponent(error.message))
   }
 
-  // Back-up update (useful if trigger is not yet updated or for role assignment)
-  if (data?.user) {
-    await supabase.from('users').update({ 
-      role: email === 'admin@invest.com' ? 'admin' : 'client'
-    }).eq('id', data.user.id)
+  if (!data?.user) {
+    redirect('/register?error=Impossible de créer le compte pour le moment')
   }
 
-  redirect('/dashboard/kyc')
+  if (data.session) {
+    redirect('/dashboard/kyc')
+  }
+
+  redirect('/login?error=' + encodeURIComponent('Compte créé. Vérifiez votre boîte mail pour confirmer l’inscription.'))
 }

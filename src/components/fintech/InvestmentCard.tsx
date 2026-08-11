@@ -13,6 +13,7 @@ export function InvestmentCard({
   isKycValid,
   onBuy,
 }: {
+  title:string
   offer: {
     id: string
     title: string
@@ -68,7 +69,7 @@ export function InvestmentCard({
             {offer.type || 'Action'}
           </StatusBadge>
           <h3 className="text-base font-bold text-slate-900 mt-3 leading-snug">{offer.title}</h3>
-          <p className="text-[11px] text-fin-mute mt-1 font-medium">{tickerFromTitle(offer.title)}</p>
+          <p className="text-[11px] text-fin-mute mt-1 font-medium">{offer.symbol}</p>
         </div>
         <div className="text-right">
           <p className="text-fin-success font-bold text-lg inline-flex items-center gap-1">

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
+import { ensureAdminAccess } from '@/lib/admin'
 import { createClient } from '@/utils/supabase/server'
 import Navbar from '@/components/Navbar'
 import MobileBottomNav from '@/components/MobileBottomNav'
@@ -47,10 +48,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   let isAdmin = false
   if (user) {
-    const { data: profile } = await supabase.from('users').select('role').eq('id', user.id).single()
-    if (profile?.role === 'admin' || user.email === 'admin@invest.com') {
-      isAdmin = true
-    }
+    isAdmin = await ensureAdminAccess(supabase, user)
   }
 
   const showSidebar = !!user

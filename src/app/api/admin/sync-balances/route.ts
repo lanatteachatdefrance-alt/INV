@@ -1,3 +1,4 @@
+import { ensureAdminAccess } from '@/lib/admin'
 import { createClient } from '@/utils/supabase/server'
 import { syncPortfolioBalances } from '@/lib/syncPortfolioBalances'
 
@@ -21,14 +22,9 @@ export async function POST(request: Request) {
       return Response.json({ error: 'Non authentifié' }, { status: 401 })
     }
 
-    // Vérifier que l'utilisateur est admin
-    const { data: userData } = await supabase
-      .from('users')
-      .select('role')
-      .eq('id', user.id)
-      .single()
+    const isAdmin = await ensureAdminAccess(supabase, user)
 
-    if (userData?.role !== 'admin') {
+    if (!isAdmin) {
       return Response.json({ error: 'Accès réservé aux administrateurs' }, { status: 403 })
     }
 

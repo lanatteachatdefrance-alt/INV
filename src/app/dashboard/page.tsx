@@ -4,6 +4,8 @@ import { PortfolioTable } from '@/components/fintech/PortfolioTable'
 import { createClient } from '@/utils/supabase/server'
 import { formatFcfa, formatPct } from '@/lib/utils'
 
+export const dynamic = 'force-dynamic'
+
 type InvestmentRow = {
   id: string
   shares_bought: number | string | null
@@ -41,13 +43,22 @@ async function getDashboardData() {
     throw new Error(investmentsError.message)
   }
 
-  const rows = (investments || []).map((row: InvestmentRow) => {
-    const offer = Array.isArray(row.investment_offers) ? row.investment_offers[0] : row.investment_offers
-    const price = parseFloat(String(offer?.price_per_share ?? '0')) || 0
-    const quantity = parseFloat(String(row.shares_bought ?? '0')) || 0
-    const invested = parseFloat(String(row.amount_invested ?? '0')) || 0
-    const value = quantity * price
-    const changePct = invested > 0 ? ((value - invested) / invested) * 100 : 0
+ const rows = (investments || []).map((row: InvestmentRow) => {
+  const offer = Array.isArray(row.investment_offers)
+    ? row.investment_offers[0]
+    : row.investment_offers
+
+  const price = Number(offer?.price_per_share) || 0
+  const quantity = Number(row.shares_bought) || 0
+  const invested = Number(row.amount_invested) || 0
+
+  const value = price > 0 && quantity > 0
+    ? price * quantity
+    : invested
+
+  const changePct = invested > 0
+    ? ((value - invested) / invested) * 100
+    : 0
 
     return {
       id: row.id,
@@ -59,12 +70,16 @@ async function getDashboardData() {
     }
   })
 
-  const cashBalance = parseFloat(String(profile.balance ?? '0')) || 0
-  const totalPortfolioValue = rows.reduce((sum, row) => sum + row.value, 0)
+  const cashBalance = Number(profile.balance) || 0
+const totalPortfolioValue = rows.reduce(
+  (sum, row) => sum + Number(row.value || 0),
+  0
+)
   const totalInvested = (investments || []).reduce(
-    (sum, row: InvestmentRow) => sum + (parseFloat(String(row.amount_invested ?? '0')) || 0),
-    0
-  )
+  (sum, row: InvestmentRow) =>
+    sum + (Number(row.amount_invested) || 0),
+  0
+)
   const portfolioChangePct = totalInvested > 0 ? ((totalPortfolioValue - totalInvested) / totalInvested) * 100 : 0
 
   return {
@@ -84,7 +99,7 @@ export default async function DashboardPage() {
     <div className="fin-page fin-section space-y-6">
       <div className="grid grid-cols-1 xl:grid-cols-[1.8fr_1.2fr] gap-6">
         <BalanceCard
-          accountLabel="Solde disponible"
+          accountLabel={accountLabel}
           balance={cashBalance}
           portfolioValue={totalPortfolioValue}
           portfolioChangePct={portfolioChangePct}

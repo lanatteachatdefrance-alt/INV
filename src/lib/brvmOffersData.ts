@@ -1,5 +1,6 @@
 export type BRVMOffer = {
   id: string
+  symbol: string
   title: string
   description: string
   type: string
@@ -12,6 +13,7 @@ export type BRVMOffer = {
 export const BRVM_OFFERS: BRVMOffer[] = [
   {
     id: 'abjc',
+    symbol: 'ABJC',
     title: 'Servair Abidjan (ABJC)',
     description: 'Restauration et services aéroportuaires.',
     type: 'Action',
@@ -22,6 +24,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'bicb',
+    symbol: 'BICB',
     title: 'BIIC Bénin (BICB)',
     description: 'Secteur Bancaire et financier - Bénin.',
     type: 'Action',
@@ -32,6 +35,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'bicc',
+    symbol: 'BICC',
     title: 'BICI Côte d’Ivoire (BICC)',
     description: 'Banque Ivoirienne pour le Commerce et l’Industrie.',
     type: 'Action',
@@ -42,6 +46,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'bnbc',
+    symbol: 'BNBC',
     title: 'Bernabé Côte d’Ivoire (BNBC)',
     description: 'Distribution de quincaillerie et matériels industriels.',
     type: 'Action',
@@ -52,6 +57,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'boab',
+    symbol: 'BOAB',
     title: 'Bank of Africa Bénin (BOAB)',
     description: 'Secteur Bancaire - Bénin.',
     type: 'Action',
@@ -62,6 +68,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'boabf',
+    symbol: 'BOABF',
     title: 'Bank of Africa Burkina Faso (BOABF)',
     description: 'Secteur Bancaire - Burkina Faso.',
     type: 'Action',
@@ -72,6 +79,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'boac',
+    symbol: 'BOAC',
     title: 'Bank of Africa Côte d’Ivoire (BOAC)',
     description: 'Secteur Bancaire - Côte d’Ivoire.',
     type: 'Action',
@@ -82,6 +90,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'boam',
+    symbol: 'BOAM',
     title: 'Bank of Africa Mali (BOAM)',
     description: 'Secteur Bancaire - Mali.',
     type: 'Action',
@@ -92,6 +101,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'boan',
+    symbol: 'BOAN',
     title: 'Bank of Africa Niger (BOAN)',
     description: 'Secteur Bancaire - Niger.',
     type: 'Action',
@@ -102,6 +112,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'boas',
+    symbol: 'BOAS',
     title: 'Bank of Africa Sénégal (BOAS)',
     description: 'Secteur Bancaire - Sénégal.',
     type: 'Action',
@@ -112,6 +123,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'cabc',
+    symbol: 'CABC',
     title: 'Crown Siem CI (CABC)',
     description: 'Emballage métallique et sous-traitance industrielle.',
     type: 'Action',
@@ -122,6 +134,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'cbibf',
+    symbol: 'CBIBF',
     title: 'Coris Bank International (CBIBF)',
     description: 'Banque commerciale et d’investissement.',
     type: 'Action',
@@ -132,6 +145,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'cfac',
+    symbol: 'CFAC',
     title: 'CFAO Motors CI (CFAC)',
     description: 'Distribution automobile et équipements.',
     type: 'Action',
@@ -142,6 +156,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'ciec',
+    symbol: 'CIEC',
     title: 'Compagnie Ivoirienne d’Électricité (CIEC)',
     description: 'Compagnie Ivoirienne d’Électricité.',
     type: 'Action',
@@ -152,6 +167,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'ecoc',
+    symbol: 'ECOC',
     title: 'Ecobank Côte d’Ivoire (ECOC)',
     description: 'Services bancaires et financiers.',
     type: 'Action',
@@ -162,6 +178,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'etit',
+    symbol: 'ETIT',
     title: 'Ecobank Transnational (ETIT)',
     description: 'Holding bancaire panafricain.',
     type: 'Action',
@@ -172,6 +189,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'ftsc',
+    symbol: 'FTSC',
     title: 'Filtisac (FTSC)',
     description: 'Leader de l’emballage en Afrique de l’Ouest.',
     type: 'Action',
@@ -182,6 +200,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'lnbb',
+    symbol: 'LNBB',
     title: 'Loterie Nationale du Bénin (LNBB)',
     description: 'Loterie Nationale du Bénin.',
     type: 'Action',
@@ -192,6 +211,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'neic',
+    symbol: 'NEIC',
     title: 'NEI-CEDA (NEIC)',
     description: 'Nouvelles Éditions Ivoiriennes - CEDA.',
     type: 'Action',
@@ -202,6 +222,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'nsbc',
+    symbol: 'NSBC',
     title: 'NSIA Banque CI (NSBC)',
     description: 'Groupe bancaire et assurances.',
     type: 'Action',
@@ -212,6 +233,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'ntlc',
+    symbol: 'NTLC',
     title: 'Nestlé Côte d’Ivoire (NTLC)',
     description: 'Transformation et distribution de produits alimentaires.',
     type: 'Action',
@@ -222,6 +244,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'ontbf',
+    symbol: 'ONTBF',
     title: 'Onatel Burkina Faso (ONTBF)',
     description: 'Opérateur télécom majeur au Burkina Faso.',
     type: 'Action',
@@ -232,6 +255,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'orac',
+    symbol: 'ORAC',
     title: 'Orange Côte d’Ivoire (ORAC)',
     description: 'Opérateur télécoms et services numériques.',
     type: 'Action',
@@ -242,6 +266,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'orgt',
+    symbol: 'ORGT',
     title: 'Oragroup (ORGT)',
     description: 'Groupe bancaire régional Orabank.',
     type: 'Action',
@@ -252,6 +277,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'palc',
+    symbol: 'PALC',
     title: 'Palm CI (PALC)',
     description: 'Production et transformation d’huile de palme.',
     type: 'Action',
@@ -262,6 +288,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'prsc',
+    symbol:'PRSSC'
     title: 'Tractafric Motors CI (PRSC)',
     description: 'Vente et maintenance de véhicules industriels.',
     type: 'Action',
@@ -272,6 +299,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'safc',
+    symbol:'SAFC'
     title: 'Alios Finance (SAFC)',
     description: 'Société Africaine de Crédit Automobile.',
     type: 'Action',
@@ -282,6 +310,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'scrc',
+    symbol: 'SCRC',
     title: 'Sucrivoire (SCRC)',
     description: 'Exploitation et raffinage de canne à sucre.',
     type: 'Action',
@@ -292,6 +321,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'sdcc',
+    symbol:'SDCC'
     title: 'SODECI (SDCC)',
     description: 'Société de Distribution d’Eau de Côte d’Ivoire.',
     type: 'Action',
@@ -302,6 +332,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'sdsc',
+    symbol:'SDSC'
     title: 'Africa Global Logistics CI (SDSC)',
     description: 'Logistique et transport maritime - Côte d’Ivoire.',
     type: 'Action',
@@ -312,6 +343,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'semc',
+    symbol:'SEMC'
     title: 'Siem Côte d’Ivoire (SEMC)',
     description: 'Emballage métallique et sous-traitance industrielle.',
     type: 'Action',
@@ -322,6 +354,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'sgbc',
+    symbol:'SGBC'
     title: 'Société Générale CI (SGBC)',
     description: 'Société Générale Côte d’Ivoire.',
     type: 'Action',
@@ -332,6 +365,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'shec',
+    symbol:'SHEC'
     title: 'Sicable (SHEC)',
     description: 'Fabrication de câbles électriques et téléphoniques.',
     type: 'Action',
@@ -342,6 +376,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'sibc',
+    symbol:'SIBC'
     title: 'Société Ivoirienne de Banque (SIBC)',
     description: 'Filiale du groupe Attijariwafa bank.',
     type: 'Action',
@@ -352,6 +387,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'sicc',
+    symbol:'SICC'
     title: 'SICOR (SICC)',
     description: 'Société Ivoirienne de Coco Râpé.',
     type: 'Action',
@@ -362,6 +398,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'sivc',
+    symbol:'SIVC'
     title: 'Air Liquide CI (SIVC)',
     description: 'Production et distribution de gaz industriels et médicaux.',
     type: 'Action',
@@ -372,6 +409,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'slbc',
+    symbol:'SLBC'
     title: 'SOLIBRA (SLBC)',
     description: 'Société de Limonaderies et Brasseries d’Afrique.',
     type: 'Action',
@@ -382,6 +420,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'smbc',
+    symbol:'SMBC'
     title: 'SMB CI (SMBC)',
     description: 'Société Multinationale de Bitumes.',
     type: 'Action',
@@ -392,6 +431,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'snts',
+    symbol:'SNTS'
     title: 'Sonatel (SNTS)',
     description: 'Télécommunications et réseaux en Afrique de l’Ouest.',
     type: 'Action',
@@ -402,6 +442,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'sogc',
+    symbol:'SOGC'
     title: 'SOGB (SOGC)',
     description: 'Société Grand-Bereby d’Hévéas et de Palmier à Huile.',
     type: 'Action',
@@ -412,6 +453,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'sphc',
+    symbol:'SPHC'
     title: 'SAPH (SPHC)',
     description: 'Société Africaine de Plantations d’Hévéas.',
     type: 'Action',
@@ -422,6 +464,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'stac',
+    symbol:'STAC'
     title: 'SITAB (STAC)',
     description: 'Société Ivoirienne des Tabacs.',
     type: 'Action',
@@ -432,6 +475,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'stbc',
+    symbol:'STBC'
     title: 'SETAO (STBC)',
     description: 'Société d’Études et de Travaux pour l’Afrique de l’Ouest.',
     type: 'Action',
@@ -442,6 +486,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'ttlc',
+    symbol:'TTLC'
     title: 'TOTALENERGIES CI (TTLC)',
     description: 'Réseau de stations-services et lubrifiants CI.',
     type: 'Action',
@@ -452,6 +497,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'ttls',
+    symbol:'TTLS'
     title: 'TOTALENERGIES SÉNÉGAL (TTLS)',
     description: 'Réseau de distribution pétrolière Sénégal.',
     type: 'Action',
@@ -462,6 +508,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'unlc',
+    symbol:'UNLC'
     title: 'UNILEVER CI (UNLC)',
     description: 'Fabrication et vente de produits de grande consommation.',
     type: 'Action',
@@ -472,6 +519,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'unxc',
+    symbol:'UNXC'
     title: 'UNIWAX (UNXC)',
     description: 'Fabrication et distribution de tissus wax.',
     type: 'Action',
@@ -482,6 +530,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'vivo',
+    symbol:'VIVO'
     title: 'VIVO ENERGY CI (VIVO)',
     description: 'Distribution et commercialisation de carburants.',
     type: 'Action',

@@ -1,5 +1,6 @@
 'use server'
 
+import { ensureAdminAccess } from '@/lib/admin'
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 
@@ -23,20 +24,14 @@ export async function login(formData: FormData) {
     redirect('/login?error=' + encodeURIComponent(error.message))
   }
 
-  // Check admin role
   const { data: { user } } = await supabase.auth.getUser()
   if (user) {
-    if (user.email === 'admin@invest.com') {
-      // Auto-heal right for the demo: ensure this account gets the admin role physically in the database
-      await supabase.from('users').update({ role: 'admin' }).eq('id', user.id)
-    }
-
-    const { data: profile } = await supabase.from('users').select('role').eq('id', user.id).single()
-    if (profile?.role === 'admin' || user.email === 'admin@invest.com') {
+    const isAdmin = await ensureAdminAccess(supabase, user)
+    if (isAdmin) {
       redirect('/admin')
     }
   }
-  
+
   redirect('/dashboard')
 }
 

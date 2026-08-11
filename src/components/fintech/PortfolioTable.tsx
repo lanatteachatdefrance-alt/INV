@@ -60,7 +60,7 @@ export function PortfolioTable({
                           {initialsFromTitle(row.title)}
                         </div>
                         <div>
-                          <p className="text-sm font-semibold text-slate-900">{tickerFromTitle(row.title)}</p>
+                          <p className="text-sm font-semibold text-slate-900">{row.symbol || tickerFromTitle(row.title)}</p>
                           <p className="text-[11px] text-fin-mute truncate max-w-[140px]">{row.title}</p>
                         </div>
                       </div>

@@ -1,60 +1,63 @@
 import { createClient } from '@/utils/supabase/server'
-import Link from 'next/link'
-import { Users, Wallet } from 'lucide-react'
-import SyncBalancesButton from './SyncBalancesButton'
-import { GlassCard } from '@/components/ui/GlassCard'
-import { MetricCard } from '@/components/fintech/PerformanceChart'
-import { formatFcfa } from '@/lib/utils'
+import { redirect } from 'next/navigation'
+import { ensureAdminAccess } from '@/lib/admin'
+import { SyncBalancesButton } from '@/components/admin/SyncBalancesButton'
 
-export default async function AdminDashboard() {
+export default async function AdminPage() {
   const supabase = createClient()
-  const { data: users } = await supabase.from('users').select('*')
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
-  const totalUsers = users?.length || 0
-  const pendingKyc = users?.filter((u) => u.kyc_status !== 'validé')?.length || 0
-  const activeKyc = users?.filter((u) => u.kyc_status === 'validé')?.length || 0
-  const totalFunds = users?.reduce((acc, user) => acc + parseFloat(user.balance || 0), 0) || 0
+  if (!user) {
+    redirect('/login')
+  }
+
+  const isAdmin = await ensureAdminAccess(supabase, user)
+  if (!isAdmin) {
+    redirect('/dashboard')
+  }
+
+  const { data: profiles } = await supabase
+    .from('users')
+    .select('id, email, first_name, last_name, role, kyc_status, balance')
+    .order('created_at', { ascending: false })
 
   return (
-    <div className="fin-page fin-section">
-      <GlassCard hover={false} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl md:text-2xl font-bold">Administration</h1>
-          <p className="text-sm text-fin-mute mt-1">Vue d&apos;ensemble de la plateforme</p>
-        </div>
-        <SyncBalancesButton />
-      </GlassCard>
-
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-        <MetricCard label="Inscrits" value={String(totalUsers)} />
-        <MetricCard label="KYC en attente" value={String(pendingKyc)} tone="danger" hint={pendingKyc > 0 ? 'Action requise' : undefined} />
-        <MetricCard label="KYC validés" value={String(activeKyc)} tone="success" />
-        <MetricCard label="Fonds gérés" value={formatFcfa(totalFunds)} tone="primary" />
+    <div className="p-6 space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold text-slate-900">Administration</h1>
+        <p className="text-sm text-slate-600">Validation des comptes, gestion des soldes et supervision du portefeuille.</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Link href="/admin/users">
-          <GlassCard className="flex items-center gap-4 h-full">
-            <div className="w-12 h-12 rounded-2xl bg-fin-primary/15 text-fin-primary flex items-center justify-center">
-              <Users size={22} />
-            </div>
-            <div>
-              <p className="font-bold">Clients</p>
-              <p className="text-sm text-fin-mute">KYC & recharges</p>
-            </div>
-          </GlassCard>
-        </Link>
-        <Link href="/admin/offers">
-          <GlassCard className="flex items-center gap-4 h-full">
-            <div className="w-12 h-12 rounded-2xl bg-fin-success/15 text-fin-success flex items-center justify-center">
-              <Wallet size={22} />
-            </div>
-            <div>
-              <p className="font-bold">Offres</p>
-              <p className="text-sm text-fin-mute">Catalogue marché</p>
-            </div>
-          </GlassCard>
-        </Link>
+      <div className="grid gap-6 lg:grid-cols-[1.5fr_0.9fr]">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <h2 className="text-lg font-semibold text-slate-900">Comptes clients</h2>
+          <div className="mt-4 overflow-x-auto">
+            <table className="min-w-full text-sm">
+            <thead>
+              <tr className="text-left text-slate-600">
+                <th className="py-2">Email</th>
+                <th className="py-2">Nom</th>
+                <th className="py-2">Rôle</th>
+                <th className="py-2">KYC</th>
+                <th className="py-2">Solde</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(profiles ?? []).map((profile: any) => (
+                <tr key={profile.id} className="border-t border-slate-100">
+                  <td className="py-3">{profile.email}</td>
+                  <td className="py-3">{[profile.first_name, profile.last_name].filter(Boolean).join(' ') || '—'}</td>
+                  <td className="py-3">{profile.role}</td>
+                  <td className="py-3">{profile.kyc_status || 'en_attente'}</td>
+                  <td className="py-3">{Number(profile.balance ?? 0).toLocaleString('fr-FR')} FCFA</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <SyncBalancesButton />
       </div>
     </div>
   )

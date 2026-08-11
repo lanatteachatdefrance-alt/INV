@@ -30,6 +30,12 @@ AFTER UPDATE OF price_per_share ON public.investment_offers
 FOR EACH ROW
 EXECUTE FUNCTION public.notify_price_change();
 
+DROP TRIGGER IF EXISTS trg_sync_portfolio_balances_on_price_change ON public.investment_offers;
+CREATE TRIGGER trg_sync_portfolio_balances_on_price_change
+AFTER UPDATE OF price_per_share ON public.investment_offers
+FOR EACH ROW
+EXECUTE FUNCTION public.sync_portfolio_balances_on_price_change();
+
 -- =============================================================================
 -- Notes d'utilisation :
 -- 1. Exécuter ce script dans la base Supabase (SQL Editor)
