@@ -288,7 +288,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'prsc',
-    symbol:'PRSSC'
+    symbol: 'PRSSC',
     title: 'Tractafric Motors CI (PRSC)',
     description: 'Vente et maintenance de véhicules industriels.',
     type: 'Action',
@@ -299,7 +299,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'safc',
-    symbol:'SAFC'
+    symbol: 'SAFC',
     title: 'Alios Finance (SAFC)',
     description: 'Société Africaine de Crédit Automobile.',
     type: 'Action',
@@ -321,7 +321,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'sdcc',
-    symbol:'SDCC'
+    symbol: 'SDCC',
     title: 'SODECI (SDCC)',
     description: 'Société de Distribution d’Eau de Côte d’Ivoire.',
     type: 'Action',
@@ -332,7 +332,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'sdsc',
-    symbol:'SDSC'
+    symbol: 'SDSC',
     title: 'Africa Global Logistics CI (SDSC)',
     description: 'Logistique et transport maritime - Côte d’Ivoire.',
     type: 'Action',
@@ -343,7 +343,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'semc',
-    symbol:'SEMC'
+    symbol: 'SEMC',
     title: 'Siem Côte d’Ivoire (SEMC)',
     description: 'Emballage métallique et sous-traitance industrielle.',
     type: 'Action',
@@ -354,7 +354,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'sgbc',
-    symbol:'SGBC'
+    symbol: 'SGBC',
     title: 'Société Générale CI (SGBC)',
     description: 'Société Générale Côte d’Ivoire.',
     type: 'Action',
@@ -365,7 +365,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'shec',
-    symbol:'SHEC'
+    symbol: 'SHEC',
     title: 'Sicable (SHEC)',
     description: 'Fabrication de câbles électriques et téléphoniques.',
     type: 'Action',
@@ -376,7 +376,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'sibc',
-    symbol:'SIBC'
+    symbol: 'SIBC',
     title: 'Société Ivoirienne de Banque (SIBC)',
     description: 'Filiale du groupe Attijariwafa bank.',
     type: 'Action',
@@ -387,7 +387,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'sicc',
-    symbol:'SICC'
+    symbol: 'SICC',
     title: 'SICOR (SICC)',
     description: 'Société Ivoirienne de Coco Râpé.',
     type: 'Action',
@@ -398,7 +398,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'sivc',
-    symbol:'SIVC'
+    symbol: 'SIVC',
     title: 'Air Liquide CI (SIVC)',
     description: 'Production et distribution de gaz industriels et médicaux.',
     type: 'Action',
@@ -409,7 +409,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'slbc',
-    symbol:'SLBC'
+    symbol: 'SLBC',
     title: 'SOLIBRA (SLBC)',
     description: 'Société de Limonaderies et Brasseries d’Afrique.',
     type: 'Action',
@@ -420,7 +420,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'smbc',
-    symbol:'SMBC'
+    symbol: 'SMBC',
     title: 'SMB CI (SMBC)',
     description: 'Société Multinationale de Bitumes.',
     type: 'Action',
@@ -431,7 +431,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'snts',
-    symbol:'SNTS'
+    symbol: 'SNTS',
     title: 'Sonatel (SNTS)',
     description: 'Télécommunications et réseaux en Afrique de l’Ouest.',
     type: 'Action',
@@ -442,7 +442,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'sogc',
-    symbol:'SOGC'
+    symbol: 'SOGC',
     title: 'SOGB (SOGC)',
     description: 'Société Grand-Bereby d’Hévéas et de Palmier à Huile.',
     type: 'Action',
@@ -453,7 +453,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'sphc',
-    symbol:'SPHC'
+    symbol: 'SPHC',
     title: 'SAPH (SPHC)',
     description: 'Société Africaine de Plantations d’Hévéas.',
     type: 'Action',
@@ -464,7 +464,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'stac',
-    symbol:'STAC'
+    symbol: 'STAC',
     title: 'SITAB (STAC)',
     description: 'Société Ivoirienne des Tabacs.',
     type: 'Action',
@@ -475,7 +475,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'stbc',
-    symbol:'STBC'
+    symbol: 'STBC',
     title: 'SETAO (STBC)',
     description: 'Société d’Études et de Travaux pour l’Afrique de l’Ouest.',
     type: 'Action',
@@ -486,7 +486,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'ttlc',
-    symbol:'TTLC'
+    symbol: 'TTLC',
     title: 'TOTALENERGIES CI (TTLC)',
     description: 'Réseau de stations-services et lubrifiants CI.',
     type: 'Action',
@@ -497,7 +497,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'ttls',
-    symbol:'TTLS'
+    symbol: 'TTLS',
     title: 'TOTALENERGIES SÉNÉGAL (TTLS)',
     description: 'Réseau de distribution pétrolière Sénégal.',
     type: 'Action',
@@ -508,7 +508,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'unlc',
-    symbol:'UNLC'
+    symbol: 'UNLC',
     title: 'UNILEVER CI (UNLC)',
     description: 'Fabrication et vente de produits de grande consommation.',
     type: 'Action',
@@ -519,7 +519,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'unxc',
-    symbol:'UNXC'
+    symbol: 'UNXC',
     title: 'UNIWAX (UNXC)',
     description: 'Fabrication et distribution de tissus wax.',
     type: 'Action',
@@ -530,7 +530,7 @@ export const BRVM_OFFERS: BRVMOffer[] = [
   },
   {
     id: 'vivo',
-    symbol:'VIVO'
+    symbol: 'VIVO',
     title: 'VIVO ENERGY CI (VIVO)',
     description: 'Distribution et commercialisation de carburants.',
     type: 'Action',
