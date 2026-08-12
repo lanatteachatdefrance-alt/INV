@@ -2,18 +2,31 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Bell, ChevronLeft, LogOut, Menu, X } from 'lucide-react'
-import { useState } from 'react'
+import {
+  Bell,
+  ChevronDown,
+  ChevronLeft,
+  CircleUserRound,
+  LogOut,
+  Mail,
+  Menu,
+  ShieldCheck,
+  User,
+  Wallet,
+  X,
+} from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+
 import { createClient } from '@/utils/supabase/client'
-import { PrimaryButton, SecondaryButton } from '@/components/ui/Buttons'
-import { cn } from '@/lib/utils'
+import { PrimaryButton } from '@/components/ui/Buttons'
+import { cn, formatFcfa } from '@/lib/utils'
 
 const titles: Record<string, string> = {
   '/': 'Investir Bourse',
   '/dashboard': 'Accueil',
-  '/dashboard/investments': 'Marché',
+  '/dashboard/investments': 'Marche',
   '/dashboard/orders': 'Ordres',
-  '/dashboard/kyc': 'Conformité',
+  '/dashboard/kyc': 'Conformite',
   '/login': 'Connexion',
   '/register': 'Inscription',
   '/admin': 'Administration',
@@ -22,90 +35,344 @@ const titles: Record<string, string> = {
   '/admin/requests': 'Demandes',
 }
 
-export default function Navbar({ userEmail }: { userEmail?: string }) {
+type Profile = {
+  first_name: string | null
+  last_name: string | null
+  balance: number | string | null
+  kyc_status: string | null
+}
+
+type ProfileMenuProps = {
+  fullName: string
+  email: string
+  initials: string
+  balance: number
+  kycLabel: string
+  isKycValid: boolean
+  loading: boolean
+  onLogout: () => void
+}
+
+export default function Navbar({
+  userEmail,
+}: {
+  userEmail?: string
+}) {
   const pathname = usePathname() || '/'
   const router = useRouter()
-  const [open, setOpen] = useState(false)
   const supabase = createClient()
+
+  const [open, setOpen] = useState(false)
+  const [profile, setProfile] = useState<Profile | null>(null)
+  const [loadingProfile, setLoadingProfile] = useState(false)
+
+  const menuRef = useRef<HTMLDivElement>(null)
 
   const title =
     titles[pathname] ||
-    (pathname.startsWith('/admin') ? 'Admin' : pathname.startsWith('/dashboard') ? 'Espace client' : 'Investir Bourse')
+    (pathname.startsWith('/admin')
+      ? 'Admin'
+      : pathname.startsWith('/dashboard')
+        ? 'Espace client'
+        : 'Investir Bourse')
 
-  const showBack = pathname.startsWith('/dashboard/') || (pathname.startsWith('/admin/') && pathname !== '/admin')
+  const showBack =
+    pathname.startsWith('/dashboard/') ||
+    (pathname.startsWith('/admin/') && pathname !== '/admin')
+
+  useEffect(() => {
+    if (!userEmail) {
+      setProfile(null)
+      return
+    }
+
+    let active = true
+
+    const loadProfile = async () => {
+      setLoadingProfile(true)
+
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+
+        if (!user || !active) return
+
+        const { data, error } = await supabase
+          .from('users')
+          .select(
+            'first_name, last_name, balance, kyc_status'
+          )
+          .eq('id', user.id)
+          .single()
+
+        if (error) {
+          console.error(
+            'Erreur chargement profil:',
+            error.message
+          )
+          return
+        }
+
+        if (active) {
+          setProfile(data)
+        }
+      } catch (error) {
+        console.error(
+          'Erreur chargement profil:',
+          error
+        )
+      } finally {
+        if (active) {
+          setLoadingProfile(false)
+        }
+      }
+    }
+
+    loadProfile()
+
+    return () => {
+      active = false
+    }
+  }, [userEmail, supabase])
+
+  useEffect(() => {
+    const handleClickOutside = (
+      event: MouseEvent
+    ) => {
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(
+          event.target as Node
+        )
+      ) {
+        setOpen(false)
+      }
+    }
+
+    if (open) {
+      document.addEventListener(
+        'mousedown',
+        handleClickOutside
+      )
+    }
+
+    return () => {
+      document.removeEventListener(
+        'mousedown',
+        handleClickOutside
+      )
+    }
+  }, [open])
 
   const logout = async () => {
+    setOpen(false)
+
     await supabase.auth.signOut()
+
     router.push('/login')
     router.refresh()
   }
 
+  const firstName =
+    profile?.first_name?.trim() || ''
+
+  const lastName =
+    profile?.last_name?.trim() || ''
+
+  const fullName =
+    `${firstName} ${lastName}`.trim() ||
+    userEmail?.split('@')[0] ||
+    'Utilisateur'
+
+  const initials =
+    `${firstName.charAt(0)}${lastName.charAt(0)}`
+      .trim()
+      .toUpperCase() ||
+    fullName.charAt(0).toUpperCase()
+
+  const balance =
+    Number(profile?.balance ?? 0)
+
+  const normalizedKyc =
+    profile?.kyc_status?.toLowerCase().trim()
+
+  const isKycValid =
+    normalizedKyc === 'valid' ||
+    normalizedKyc === 'approved' ||
+    normalizedKyc === 'valide'
+
+  const kycLabel = isKycValid
+    ? 'KYC valide'
+    : 'KYC en attente'
+
   return (
     <header
       className="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur-xl"
-      style={{ paddingTop: 'env(safe-area-inset-top)' }}
+      style={{
+        paddingTop: 'env(safe-area-inset-top)',
+      }}
     >
-      {/* Mobile */}
-      <div className="lg:hidden flex items-center justify-between h-14 px-4 gap-2">
+      <div className="lg:hidden flex h-14 items-center justify-between gap-2 px-4">
         {showBack ? (
-          <button 
+          <button
             type="button"
             onClick={() => router.back()}
-            className="w-10 h-10 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-slate-700 shadow-sm"
+            className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm"
             aria-label="Retour"
           >
             <ChevronLeft size={20} />
           </button>
         ) : (
-          <Link href={userEmail ? '/dashboard' : '/'} className="w-10 h-10 rounded-2xl bg-primary-gradient flex items-center justify-center font-black text-xs text-white shadow-glow">
+          <Link
+            href={userEmail ? '/dashboard' : '/'}
+            className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary-gradient text-xs font-black text-white shadow-glow"
+          >
             IB
           </Link>
         )}
-        <div className="flex-1 text-center min-w-0">
-          <p className="font-bold text-sm text-slate-900 truncate">{title}</p>
+
+        <div className="min-w-0 flex-1 text-center">
+          <p className="truncate text-sm font-bold text-slate-900">
+            {title}
+          </p>
+
           {userEmail && (
-            <p className="text-[10px] text-fin-mute truncate">{userEmail.split('@')[0]}</p>
+            <p className="truncate text-[10px] text-fin-mute">
+              {fullName}
+            </p>
           )}
         </div>
-        <div className="w-10 flex justify-end">
-          {userEmail ? (
-            <button type="button" className="w-10 h-10 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-slate-600 shadow-sm" aria-label="Notifications">
-              <Bell size={18} />
+
+        {userEmail ? (
+          <div
+            className="relative"
+            ref={menuRef}
+          >
+            <button
+              type="button"
+              onClick={() => setOpen((value) => !value)}
+              className={cn(
+                'flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-900 text-xs font-bold text-white shadow-sm',
+                open && 'ring-2 ring-blue-100'
+              )}
+              aria-label="Mon profil"
+              aria-expanded={open}
+            >
+              {open ? <X size={18} /> : initials}
             </button>
-          ) : (
-            <button type="button" onClick={() => setOpen((v) => !v)} className="w-10 h-10 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-slate-700 shadow-sm">
-              {open ? <X size={18} /> : <Menu size={18} />}
-            </button>
-          )}
-        </div>
+
+            {open && (
+              <ProfileMenu
+                fullName={fullName}
+                email={userEmail}
+                initials={initials}
+                balance={balance}
+                kycLabel={kycLabel}
+                isKycValid={isKycValid}
+                loading={loadingProfile}
+                onLogout={logout}
+              />
+            )}
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setOpen((value) => !value)}
+            className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm"
+            aria-label="Menu"
+          >
+            {open ? <X size={18} /> : <Menu size={18} />}
+          </button>
+        )}
       </div>
 
-      {/* Desktop top bar */}
-      <div className="hidden lg:flex items-center justify-between h-16 px-6">
+      <div className="hidden h-16 items-center justify-between px-6 lg:flex">
         <div>
-          <p className="text-sm font-bold text-slate-900">{title}</p>
-          <p className="text-[11px] text-fin-mute">Marchés régionaux · Temps réel</p>
+          <p className="text-sm font-bold text-slate-900">
+            {title}
+          </p>
+
+          <p className="text-[11px] text-fin-mute">
+            Marches regionaux - Temps reel
+          </p>
         </div>
+
         <div className="flex items-center gap-3">
           {userEmail ? (
             <>
-              <button type="button" className="w-10 h-10 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-slate-600 hover:text-slate-900 shadow-sm transition-colors">
+              <button
+                type="button"
+                className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:text-slate-900"
+                aria-label="Notifications"
+              >
                 <Bell size={18} />
               </button>
-              <div className="px-4 py-2 rounded-2xl bg-slate-100 border border-slate-200 text-xs font-semibold text-slate-700">
-                {userEmail}
+
+              <div
+                className="relative"
+                ref={menuRef}
+              >
+                <button
+                  type="button"
+                  onClick={() => setOpen((value) => !value)}
+                  className={cn(
+                    'flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-2 shadow-sm transition',
+                    'hover:border-blue-200 hover:bg-blue-50/30'
+                  )}
+                  aria-label="Mon profil"
+                  aria-expanded={open}
+                >
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900 text-xs font-bold text-white">
+                    {initials}
+                  </div>
+
+                  <div className="max-w-[150px] text-left">
+                    <p className="truncate text-xs font-bold text-slate-900">
+                      {fullName}
+                    </p>
+
+                    <p className="truncate text-[10px] text-slate-400">
+                      Mon profil
+                    </p>
+                  </div>
+
+                  <ChevronDown
+                    size={15}
+                    className={cn(
+                      'text-slate-400 transition-transform',
+                      open && 'rotate-180'
+                    )}
+                  />
+                </button>
+
+                {open && (
+                  <ProfileMenu
+                    fullName={fullName}
+                    email={userEmail}
+                    initials={initials}
+                    balance={balance}
+                    kycLabel={kycLabel}
+                    isKycValid={isKycValid}
+                    loading={loadingProfile}
+                    onLogout={logout}
+                  />
+                )}
               </div>
-              <SecondaryButton size="sm" onClick={logout}>
-                <LogOut size={14} /> Déconnexion
-              </SecondaryButton>
             </>
           ) : (
             <>
-              <Link href="/login" className="text-sm font-semibold text-slate-600 hover:text-slate-900">
+              <Link
+                href="/login"
+                className="text-sm font-semibold text-slate-600 hover:text-slate-900"
+              >
                 Se connecter
               </Link>
+
               <Link href="/register">
-                <PrimaryButton size="sm">Créer un compte</PrimaryButton>
+                <PrimaryButton size="sm">
+                  Creer un compte
+                </PrimaryButton>
               </Link>
             </>
           )}
@@ -113,12 +380,21 @@ export default function Navbar({ userEmail }: { userEmail?: string }) {
       </div>
 
       {open && !userEmail && (
-        <div className={cn('lg:hidden border-t border-slate-200 p-4 space-y-2 bg-white')}>
-          <Link href="/login" onClick={() => setOpen(false)} className="block p-4 rounded-2xl bg-slate-100 text-slate-900 text-sm font-semibold text-center">
+        <div className="space-y-2 border-t border-slate-200 bg-white p-4 lg:hidden">
+          <Link
+            href="/login"
+            onClick={() => setOpen(false)}
+            className="block rounded-2xl bg-slate-100 p-4 text-center text-sm font-semibold text-slate-900"
+          >
             Se connecter
           </Link>
-          <Link href="/register" onClick={() => setOpen(false)} className="block p-4 rounded-2xl bg-primary-gradient text-white text-sm font-semibold text-center">
-            Créer un compte
+
+          <Link
+            href="/register"
+            onClick={() => setOpen(false)}
+            className="block rounded-2xl bg-primary-gradient p-4 text-center text-sm font-semibold text-white"
+          >
+            Creer un compte
           </Link>
         </div>
       )}
@@ -126,18 +402,167 @@ export default function Navbar({ userEmail }: { userEmail?: string }) {
   )
 }
 
+function ProfileMenu({
+  fullName,
+  email,
+  initials,
+  balance,
+  kycLabel,
+  isKycValid,
+  loading,
+  onLogout,
+}: ProfileMenuProps) {
+  return (
+    <div className="absolute right-0 top-[calc(100%+10px)] z-[100] w-[310px] max-w-[calc(100vw-24px)] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/10">
+      <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-blue-900 p-5 text-white">
+        <div className="flex items-center gap-3">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/20 bg-white/15 text-sm font-black">
+            {initials}
+          </div>
+
+          <div className="min-w-0">
+            <p className="truncate text-base font-bold">
+              {fullName}
+            </p>
+
+            <p className="truncate text-xs text-white/60">
+              {email}
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1.5">
+          <User size={12} />
+
+          <span className="text-[10px] font-semibold uppercase tracking-wider">
+            Profil client
+          </span>
+        </div>
+      </div>
+
+      <div className="space-y-2 p-4">
+        <div className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+            <Mail size={16} />
+          </div>
+
+          <div className="min-w-0">
+            <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
+              Adresse e-mail
+            </p>
+
+            <p className="mt-0.5 truncate text-xs font-semibold text-slate-700">
+              {email}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-50 text-orange-600">
+            <Wallet size={16} />
+          </div>
+
+          <div>
+            <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
+              Solde disponible
+            </p>
+
+            {loading ? (
+              <div className="mt-1 h-4 w-24 animate-pulse rounded bg-slate-200" />
+            ) : (
+              <p className="mt-0.5 text-xs font-bold text-slate-900">
+                {formatFcfa(balance)}
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-3">
+          <div
+            className={cn(
+              'flex h-9 w-9 items-center justify-center rounded-xl',
+              isKycValid
+                ? 'bg-emerald-50 text-emerald-600'
+                : 'bg-orange-50 text-orange-600'
+            )}
+          >
+            <ShieldCheck size={16} />
+          </div>
+
+          <div>
+            <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
+              Verification
+            </p>
+
+            <p
+              className={cn(
+                'mt-0.5 text-xs font-bold',
+                isKycValid
+                  ? 'text-emerald-600'
+                  : 'text-orange-600'
+              )}
+            >
+              {kycLabel}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="mx-4 mb-3 rounded-2xl border border-blue-100 bg-blue-50/70 px-3 py-2.5">
+        <div className="flex items-start gap-2">
+          <CircleUserRound
+            size={15}
+            className="mt-0.5 shrink-0 text-blue-600"
+          />
+
+          <p className="text-[10px] leading-relaxed text-blue-700">
+            Ces informations sont consultables uniquement.
+            Pour toute modification, veuillez contacter le
+            service client.
+          </p>
+        </div>
+      </div>
+
+      <div className="border-t border-slate-100 p-3">
+        <button
+          type="button"
+          onClick={onLogout}
+          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold text-red-600 transition hover:bg-red-100 hover:text-red-700"
+        >
+          <LogOut size={16} />
+          Deconnexion
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export function NotificationButton() {
   return (
-    <button type="button" className="w-10 h-10 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-slate-600 hover:text-slate-900 shadow-sm" aria-label="Notifications">
+    <button
+      type="button"
+      className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm hover:text-slate-900"
+      aria-label="Notifications"
+    >
       <Bell size={18} />
     </button>
   )
 }
 
-export function UserDropdown({ email }: { email: string }) {
+export function UserDropdown({
+  email,
+}: {
+  email: string
+}) {
   return (
-    <div className="px-4 py-2 rounded-2xl bg-slate-100 border border-slate-200 text-xs font-semibold text-slate-700">
-      {email}
+    <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-100 px-3 py-2">
+      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-900 text-[10px] font-bold text-white">
+        {email.charAt(0).toUpperCase()}
+      </div>
+
+      <span className="max-w-[160px] truncate text-xs font-semibold text-slate-700">
+        {email}
+      </span>
     </div>
   )
 }
