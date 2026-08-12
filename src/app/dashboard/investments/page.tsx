@@ -1,9 +1,28 @@
-import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
+import { createClient } from '@/utils/supabase/server'
 import { InvestmentCard } from '@/components/fintech/InvestmentCard'
+import MarketFilters from '@/components/fintech/MarketFilters'
+
+export const dynamic = 'force-dynamic'
+
+type InvestmentOffer = {
+  id: string
+  title: string | null
+  symbol: string | null
+  description: string | null
+  type: string | null
+  roi_percentage: number | string | null
+  price_per_share: number | string | null
+  minimum_investment: number | string | null
+  company_name: string | null
+}
 
 export default async function InvestmentsPage() {
   const supabase = createClient()
+
+  // =========================
+  // UTILISATEUR
+  // =========================
 
   const {
     data: { user },
@@ -23,7 +42,9 @@ export default async function InvestmentsPage() {
     .eq('id', user.id)
     .single()
 
-  const userBalance = Number(profile?.balance ?? 0)
+  const userBalance = Number(
+    profile?.balance ?? 0
+  )
 
   const isKycValid =
     profile?.kyc_status === 'valid' ||
@@ -31,12 +52,27 @@ export default async function InvestmentsPage() {
     profile?.kyc_status === 'valide'
 
   // =========================
-  // OFFRES DEPUIS SUPABASE
+  // OFFRES SUPABASE
   // =========================
 
-  const { data: offers, error: offersError } = await supabase
+  const {
+    data: offers,
+    error: offersError,
+  } = await supabase
     .from('investment_offers')
-    .select('*')
+    .select(
+      `
+        id,
+        title,
+        symbol,
+        description,
+        type,
+        roi_percentage,
+        price_per_share,
+        minimum_investment,
+        company_name
+      `
+    )
     .eq('is_active', true)
 
   if (offersError) {
@@ -46,13 +82,49 @@ export default async function InvestmentsPage() {
     )
   }
 
-  const investmentOffers = offers ?? []
+  /*
+   * On normalise les données avant de les envoyer
+   * au composant client.
+   */
+  const investmentOffers: InvestmentOffer[] = (
+    offers ?? []
+  ).map((offer) => ({
+    id: String(offer.id),
+
+    title:
+      offer.title ??
+      offer.company_name ??
+      'Valeur',
+
+    symbol:
+      offer.symbol ?? null,
+
+    description:
+      offer.description ?? null,
+
+    type:
+      offer.type ?? 'Action',
+
+    roi_percentage:
+      offer.roi_percentage ?? 0,
+
+    price_per_share:
+      offer.price_per_share ?? 0,
+
+    minimum_investment:
+      offer.minimum_investment ?? 0,
+
+    company_name:
+      offer.company_name ?? null,
+  }))
 
   // =========================
   // ACHAT
   // =========================
 
-  const handleBuy = async (shares: number) => {
+  const handleBuy = async (
+    shares: number
+  ) => {
     'use server'
 
     try {
@@ -64,7 +136,8 @@ export default async function InvestmentsPage() {
 
       if (!user) {
         return {
-          error: 'Vous devez être connecté.',
+          error:
+            'Vous devez être connecté.',
         }
       }
 
@@ -74,7 +147,8 @@ export default async function InvestmentsPage() {
       }
     } catch {
       return {
-        error: 'Une erreur est survenue.',
+        error:
+          'Une erreur est survenue.',
       }
     }
   }
@@ -86,19 +160,22 @@ export default async function InvestmentsPage() {
           EN-TÊTE
       ========================== */}
 
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-4">
 
         <div>
           <h1 className="text-2xl font-bold text-slate-900">
             Marché
           </h1>
 
-          <p className="text-sm text-slate-500">
-            Découvrez les valeurs disponibles sur le marché régional BRVM.
+          <p className="text-sm text-slate-500 mt-1">
+            Découvrez les valeurs disponibles sur
+            le marché régional BRVM.
           </p>
         </div>
 
-        {/* SOLDE */}
+        {/* =========================
+            SOLDE
+        ========================== */}
 
         <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
 
@@ -108,7 +185,10 @@ export default async function InvestmentsPage() {
             </p>
 
             <p className="mt-1 text-xl font-bold text-slate-900">
-              {userBalance.toLocaleString('fr-FR')} FCFA
+              {userBalance.toLocaleString(
+                'fr-FR'
+              )}{' '}
+              FCFA
             </p>
           </div>
 
@@ -128,33 +208,15 @@ export default async function InvestmentsPage() {
 
       </div>
 
-      {/* =========================
-          NOMBRE D'OFFRES
-      ========================== */}
-
-      <div className="flex items-center justify-between">
-
-        <div>
-
-          <h2 className="text-lg font-bold text-slate-900">
-            Valeurs disponibles
-          </h2>
-
-          <p className="text-sm text-slate-500">
-            {investmentOffers.length} valeurs disponibles
-          </p>
-
-        </div>
-
-      </div>
 
       {/* =========================
-          GRILLE DES INVESTISSEMENTS
+          MARCHÉ
       ========================== */}
 
       {offersError ? (
 
         <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-red-700">
+
           <p className="font-bold">
             Impossible de charger les valeurs.
           </p>
@@ -162,39 +224,17 @@ export default async function InvestmentsPage() {
           <p className="mt-1 text-sm">
             {offersError.message}
           </p>
-        </div>
-
-      ) : investmentOffers.length === 0 ? (
-
-        <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center">
-
-          <p className="font-bold text-slate-900">
-            Aucune valeur disponible
-          </p>
-
-          <p className="mt-2 text-sm text-slate-500">
-            Aucune offre active n'a été trouvée dans Supabase.
-          </p>
 
         </div>
 
       ) : (
 
-        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-
-          {investmentOffers.map((offer) => (
-
-            <InvestmentCard
-              key={offer.id}
-              offer={offer}
-              userBalance={userBalance}
-              isKycValid={isKycValid}
-              onBuy={handleBuy}
-            />
-
-          ))}
-
-        </div>
+        <MarketFilters
+          offers={investmentOffers}
+          userBalance={userBalance}
+          isKycValid={isKycValid}
+          onBuy={handleBuy}
+        />
 
       )}
 
