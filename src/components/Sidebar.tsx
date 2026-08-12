@@ -23,7 +23,7 @@ import { cn } from '@/lib/utils'
 const clientLinks = [
   { href: '/dashboard', label: 'Tableau de bord', icon: Home },
   { href: '/dashboard/investments', label: 'Marché', icon: LineChart },
-  { href: '/dashboard/active-investments', label: 'Ordres', icon: FileText },
+  { href: '/dashboard/orders', label: 'Ordres', icon: FileText },
   { href: '/dashboard/kyc', label: 'Conformité', icon: ShieldCheck },
 ]
 

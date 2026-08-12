@@ -12,7 +12,7 @@ const titles: Record<string, string> = {
   '/': 'Investir Bourse',
   '/dashboard': 'Accueil',
   '/dashboard/investments': 'Marché',
-  '/dashboard/active-investments': 'Ordres',
+  '/dashboard/orders': 'Ordres',
   '/dashboard/kyc': 'Conformité',
   '/login': 'Connexion',
   '/register': 'Inscription',

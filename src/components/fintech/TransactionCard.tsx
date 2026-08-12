@@ -34,7 +34,7 @@ function statusLabel(status: string) {
 
 export function TransactionCard({
   items,
-  href = '/dashboard/active-investments',
+  href = '/dashboard/orders',
   title = 'Mes ordres',
 }: {
   items: OrderItem[]

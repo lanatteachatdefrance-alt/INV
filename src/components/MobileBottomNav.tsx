@@ -40,10 +40,10 @@ const clientItems: Item[] = [
     match: () => false,
   },
   {
-    href: '/dashboard/active-investments',
+    href: '/dashboard/orders',
     label: 'Ordres',
     icon: FileText,
-    match: (p) => p.startsWith('/dashboard/active-investments'),
+    match: (p) => p.startsWith('/dashboard/orders'),
   },
   {
     href: '/dashboard/kyc',
