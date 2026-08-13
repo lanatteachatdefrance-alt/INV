@@ -67,13 +67,14 @@ function formatStatus(status: string | null) {
 
   const normalized = status.toLowerCase().trim()
 
-  if (
-    normalized === 'complété' ||
-    normalized === 'complete' ||
-    normalized === 'completed'
-  ) {
-    return 'Complété'
-  }
+ if (
+  normalized === 'complété' ||
+  normalized === 'complete' ||
+  normalized === 'completed' ||
+  normalized === 'approved'
+) {
+  return 'Complété'
+}
 
   if (
     normalized === 'en_attente' ||
