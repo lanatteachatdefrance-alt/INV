@@ -1,6 +1,7 @@
 import { createClient } from '@/utils/supabase/server'
 import { ensureAdminAccess } from '@/lib/admin'
 import { redirect } from 'next/navigation'
+import { revalidatePath } from 'next/cache'
 
 export const dynamic = 'force-dynamic'
 
@@ -39,9 +40,7 @@ type Order = {
   createdAt: string
 }
 
-function formatStatus(
-  status: string | null
-) {
+function formatStatus(status: string | null) {
   const normalized =
     status?.toLowerCase().trim() ?? ''
 
@@ -72,12 +71,45 @@ function formatStatus(
   return status || 'En attente'
 }
 
-export default async function AdminOrdersPage() {
+/*
+ * =====================================================
+ * VALIDATION / REFUS D'UN ORDRE
+ * =====================================================
+ */
+
+async function updateOrderStatus(formData: FormData) {
+  'use server'
+
+  const orderId = String(
+    formData.get('orderId') ?? ''
+  )
+
+  const action = String(
+    formData.get('action') ?? ''
+  )
+
+  if (!orderId) {
+    throw new Error(
+      'Identifiant de l’ordre manquant.'
+    )
+  }
+
+  if (
+    action !== 'approve' &&
+    action !== 'reject'
+  ) {
+    throw new Error(
+      'Action invalide.'
+    )
+  }
+
   const supabase = createClient()
 
-  // =====================================================
-  // UTILISATEUR
-  // =====================================================
+  /*
+   * =====================================================
+   * ADMIN CONNECTÉ
+   * =====================================================
+   */
 
   const {
     data: { user },
@@ -87,9 +119,11 @@ export default async function AdminOrdersPage() {
     redirect('/login')
   }
 
-  // =====================================================
-  // VÉRIFICATION ADMIN
-  // =====================================================
+  /*
+   * =====================================================
+   * VÉRIFICATION ADMIN
+   * =====================================================
+   */
 
   const isAdmin =
     await ensureAdminAccess(
@@ -101,9 +135,165 @@ export default async function AdminOrdersPage() {
     redirect('/dashboard')
   }
 
-  // =====================================================
-  // RÉCUPÉRATION DES TRANSACTIONS
-  // =====================================================
+  /*
+   * =====================================================
+   * VÉRIFICATION DE L'ORDRE
+   * =====================================================
+   *
+   * On ne peut modifier qu'un ordre
+   * qui est encore en attente.
+   */
+
+  const {
+    data: order,
+    error: orderError,
+  } = await supabase
+    .from('transactions')
+    .select(
+      'id, status, type'
+    )
+    .eq('id', orderId)
+    .eq(
+      'type',
+      'achat_investissement'
+    )
+    .single()
+
+  if (orderError || !order) {
+    throw new Error(
+      'Ordre introuvable.'
+    )
+  }
+
+  const currentStatus =
+    order.status
+      ?.toLowerCase()
+      .trim()
+
+  if (
+    currentStatus !== 'pending' &&
+    currentStatus !== 'en_attente' &&
+    currentStatus !== 'en attente'
+  ) {
+    throw new Error(
+      'Cet ordre a déjà été traité.'
+    )
+  }
+
+  /*
+   * =====================================================
+   * VALIDATION
+   * =====================================================
+   */
+
+  if (action === 'approve') {
+    const {
+      error,
+    } = await supabase
+      .from('transactions')
+      .update({
+        status: 'completed',
+        approved_by: user.id,
+        approved_at:
+          new Date().toISOString(),
+        updated_at:
+          new Date().toISOString(),
+      })
+      .eq('id', orderId)
+      .eq(
+        'type',
+        'achat_investissement'
+      )
+
+    if (error) {
+      throw new Error(
+        `Impossible de valider l’ordre : ${error.message}`
+      )
+    }
+  }
+
+  /*
+   * =====================================================
+   * REFUS
+   * =====================================================
+   */
+
+  if (action === 'reject') {
+    const {
+      error,
+    } = await supabase
+      .from('transactions')
+      .update({
+        status: 'cancelled',
+        updated_at:
+          new Date().toISOString(),
+      })
+      .eq('id', orderId)
+      .eq(
+        'type',
+        'achat_investissement'
+      )
+
+    if (error) {
+      throw new Error(
+        `Impossible de refuser l’ordre : ${error.message}`
+      )
+    }
+  }
+
+  /*
+   * =====================================================
+   * RAFRAÎCHISSEMENT DE LA PAGE ADMIN
+   * =====================================================
+   */
+
+  revalidatePath('/admin/orders')
+}
+
+/*
+ * =====================================================
+ * PAGE ADMIN
+ * =====================================================
+ */
+
+export default async function AdminOrdersPage() {
+  const supabase = createClient()
+
+  /*
+   * =====================================================
+   * UTILISATEUR
+   * =====================================================
+   */
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect('/login')
+  }
+
+  /*
+   * =====================================================
+   * VÉRIFICATION ADMIN
+   * =====================================================
+   */
+
+  const isAdmin =
+    await ensureAdminAccess(
+      supabase,
+      user
+    )
+
+  if (!isAdmin) {
+    redirect('/dashboard')
+  }
+
+  /*
+   * =====================================================
+   * RÉCUPÉRATION DES TRANSACTIONS
+   * =====================================================
+   */
 
   const {
     data: transactions,
@@ -138,12 +328,16 @@ export default async function AdminOrdersPage() {
     )
 
   if (error) {
-    throw new Error(error.message)
+    throw new Error(
+      error.message
+    )
   }
 
-  // =====================================================
-  // UTILISATEURS
-  // =====================================================
+  /*
+   * =====================================================
+   * UTILISATEURS
+   * =====================================================
+   */
 
   const userIds = Array.from(
     new Set(
@@ -175,9 +369,11 @@ export default async function AdminOrdersPage() {
       userProfiles ?? []
   }
 
-  // =====================================================
-  // TRANSFORMATION
-  // =====================================================
+  /*
+   * =====================================================
+   * TRANSFORMATION
+   * =====================================================
+   */
 
   const orders: Order[] =
     (transactions ?? []).map(
@@ -248,9 +444,11 @@ export default async function AdminOrdersPage() {
       }
     )
 
-  // =====================================================
-  // ORDRES EN ATTENTE
-  // =====================================================
+  /*
+   * =====================================================
+   * STATISTIQUES
+   * =====================================================
+   */
 
   const pendingOrders =
     orders.filter(
@@ -265,6 +463,19 @@ export default async function AdminOrdersPage() {
         order.status ===
         'Complété'
     )
+
+  const cancelledOrders =
+    orders.filter(
+      (order) =>
+        order.status ===
+        'Annulé'
+    )
+
+  /*
+   * =====================================================
+   * AFFICHAGE
+   * =====================================================
+   */
 
   return (
     <div className="p-6 space-y-6">
@@ -288,10 +499,9 @@ export default async function AdminOrdersPage() {
           STATISTIQUES
       ================================================= */}
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
 
         <div className="rounded-2xl border border-orange-200 bg-orange-50 p-5">
-
           <p className="text-xs font-semibold uppercase tracking-wider text-orange-600">
             En attente
           </p>
@@ -299,11 +509,9 @@ export default async function AdminOrdersPage() {
           <p className="mt-2 text-3xl font-bold text-orange-800">
             {pendingOrders.length}
           </p>
-
         </div>
 
         <div className="rounded-2xl border border-green-200 bg-green-50 p-5">
-
           <p className="text-xs font-semibold uppercase tracking-wider text-green-600">
             Complétés
           </p>
@@ -311,11 +519,19 @@ export default async function AdminOrdersPage() {
           <p className="mt-2 text-3xl font-bold text-green-800">
             {completedOrders.length}
           </p>
+        </div>
 
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-5">
+          <p className="text-xs font-semibold uppercase tracking-wider text-red-600">
+            Refusés
+          </p>
+
+          <p className="mt-2 text-3xl font-bold text-red-800">
+            {cancelledOrders.length}
+          </p>
         </div>
 
         <div className="rounded-2xl border border-slate-200 bg-white p-5">
-
           <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
             Total des ordres
           </p>
@@ -323,7 +539,6 @@ export default async function AdminOrdersPage() {
           <p className="mt-2 text-3xl font-bold text-slate-900">
             {orders.length}
           </p>
-
         </div>
 
       </div>
@@ -459,27 +674,69 @@ export default async function AdminOrdersPage() {
 
                     <div className="flex flex-col gap-2 sm:flex-row">
 
-                      <button
-                        type="button"
-                        disabled
-                        className="rounded-xl bg-green-600 px-5 py-2.5 text-sm font-bold text-white opacity-50 cursor-not-allowed"
-                      >
-                        ✓ Valider
-                      </button>
+                      {/* VALIDER */}
 
-                      <button
-                        type="button"
-                        disabled
-                        className="rounded-xl bg-red-50 border border-red-200 px-5 py-2.5 text-sm font-bold text-red-700 opacity-50 cursor-not-allowed"
+                      <form
+                        action={
+                          updateOrderStatus
+                        }
                       >
-                        Refuser
-                      </button>
+                        <input
+                          type="hidden"
+                          name="orderId"
+                          value={
+                            order.id
+                          }
+                        />
+
+                        <input
+                          type="hidden"
+                          name="action"
+                          value="approve"
+                        />
+
+                        <button
+                          type="submit"
+                          className="w-full rounded-xl bg-green-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-green-700 active:scale-[0.98]"
+                        >
+                          ✓ Valider
+                        </button>
+                      </form>
+
+                      {/* REFUSER */}
+
+                      <form
+                        action={
+                          updateOrderStatus
+                        }
+                      >
+                        <input
+                          type="hidden"
+                          name="orderId"
+                          value={
+                            order.id
+                          }
+                        />
+
+                        <input
+                          type="hidden"
+                          name="action"
+                          value="reject"
+                        />
+
+                        <button
+                          type="submit"
+                          className="w-full rounded-xl border border-red-200 bg-red-50 px-5 py-2.5 text-sm font-bold text-red-700 transition hover:bg-red-100 active:scale-[0.98]"
+                        >
+                          Refuser
+                        </button>
+                      </form>
 
                     </div>
 
                   </div>
 
-                  <div className="mt-4 flex items-center justify-between rounded-xl bg-orange-50 border border-orange-100 px-3 py-2">
+                  <div className="mt-4 flex flex-col gap-1 rounded-xl border border-orange-100 bg-orange-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
 
                     <span className="text-xs font-semibold text-orange-700">
                       En attente de validation
