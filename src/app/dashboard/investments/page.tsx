@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
+import { InvestmentCard } from '@/components/fintech/InvestmentCard'
 import MarketFilters from '@/components/fintech/MarketFilters'
 import { tickerFromTitle } from '@/lib/utils'
 
@@ -30,7 +31,8 @@ function normalizeKycStatus(
 function isKycValid(
   status: string | null | undefined
 ) {
-  const normalized = normalizeKycStatus(status)
+  const normalized =
+    normalizeKycStatus(status)
 
   return (
     normalized === 'valid' ||
@@ -44,7 +46,8 @@ function isKycValid(
 function isKycRejected(
   status: string | null | undefined
 ) {
-  const normalized = normalizeKycStatus(status)
+  const normalized =
+    normalizeKycStatus(status)
 
   return (
     normalized === 'rejected' ||
@@ -59,9 +62,9 @@ function isKycRejected(
 export default async function InvestmentsPage() {
   const supabase = createClient()
 
-  // =========================
-  // UTILISATEUR
-  // =========================
+  // =====================================================
+  // UTILISATEUR CONNECTÉ
+  // =====================================================
 
   const {
     data: { user },
@@ -71,9 +74,9 @@ export default async function InvestmentsPage() {
     redirect('/login')
   }
 
-  // =========================
-  // PROFIL + KYC
-  // =========================
+  // =====================================================
+  // PROFIL UTILISATEUR
+  // =====================================================
 
   const {
     data: profile,
@@ -100,27 +103,27 @@ export default async function InvestmentsPage() {
     )
   }
 
-  const userBalance = Number(
-    profile.balance ?? 0
-  )
+  const userBalance =
+    Number(profile.balance ?? 0)
 
-  const kycStatus = profile.kyc_status
+  const kycStatus =
+    profile.kyc_status
 
-  const kycValid = isKycValid(
-    kycStatus
-  )
+  const kycValid =
+    isKycValid(kycStatus)
 
-  const kycRejected = isKycRejected(
-    kycStatus
-  )
+  const kycRejected =
+    isKycRejected(kycStatus)
 
-  // =========================
-  // OFFRES SUPABASE
-  // =========================
+  // =====================================================
+  // OFFRES DU MARCHÉ
+  // =====================================================
 
-  let investmentOffers: InvestmentOffer[] = []
+  let investmentOffers:
+    InvestmentOffer[] = []
 
-  let offersError: string | null = null
+  let offersError:
+    string | null = null
 
   if (kycValid) {
     const {
@@ -181,9 +184,9 @@ export default async function InvestmentsPage() {
     }
   }
 
-  // =========================
-  // ACHAT
-  // =========================
+  // =====================================================
+  // CRÉATION D'UN ORDRE D'INVESTISSEMENT
+  // =====================================================
 
   const handleBuy = async (
     offerId: string,
@@ -193,9 +196,9 @@ export default async function InvestmentsPage() {
 
     const supabase = createClient()
 
-    // =========================
-    // UTILISATEUR CONNECTÉ
-    // =========================
+    // ===================================================
+    // UTILISATEUR
+    // ===================================================
 
     const {
       data: { user },
@@ -208,13 +211,13 @@ export default async function InvestmentsPage() {
       }
     }
 
-    // =========================
-    // PROFIL ACTUEL
-    // =========================
+    // ===================================================
+    // VÉRIFICATION DU PROFIL
+    // ===================================================
 
     const {
       data: currentProfile,
-      error: profileError,
+      error: currentProfileError,
     } = await supabase
       .from('users')
       .select(
@@ -224,7 +227,7 @@ export default async function InvestmentsPage() {
       .single()
 
     if (
-      profileError ||
+      currentProfileError ||
       !currentProfile
     ) {
       return {
@@ -233,9 +236,9 @@ export default async function InvestmentsPage() {
       }
     }
 
-    // =========================
-    // VÉRIFICATION KYC
-    // =========================
+    // ===================================================
+    // KYC
+    // ===================================================
 
     if (
       !isKycValid(
@@ -248,9 +251,9 @@ export default async function InvestmentsPage() {
       }
     }
 
-    // =========================
-    // VALIDATION QUANTITÉ
-    // =========================
+    // ===================================================
+    // VALIDATION DU NOMBRE DE TITRES
+    // ===================================================
 
     if (
       !Number.isInteger(shares) ||
@@ -262,9 +265,9 @@ export default async function InvestmentsPage() {
       }
     }
 
-    // =========================
-    // VALIDATION OFFRE
-    // =========================
+    // ===================================================
+    // VALIDATION DE L'ID DE L'OFFRE
+    // ===================================================
 
     if (!offerId) {
       return {
@@ -272,6 +275,10 @@ export default async function InvestmentsPage() {
           'La valeur sélectionnée est invalide.',
       }
     }
+
+    // ===================================================
+    // RÉCUPÉRATION DE L'OFFRE
+    // ===================================================
 
     const {
       data: offer,
@@ -282,36 +289,54 @@ export default async function InvestmentsPage() {
         `
           id,
           title,
+          company_name,
+          type,
           price_per_share,
           minimum_investment,
           is_active
         `
       )
       .eq('id', offerId)
-      .eq('is_active', true)
       .single()
 
     if (
       offerError ||
       !offer
     ) {
+      console.error(
+        'Erreur récupération offre:',
+        offerError
+      )
+
       return {
         error:
-          'Cette valeur n’est plus disponible.',
+          'Cette valeur est introuvable.',
       }
     }
 
-    // =========================
-    // CALCUL DU MONTANT
-    // =========================
+    // ===================================================
+    // OFFRE ACTIVE
+    // ===================================================
 
-    const price = Number(
-      offer.price_per_share ?? 0
-    )
+    if (!offer.is_active) {
+      return {
+        error:
+          'Cette valeur n’est actuellement plus disponible.',
+      }
+    }
+
+    // ===================================================
+    // COURS
+    // ===================================================
+
+    const unitPrice =
+      Number(
+        offer.price_per_share ?? 0
+      )
 
     if (
-      !Number.isFinite(price) ||
-      price <= 0
+      !Number.isFinite(unitPrice) ||
+      unitPrice <= 0
     ) {
       return {
         error:
@@ -319,30 +344,45 @@ export default async function InvestmentsPage() {
       }
     }
 
-    const total =
-      shares * price
+    // ===================================================
+    // CALCUL DU MONTANT
+    // ===================================================
 
-    // =========================
-    // VÉRIFICATION SOLDE
-    // =========================
-
-    const balance = Number(
-      currentProfile.balance ?? 0
-    )
+    const amount =
+      shares * unitPrice
 
     if (
-      !Number.isFinite(balance) ||
-      balance < total
+      !Number.isFinite(amount) ||
+      amount <= 0
     ) {
       return {
         error:
-          'Fonds insuffisants pour effectuer cet ordre.',
+          'Le montant de l’ordre est invalide.',
       }
     }
 
-    // =========================
+    // ===================================================
+    // SOLDE
+    // ===================================================
+
+    const balance =
+      Number(
+        currentProfile.balance ?? 0
+      )
+
+    if (
+      !Number.isFinite(balance) ||
+      balance < amount
+    ) {
+      return {
+        error:
+          'Fonds insuffisants pour passer cet ordre.',
+      }
+    }
+
+    // ===================================================
     // INVESTISSEMENT MINIMUM
-    // =========================
+    // ===================================================
 
     const minimumInvestment =
       Number(
@@ -351,7 +391,7 @@ export default async function InvestmentsPage() {
 
     if (
       minimumInvestment > 0 &&
-      total < minimumInvestment
+      amount < minimumInvestment
     ) {
       return {
         error:
@@ -361,31 +401,92 @@ export default async function InvestmentsPage() {
       }
     }
 
-    // =========================
-    // POUR LE MOMENT :
-    // CRÉATION DE L'ORDRE
-    // =========================
+    // ===================================================
+    // DESCRIPTION
+    // ===================================================
 
-    /*
-     * La fonction d'achat réelle sera
-     * connectée au système d'ordres.
-     *
-     * Pour l'instant, nous vérifions
-     * toutes les conditions côté serveur.
-     */
+    const companyName =
+      offer.company_name ||
+      offer.title ||
+      'Valeur BRVM'
+
+    const description =
+      `Ordre d'achat de ${shares} titre(s) : ${companyName}`
+
+    // ===================================================
+    // CRÉATION DE LA TRANSACTION
+    // ===================================================
+
+    const {
+      data: transaction,
+      error: transactionError,
+    } = await supabase
+      .from('transactions')
+      .insert({
+        user_id: user.id,
+
+        type:
+          'achat_investissement',
+
+        amount,
+
+        status:
+          'pending',
+
+        description,
+
+        offer_id:
+          offer.id,
+
+        quantity:
+          shares,
+
+        unit_price:
+          unitPrice,
+      })
+      .select('id')
+      .single()
+
+    // ===================================================
+    // ERREUR TRANSACTION
+    // ===================================================
+
+    if (
+      transactionError ||
+      !transaction
+    ) {
+      console.error(
+        'Erreur création transaction:',
+        transactionError
+      )
+
+      return {
+        error:
+          'Impossible d’enregistrer votre ordre. Veuillez réessayer.',
+      }
+    }
+
+    // ===================================================
+    // SUCCÈS
+    // ===================================================
 
     return {
-      error:
-        "La fonction d'achat sera activée lors de la mise en place du système d'ordres.",
+      success: true,
+      transactionId:
+        transaction.id,
     }
   }
+
+  // =====================================================
+  // AFFICHAGE
+  // =====================================================
 
   return (
     <div className="p-6 space-y-6">
 
-      {/* =========================
+      {/* =================================================
           EN-TÊTE
-      ========================== */}
+      ================================================= */}
 
       <div className="flex flex-col gap-4">
 
@@ -400,9 +501,9 @@ export default async function InvestmentsPage() {
           </p>
         </div>
 
-        {/* =========================
+        {/* =================================================
             SOLDE + KYC
-        ========================== */}
+        ================================================= */}
 
         <div className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
 
@@ -439,9 +540,9 @@ export default async function InvestmentsPage() {
 
       </div>
 
-      {/* =========================
+      {/* =================================================
           KYC NON VALIDÉ
-      ========================== */}
+      ================================================= */}
 
       {!kycValid ? (
 
@@ -503,9 +604,9 @@ export default async function InvestmentsPage() {
       ) : (
 
         <>
-          {/* =========================
+          {/* =================================================
               ERREUR SUPABASE
-          ========================== */}
+          ================================================= */}
 
           {offersError ? (
 
@@ -523,9 +624,9 @@ export default async function InvestmentsPage() {
 
           ) : (
 
-            /* =========================
+            /* =================================================
                MARCHÉ
-            ========================== */
+            ================================================= */
 
             <MarketFilters
               offers={investmentOffers.map(
