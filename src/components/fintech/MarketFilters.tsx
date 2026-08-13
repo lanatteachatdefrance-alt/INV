@@ -45,6 +45,7 @@ type MarketFiltersProps = {
   userBalance: number
   isKycValid: boolean
   onBuy: (
+    offerId: string,
     shares: number
   ) => Promise<{ error?: string } | void>
 }
@@ -60,15 +61,10 @@ export default function MarketFilters({
   const [sort, setSort] =
     useState<SortOption>('az')
 
-  /*
-   * Normalisation des données Supabase.
-   *
-   * Supabase peut retourner des valeurs null
-   * ou des nombres sous forme de chaînes.
-   *
-   * InvestmentCard, elle, a besoin de valeurs
-   * propres et non nulles.
-   */
+  // =========================
+  // NORMALISATION
+  // =========================
+
   const normalizedOffers = useMemo<
     InvestmentCardOffer[]
   >(() => {
@@ -90,10 +86,14 @@ export default function MarketFilters({
           offer.type?.trim() || 'Action'
 
         const roi =
-          Number(offer.roi_percentage ?? 0)
+          Number(
+            offer.roi_percentage ?? 0
+          )
 
         const price =
-          Number(offer.price_per_share ?? 0)
+          Number(
+            offer.price_per_share ?? 0
+          )
 
         const minimum =
           Number(
@@ -102,18 +102,15 @@ export default function MarketFilters({
 
         return {
           id: offer.id,
-
           title,
-
           symbol,
-
           description,
-
           type,
 
-          roi_percentage: Number.isFinite(roi)
-            ? roi
-            : 0,
+          roi_percentage:
+            Number.isFinite(roi)
+              ? roi
+              : 0,
 
           price_per_share:
             Number.isFinite(price)
@@ -133,38 +130,44 @@ export default function MarketFilters({
       )
   }, [offers])
 
-  /*
-   * Recherche + classement
-   */
+  // =========================
+  // RECHERCHE + TRI
+  // =========================
+
   const filteredOffers = useMemo(() => {
     const query =
       search.trim().toLowerCase()
 
     let result =
-      normalizedOffers.filter((offer) => {
-        if (!query) {
-          return true
+      normalizedOffers.filter(
+        (offer) => {
+          if (!query) {
+            return true
+          }
+
+          const title =
+            offer.title.toLowerCase()
+
+          const symbol =
+            offer.symbol?.toLowerCase() ||
+            ''
+
+          const description =
+            offer.description?.toLowerCase() ||
+            ''
+
+          const type =
+            offer.type?.toLowerCase() ||
+            ''
+
+          return (
+            title.includes(query) ||
+            symbol.includes(query) ||
+            description.includes(query) ||
+            type.includes(query)
+          )
         }
-
-        const title =
-          offer.title.toLowerCase()
-
-        const symbol =
-          offer.symbol?.toLowerCase() || ''
-
-        const description =
-          offer.description?.toLowerCase() || ''
-
-        const type =
-          offer.type?.toLowerCase() || ''
-
-        return (
-          title.includes(query) ||
-          symbol.includes(query) ||
-          description.includes(query) ||
-          type.includes(query)
-        )
-      })
+      )
 
     result = [...result].sort(
       (a, b) => {
@@ -199,9 +202,6 @@ export default function MarketFilters({
           )
 
         switch (sort) {
-          /*
-           * Classement alphabétique
-           */
           case 'az':
             return nameA.localeCompare(
               nameB,
@@ -211,9 +211,6 @@ export default function MarketFilters({
               }
             )
 
-          /*
-           * Classement inverse
-           */
           case 'za':
             return nameB.localeCompare(
               nameA,
@@ -223,30 +220,18 @@ export default function MarketFilters({
               }
             )
 
-          /*
-           * Cours croissant
-           */
           case 'priceAsc':
             return priceA - priceB
 
-          /*
-           * Cours décroissant
-           */
           case 'priceDesc':
             return priceB - priceA
 
-          /*
-           * Rendement croissant
-           */
           case 'variationAsc':
             return (
               variationA -
               variationB
             )
 
-          /*
-           * Rendement décroissant
-           */
           case 'variationDesc':
             return (
               variationB -
@@ -301,17 +286,18 @@ export default function MarketFilters({
           </div>
 
           <div className="hidden sm:flex items-center gap-2 text-xs text-slate-400">
+
             <SlidersHorizontal
               size={14}
             />
 
             Marché BRVM
+
           </div>
 
         </div>
 
       </div>
-
 
       {/* =========================
           RECHERCHE
@@ -337,7 +323,6 @@ export default function MarketFilters({
         />
 
       </div>
-
 
       {/* =========================
           TRI
@@ -391,7 +376,6 @@ export default function MarketFilters({
         </div>
 
       </div>
-
 
       {/* =========================
           AUCUN RÉSULTAT

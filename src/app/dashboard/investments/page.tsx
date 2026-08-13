@@ -1,6 +1,5 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
-import { InvestmentCard } from '@/components/fintech/InvestmentCard'
 import MarketFilters from '@/components/fintech/MarketFilters'
 import { tickerFromTitle } from '@/lib/utils'
 
@@ -31,8 +30,7 @@ function normalizeKycStatus(
 function isKycValid(
   status: string | null | undefined
 ) {
-  const normalized =
-    normalizeKycStatus(status)
+  const normalized = normalizeKycStatus(status)
 
   return (
     normalized === 'valid' ||
@@ -46,8 +44,7 @@ function isKycValid(
 function isKycRejected(
   status: string | null | undefined
 ) {
-  const normalized =
-    normalizeKycStatus(status)
+  const normalized = normalizeKycStatus(status)
 
   return (
     normalized === 'rejected' ||
@@ -103,27 +100,27 @@ export default async function InvestmentsPage() {
     )
   }
 
-  const userBalance =
-    Number(profile.balance ?? 0)
+  const userBalance = Number(
+    profile.balance ?? 0
+  )
 
-  const kycStatus =
-    profile.kyc_status
+  const kycStatus = profile.kyc_status
 
-  const kycValid =
-    isKycValid(kycStatus)
+  const kycValid = isKycValid(
+    kycStatus
+  )
 
-  const kycRejected =
-    isKycRejected(kycStatus)
+  const kycRejected = isKycRejected(
+    kycStatus
+  )
 
   // =========================
   // OFFRES SUPABASE
   // =========================
 
-  let investmentOffers:
-    InvestmentOffer[] = []
+  let investmentOffers: InvestmentOffer[] = []
 
-  let offersError:
-    string | null = null
+  let offersError: string | null = null
 
   if (kycValid) {
     const {
@@ -217,7 +214,7 @@ export default async function InvestmentsPage() {
 
     const {
       data: currentProfile,
-      error: currentProfileError,
+      error: profileError,
     } = await supabase
       .from('users')
       .select(
@@ -227,7 +224,7 @@ export default async function InvestmentsPage() {
       .single()
 
     if (
-      currentProfileError ||
+      profileError ||
       !currentProfile
     ) {
       return {
@@ -237,7 +234,7 @@ export default async function InvestmentsPage() {
     }
 
     // =========================
-    // KYC
+    // VÉRIFICATION KYC
     // =========================
 
     if (
@@ -252,7 +249,7 @@ export default async function InvestmentsPage() {
     }
 
     // =========================
-    // QUANTITÉ
+    // VALIDATION QUANTITÉ
     // =========================
 
     if (
@@ -266,8 +263,15 @@ export default async function InvestmentsPage() {
     }
 
     // =========================
-    // OFFRE
+    // VALIDATION OFFRE
     // =========================
+
+    if (!offerId) {
+      return {
+        error:
+          'La valeur sélectionnée est invalide.',
+      }
+    }
 
     const {
       data: offer,
@@ -278,7 +282,6 @@ export default async function InvestmentsPage() {
         `
           id,
           title,
-          company_name,
           price_per_share,
           minimum_investment,
           is_active
@@ -292,11 +295,6 @@ export default async function InvestmentsPage() {
       offerError ||
       !offer
     ) {
-      console.error(
-        'Erreur récupération offre:',
-        offerError
-      )
-
       return {
         error:
           'Cette valeur n’est plus disponible.',
@@ -304,17 +302,16 @@ export default async function InvestmentsPage() {
     }
 
     // =========================
-    // COURS
+    // CALCUL DU MONTANT
     // =========================
 
-    const unitPrice =
-      Number(
-        offer.price_per_share ?? 0
-      )
+    const price = Number(
+      offer.price_per_share ?? 0
+    )
 
     if (
-      !Number.isFinite(unitPrice) ||
-      unitPrice <= 0
+      !Number.isFinite(price) ||
+      price <= 0
     ) {
       return {
         error:
@@ -322,20 +319,24 @@ export default async function InvestmentsPage() {
       }
     }
 
+    const total =
+      shares * price
+
     // =========================
-    // MONTANT
+    // VÉRIFICATION SOLDE
     // =========================
 
-    const amount =
-      shares * unitPrice
+    const balance = Number(
+      currentProfile.balance ?? 0
+    )
 
     if (
-      !Number.isFinite(amount) ||
-      amount <= 0
+      !Number.isFinite(balance) ||
+      balance < total
     ) {
       return {
         error:
-          'Le montant de l’ordre est invalide.',
+          'Fonds insuffisants pour effectuer cet ordre.',
       }
     }
 
@@ -350,7 +351,7 @@ export default async function InvestmentsPage() {
 
     if (
       minimumInvestment > 0 &&
-      amount < minimumInvestment
+      total < minimumInvestment
     ) {
       return {
         error:
@@ -361,80 +362,22 @@ export default async function InvestmentsPage() {
     }
 
     // =========================
-    // SOLDE
-    // =========================
-
-    const balance =
-      Number(
-        currentProfile.balance ?? 0
-      )
-
-    if (
-      !Number.isFinite(balance) ||
-      balance < amount
-    ) {
-      return {
-        error:
-          'Fonds insuffisants pour effectuer cet ordre.',
-      }
-    }
-
-    // =========================
+    // POUR LE MOMENT :
     // CRÉATION DE L'ORDRE
     // =========================
 
-    const {
-      error: transactionError,
-    } = await supabase
-      .from('transactions')
-      .insert({
-        user_id: user.id,
+    /*
+     * La fonction d'achat réelle sera
+     * connectée au système d'ordres.
+     *
+     * Pour l'instant, nous vérifions
+     * toutes les conditions côté serveur.
+     */
 
-        type: 'achat',
-
-        amount,
-
-        status: 'pending',
-
-        description:
-          `Ordre d’achat - ${
-            offer.company_name ||
-            offer.title ||
-            'Valeur BRVM'
-          }`,
-
-        offer_id: offer.id,
-
-        quantity: shares,
-
-        unit_price: unitPrice,
-
-        shares_bought: shares,
-
-        purchase_price: unitPrice,
-
-        approved_by: null,
-
-        approved_at: null,
-      })
-
-    if (transactionError) {
-      console.error(
-        'Erreur création ordre:',
-        transactionError
-      )
-
-      return {
-        error:
-          'Impossible d’enregistrer votre ordre. Veuillez réessayer.',
-      }
+    return {
+      error:
+        "La fonction d'achat sera activée lors de la mise en place du système d'ordres.",
     }
-
-    // =========================
-    // SUCCÈS
-    // =========================
-
-    return {}
   }
 
   return (
@@ -548,6 +491,7 @@ export default async function InvestmentsPage() {
 
           <div className="mt-6 inline-flex items-center rounded-xl border border-white/70 bg-white/70 px-4 py-3 text-xs font-semibold text-slate-600">
             Statut actuel :
+
             <span className="ml-2">
               {kycStatus ||
                 'En attente'}
@@ -587,21 +531,27 @@ export default async function InvestmentsPage() {
               offers={investmentOffers.map(
                 (offer) => ({
                   ...offer,
+
                   symbol:
                     tickerFromTitle(
                       offer.title ??
-                        offer.company_name ??
-                        ''
+                      offer.company_name ??
+                      ''
                     ),
                 })
               )}
+
               userBalance={
                 userBalance
               }
+
               isKycValid={
                 kycValid
               }
-              onBuy={handleBuy}
+
+              onBuy={
+                handleBuy
+              }
             />
 
           )}
