@@ -119,14 +119,6 @@ export default async function InvestmentsPage() {
   // OFFRES SUPABASE
   // =========================
 
-  /*
-   * IMPORTANT :
-   * On ne récupère les valeurs du marché
-   * que lorsque le KYC est validé.
-   *
-   * Le contrôle est donc effectué côté serveur.
-   */
-
   let investmentOffers:
     InvestmentOffer[] = []
 
@@ -197,11 +189,16 @@ export default async function InvestmentsPage() {
   // =========================
 
   const handleBuy = async (
+    offerId: string,
     shares: number
   ) => {
     'use server'
 
     const supabase = createClient()
+
+    // =========================
+    // UTILISATEUR CONNECTÉ
+    // =========================
 
     const {
       data: { user },
@@ -214,11 +211,13 @@ export default async function InvestmentsPage() {
       }
     }
 
-    /*
-     * Vérification KYC côté serveur.
-     */
+    // =========================
+    // PROFIL ACTUEL
+    // =========================
+
     const {
       data: currentProfile,
+      error: currentProfileError,
     } = await supabase
       .from('users')
       .select(
@@ -228,7 +227,20 @@ export default async function InvestmentsPage() {
       .single()
 
     if (
-      !currentProfile ||
+      currentProfileError ||
+      !currentProfile
+    ) {
+      return {
+        error:
+          'Impossible de récupérer votre profil.',
+      }
+    }
+
+    // =========================
+    // KYC
+    // =========================
+
+    if (
       !isKycValid(
         currentProfile.kyc_status
       )
@@ -239,17 +251,190 @@ export default async function InvestmentsPage() {
       }
     }
 
-    if (!Number.isInteger(shares) || shares < 1) {
+    // =========================
+    // QUANTITÉ
+    // =========================
+
+    if (
+      !Number.isInteger(shares) ||
+      shares < 1
+    ) {
       return {
         error:
           'Le nombre de titres est invalide.',
       }
     }
 
-    return {
-      error:
-        "La fonction d'achat sera activée lors de la mise en place du système d'ordres.",
+    // =========================
+    // OFFRE
+    // =========================
+
+    const {
+      data: offer,
+      error: offerError,
+    } = await supabase
+      .from('investment_offers')
+      .select(
+        `
+          id,
+          title,
+          company_name,
+          price_per_share,
+          minimum_investment,
+          is_active
+        `
+      )
+      .eq('id', offerId)
+      .eq('is_active', true)
+      .single()
+
+    if (
+      offerError ||
+      !offer
+    ) {
+      console.error(
+        'Erreur récupération offre:',
+        offerError
+      )
+
+      return {
+        error:
+          'Cette valeur n’est plus disponible.',
+      }
     }
+
+    // =========================
+    // COURS
+    // =========================
+
+    const unitPrice =
+      Number(
+        offer.price_per_share ?? 0
+      )
+
+    if (
+      !Number.isFinite(unitPrice) ||
+      unitPrice <= 0
+    ) {
+      return {
+        error:
+          'Le cours de cette valeur est actuellement indisponible.',
+      }
+    }
+
+    // =========================
+    // MONTANT
+    // =========================
+
+    const amount =
+      shares * unitPrice
+
+    if (
+      !Number.isFinite(amount) ||
+      amount <= 0
+    ) {
+      return {
+        error:
+          'Le montant de l’ordre est invalide.',
+      }
+    }
+
+    // =========================
+    // INVESTISSEMENT MINIMUM
+    // =========================
+
+    const minimumInvestment =
+      Number(
+        offer.minimum_investment ?? 0
+      )
+
+    if (
+      minimumInvestment > 0 &&
+      amount < minimumInvestment
+    ) {
+      return {
+        error:
+          `Le montant minimum requis est de ${minimumInvestment.toLocaleString(
+            'fr-FR'
+          )} FCFA.`,
+      }
+    }
+
+    // =========================
+    // SOLDE
+    // =========================
+
+    const balance =
+      Number(
+        currentProfile.balance ?? 0
+      )
+
+    if (
+      !Number.isFinite(balance) ||
+      balance < amount
+    ) {
+      return {
+        error:
+          'Fonds insuffisants pour effectuer cet ordre.',
+      }
+    }
+
+    // =========================
+    // CRÉATION DE L'ORDRE
+    // =========================
+
+    const {
+      error: transactionError,
+    } = await supabase
+      .from('transactions')
+      .insert({
+        user_id: user.id,
+
+        type: 'achat',
+
+        amount,
+
+        status: 'pending',
+
+        description:
+          `Ordre d’achat - ${
+            offer.company_name ||
+            offer.title ||
+            'Valeur BRVM'
+          }`,
+
+        offer_id: offer.id,
+
+        quantity: shares,
+
+        unit_price: unitPrice,
+
+        shares_bought: shares,
+
+        purchase_price: unitPrice,
+
+        approved_by: null,
+
+        approved_at: null,
+      })
+
+    if (transactionError) {
+      console.error(
+        'Erreur création ordre:',
+        transactionError
+      )
+
+      return {
+        error:
+          'Impossible d’enregistrer votre ordre. Veuillez réessayer.',
+      }
+    }
+
+    // =========================
+    // SUCCÈS
+    // =========================
+
+    return {}
   }
 
   return (
@@ -310,7 +495,6 @@ export default async function InvestmentsPage() {
         </div>
 
       </div>
-
 
       {/* =========================
           KYC NON VALIDÉ

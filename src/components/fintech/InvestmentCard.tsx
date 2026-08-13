@@ -41,7 +41,17 @@ type InvestmentCardProps = {
   offer: InvestmentOffer
   userBalance: number
   isKycValid: boolean
+
+  /*
+   * L'achat transmet maintenant :
+   * - l'identifiant de l'offre
+   * - le nombre de titres
+   *
+   * L'ordre sera ensuite créé côté serveur
+   * avec le statut "pending".
+   */
   onBuy: (
+    offerId: string,
     shares: number
   ) => Promise<{ error?: string } | void>
 }
@@ -111,6 +121,10 @@ export function InvestmentCard({
   const submit = async () => {
     setError('')
 
+    // =========================
+    // KYC
+    // =========================
+
     if (!isKycValid) {
       setError(
         'KYC requis avant d’investir.'
@@ -118,12 +132,20 @@ export function InvestmentCard({
       return
     }
 
+    // =========================
+    // COURS
+    // =========================
+
     if (price <= 0) {
       setError(
         'Le cours de cette valeur est actuellement indisponible.'
       )
       return
     }
+
+    // =========================
+    // MINIMUM
+    // =========================
 
     if (!meetsMinimum) {
       setError(
@@ -134,6 +156,10 @@ export function InvestmentCard({
       return
     }
 
+    // =========================
+    // SOLDE
+    // =========================
+
     if (!canAfford) {
       setError(
         'Fonds insuffisants.'
@@ -141,11 +167,31 @@ export function InvestmentCard({
       return
     }
 
+    // =========================
+    // TRAITEMENT
+    // =========================
+
     setPending(true)
 
     try {
+      /*
+       * On transmet maintenant l'ID
+       * de la valeur ainsi que la quantité.
+       *
+       * L'ID permettra au serveur de
+       * récupérer le cours directement
+       * depuis Supabase.
+       */
+
       const result =
-        await onBuy(shares)
+        await onBuy(
+          offer.id,
+          shares
+        )
+
+      // =========================
+      // ERREUR SERVEUR
+      // =========================
 
       if (
         result &&
@@ -156,12 +202,25 @@ export function InvestmentCard({
         return
       }
 
+      // =========================
+      // SUCCÈS
+      // =========================
+
       setSuccess(true)
+
+      /*
+       * L'ordre n'est pas encore
+       * considéré comme exécuté.
+       *
+       * Il est envoyé à
+       * l'administrateur pour validation.
+       */
 
       setTimeout(() => {
         setSuccess(false)
         setShares(1)
-      }, 2200)
+      }, 3000)
+
     } catch {
       setError(
         'Une erreur est survenue lors du traitement de l’ordre.'
@@ -184,7 +243,6 @@ export function InvestmentCard({
       <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-blue-500/10 blur-2xl pointer-events-none" />
 
       <div className="absolute -bottom-10 -left-10 w-24 h-24 rounded-full bg-orange-500/5 blur-2xl pointer-events-none" />
-
 
       {/* =========================
           EN-TÊTE
@@ -214,7 +272,6 @@ export function InvestmentCard({
 
         </div>
 
-
         {/* Rendement */}
 
         <div className="text-right shrink-0">
@@ -241,6 +298,7 @@ export function InvestmentCard({
                 maximumFractionDigits: 2,
               }
             )}
+
             %
 
           </p>
@@ -252,7 +310,6 @@ export function InvestmentCard({
         </div>
 
       </div>
-
 
       {/* =========================
           COURS + TOTAL
@@ -276,7 +333,6 @@ export function InvestmentCard({
 
         </div>
 
-
         <div className="rounded-2xl bg-slate-50 border border-slate-200 p-3">
 
           <p className="text-[10px] text-fin-mute uppercase tracking-wider mb-1">
@@ -290,7 +346,6 @@ export function InvestmentCard({
         </div>
 
       </div>
-
 
       {/* =========================
           BOUTON DÉTAILS
@@ -320,7 +375,6 @@ export function InvestmentCard({
 
       </button>
 
-
       {/* =========================
           FICHE DÉTAILLÉE
       ========================== */}
@@ -341,7 +395,6 @@ export function InvestmentCard({
 
           </div>
 
-
           {/* Informations */}
 
           <div className="grid grid-cols-2 gap-3">
@@ -358,7 +411,6 @@ export function InvestmentCard({
 
             </div>
 
-
             <div className="rounded-xl bg-white border border-slate-200 p-3">
 
               <p className="text-[10px] uppercase tracking-wider text-slate-400">
@@ -370,7 +422,6 @@ export function InvestmentCard({
               </p>
 
             </div>
-
 
             <div className="rounded-xl bg-white border border-slate-200 p-3">
 
@@ -387,7 +438,6 @@ export function InvestmentCard({
               </p>
 
             </div>
-
 
             <div className="rounded-xl bg-white border border-slate-200 p-3">
 
@@ -416,7 +466,6 @@ export function InvestmentCard({
 
           </div>
 
-
           {/* Description */}
 
           {offer.description && (
@@ -434,7 +483,6 @@ export function InvestmentCard({
             </div>
 
           )}
-
 
           {/* Minimum */}
 
@@ -457,9 +505,7 @@ export function InvestmentCard({
           )}
 
         </div>
-
       )}
-
 
       {/* =========================
           QUANTITÉ
@@ -491,7 +537,6 @@ export function InvestmentCard({
             −
           </SecondaryButton>
 
-
           <input
             type="number"
             min={1}
@@ -519,7 +564,6 @@ export function InvestmentCard({
             className="fin-input text-center font-bold !py-2.5"
           />
 
-
           <SecondaryButton
             type="button"
             size="sm"
@@ -539,7 +583,6 @@ export function InvestmentCard({
 
       </div>
 
-
       {/* =========================
           INFORMATIONS ACHAT
       ========================== */}
@@ -557,7 +600,6 @@ export function InvestmentCard({
           </span>
 
         </div>
-
 
         <div className="flex items-center justify-between gap-3 mt-2">
 
@@ -581,7 +623,6 @@ export function InvestmentCard({
         </div>
 
       </div>
-
 
       {/* =========================
           KYC
@@ -610,9 +651,7 @@ export function InvestmentCard({
           </div>
 
         </div>
-
       )}
-
 
       {/* =========================
           ERREUR
@@ -627,9 +666,7 @@ export function InvestmentCard({
           {error}
 
         </p>
-
       )}
-
 
       {/* =========================
           SUCCÈS
@@ -641,12 +678,10 @@ export function InvestmentCard({
 
           <CheckCircle size={14} />
 
-          Ordre exécuté
+          Ordre enregistré — en attente de validation
 
         </p>
-
       )}
-
 
       {/* =========================
           ACHETER

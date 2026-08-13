@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { ArrowUpRight, TrendingDown, TrendingUp } from 'lucide-react'
 import { GlassCard } from '@/components/ui/GlassCard'
 import {
   cn,
@@ -30,37 +31,50 @@ export function PortfolioTable({
   title?: string
 }) {
   return (
-    <GlassCard padding="none" hover={false} className="overflow-hidden">
-      <div className="flex items-center justify-between px-5 pt-5 pb-3">
-        <h2 className="text-base font-bold text-slate-900">
-          {title}
-        </h2>
+    <GlassCard
+      padding="none"
+      hover={false}
+      className="overflow-hidden border border-slate-200 bg-white shadow-sm"
+    >
+      {/* En-tête */}
+      <div className="flex items-center justify-between border-b border-slate-200 px-5 py-5">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">
+            Portefeuille
+          </p>
+
+          <h2 className="mt-1 text-lg font-bold tracking-tight text-slate-900">
+            {title}
+          </h2>
+        </div>
 
         <Link
           href={href}
-          className="text-sm font-semibold text-fin-primary hover:text-blue-400"
+          className="inline-flex items-center gap-1 rounded-xl bg-blue-50 px-3 py-2 text-xs font-bold text-blue-600 transition hover:bg-blue-100"
         >
           Voir tout
+          <ArrowUpRight size={14} />
         </Link>
       </div>
 
+      {/* Tableau */}
       <div className="overflow-x-auto">
-        <table className="w-full text-left min-w-[480px]">
-          <thead className="sticky top-0 bg-white backdrop-blur">
-            <tr className="border-y border-slate-200 text-[11px] uppercase tracking-wider text-fin-mute">
-              <th className="px-5 py-3 font-semibold">
+        <table className="w-full min-w-[620px] text-left">
+          <thead>
+            <tr className="border-b border-slate-200 bg-slate-50/80 text-[10px] uppercase tracking-[0.16em] text-slate-400">
+              <th className="px-5 py-3.5 font-bold">
                 Valeur
               </th>
 
-              <th className="px-3 py-3 font-semibold">
+              <th className="px-3 py-3.5 font-bold">
                 Quantité
               </th>
 
-              <th className="px-3 py-3 font-semibold">
+              <th className="px-3 py-3.5 font-bold">
                 Cours
               </th>
 
-              <th className="px-5 py-3 font-semibold text-right">
+              <th className="px-5 py-3.5 text-right font-bold">
                 Variation
               </th>
             </tr>
@@ -71,9 +85,21 @@ export function PortfolioTable({
               <tr>
                 <td
                   colSpan={4}
-                  className="px-5 py-10 text-center text-sm text-fin-mute"
+                  className="px-5 py-14 text-center"
                 >
-                  Aucune position ouverte.
+                  <div className="mx-auto flex max-w-xs flex-col items-center">
+                    <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
+                      📊
+                    </div>
+
+                    <p className="text-sm font-semibold text-slate-900">
+                      Aucune position ouverte
+                    </p>
+
+                    <p className="mt-1 text-xs text-slate-500">
+                      Vos investissements apparaîtront ici.
+                    </p>
+                  </div>
                 </td>
               </tr>
             ) : (
@@ -84,43 +110,63 @@ export function PortfolioTable({
                 return (
                   <tr
                     key={row.id}
-                    className="border-b border-slate-200 hover:bg-slate-50 transition-colors"
+                    className="border-b border-slate-100 transition-colors hover:bg-blue-50/30"
                   >
-                    <td className="px-5 py-3.5">
+                    {/* Valeur */}
+                    <td className="px-5 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center text-[10px] font-bold text-fin-primary">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 text-[10px] font-bold text-blue-600">
                           {initialsFromTitle(row.title)}
                         </div>
 
-                        <div>
-                          <p className="text-sm font-semibold text-slate-900">
+                        <div className="min-w-0">
+                          <p className="text-sm font-bold text-slate-900">
                             {row.symbol || tickerFromTitle(row.title)}
                           </p>
 
-                          <p className="text-[11px] text-fin-mute truncate max-w-[140px]">
+                          <p className="mt-0.5 max-w-[180px] truncate text-[11px] text-slate-500">
                             {row.title}
                           </p>
                         </div>
                       </div>
                     </td>
 
-                    <td className="px-3 py-3.5 text-sm font-medium text-slate-900">
-                      {row.quantity}
+                    {/* Quantité */}
+                    <td className="px-3 py-4">
+                      <p className="text-sm font-semibold text-slate-900">
+                        {row.quantity.toLocaleString('fr-FR')}
+                      </p>
                     </td>
 
-                    <td className="px-3 py-3.5 text-sm font-medium text-slate-900">
-                      {row.price.toLocaleString('fr-FR')}
+                    {/* Cours */}
+                    <td className="px-3 py-4">
+                      <p className="text-sm font-semibold text-slate-900">
+                        {row.price.toLocaleString('fr-FR')}
+                      </p>
+
+                      <p className="text-[10px] text-slate-400">
+                        FCFA
+                      </p>
                     </td>
 
-                    <td
-                      className={cn(
-                        'px-5 py-3.5 text-sm font-semibold text-right',
-                        positive
-                          ? 'text-fin-success'
-                          : 'text-fin-danger'
-                      )}
-                    >
-                      {formatPct(change)}
+                    {/* Variation */}
+                    <td className="px-5 py-4 text-right">
+                      <span
+                        className={cn(
+                          'inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-bold',
+                          positive
+                            ? 'bg-emerald-50 text-emerald-600'
+                            : 'bg-red-50 text-red-600'
+                        )}
+                      >
+                        {positive ? (
+                          <TrendingUp size={13} />
+                        ) : (
+                          <TrendingDown size={13} />
+                        )}
+
+                        {formatPct(change)}
+                      </span>
                     </td>
                   </tr>
                 )
@@ -129,6 +175,18 @@ export function PortfolioTable({
           </tbody>
         </table>
       </div>
+
+      {/* Footer */}
+      {rows.length > 0 && (
+        <div className="border-t border-slate-200 bg-slate-50/50 px-5 py-3">
+          <p className="text-[11px] text-slate-500">
+            {rows.length}{' '}
+            {rows.length > 1
+              ? 'positions dans votre portefeuille'
+              : 'position dans votre portefeuille'}
+          </p>
+        </div>
+      )}
     </GlassCard>
   )
 }
@@ -153,66 +211,74 @@ export function PortfolioCard({
   return (
     <GlassCard
       padding="sm"
-      className="flex flex-col gap-3"
+      className="flex flex-col gap-4 border border-slate-200 bg-white shadow-sm"
     >
       <div className="flex items-center gap-3">
-        <div className="w-11 h-11 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center text-xs font-bold text-fin-primary">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 text-xs font-bold text-blue-600">
           {initialsFromTitle(title)}
         </div>
 
         <div className="min-w-0">
-          <p className="font-bold text-sm text-slate-900 truncate">
+          <p className="truncate text-sm font-bold text-slate-900">
             {ticker || tickerFromTitle(title)}
           </p>
 
-          <p className="text-[11px] text-fin-mute truncate">
+          <p className="truncate text-[11px] text-slate-500">
             {title}
           </p>
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3 text-sm">
-        <div>
-          <p className="text-[10px] text-fin-mute uppercase tracking-wider">
+        <div className="rounded-xl bg-slate-50 p-3">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
             Parts
           </p>
 
-          <p className="font-semibold text-slate-900">
-            {shares}
+          <p className="mt-1 font-bold text-slate-900">
+            {shares.toLocaleString('fr-FR')}
           </p>
         </div>
 
-        <div>
-          <p className="text-[10px] text-fin-mute uppercase tracking-wider">
+        <div className="rounded-xl bg-slate-50 p-3">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
             Cours
           </p>
 
-          <p className="font-semibold text-slate-900">
+          <p className="mt-1 font-bold text-slate-900">
             {price.toLocaleString('fr-FR')}
           </p>
         </div>
 
-        <div>
-          <p className="text-[10px] text-fin-mute uppercase tracking-wider">
+        <div className="rounded-xl bg-blue-50/60 p-3">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-blue-500">
             Valeur
           </p>
 
-          <p className="font-semibold text-slate-900">
+          <p className="mt-1 font-bold text-slate-900">
             {formatFcfa(value ?? shares * price)}
           </p>
         </div>
 
-        <div>
-          <p className="text-[10px] text-fin-mute uppercase tracking-wider">
-            Var.
+        <div
+          className={cn(
+            'rounded-xl p-3',
+            positive ? 'bg-emerald-50' : 'bg-red-50'
+          )}
+        >
+          <p
+            className={cn(
+              'text-[10px] font-bold uppercase tracking-wider',
+              positive ? 'text-emerald-600' : 'text-red-600'
+            )}
+          >
+            Variation
           </p>
 
           <p
             className={cn(
-              'font-semibold',
-              positive
-                ? 'text-fin-success'
-                : 'text-fin-danger'
+              'mt-1 font-bold',
+              positive ? 'text-emerald-600' : 'text-red-600'
             )}
           >
             {formatPct(changePct)}
