@@ -43,7 +43,13 @@ type Order = {
 function formatStatus(status: string | null) {
   const normalized =
     status?.toLowerCase().trim() ?? ''
+if (normalized === 'approved') {
+  return 'Complété'
+}
 
+if (normalized === 'rejected') {
+  return 'Annulé'
+}
   if (
     normalized === 'pending' ||
     normalized === 'en_attente' ||
@@ -192,7 +198,7 @@ async function updateOrderStatus(formData: FormData) {
     } = await supabase
       .from('transactions')
       .update({
-        status: 'completed',
+        status: 'approved',
         approved_by: user.id,
         approved_at:
           new Date().toISOString(),
@@ -224,7 +230,7 @@ async function updateOrderStatus(formData: FormData) {
     } = await supabase
       .from('transactions')
       .update({
-        status: 'cancelled',
+        status: 'rejected',
         updated_at:
           new Date().toISOString(),
       })
