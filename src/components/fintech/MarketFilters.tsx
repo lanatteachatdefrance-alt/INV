@@ -40,30 +40,41 @@ type SortOption =
   | 'variationAsc'
   | 'variationDesc'
 
+type OrderResult = {
+  error?: string
+  success?: boolean
+}
+
 type MarketFiltersProps = {
   offers: InvestmentOffer[]
   userBalance: number
   isKycValid: boolean
+
+  ownedShares: Record<string, number>
+
   onBuy: (
     offerId: string,
     shares: number
-  ) => Promise<{ error?: string } | void>
+  ) => Promise<OrderResult | void>
+
+  onSell: (
+    offerId: string,
+    shares: number
+  ) => Promise<OrderResult | void>
 }
 
 export default function MarketFilters({
   offers,
   userBalance,
   isKycValid,
+  ownedShares,
   onBuy,
+  onSell,
 }: MarketFiltersProps) {
   const [search, setSearch] = useState('')
 
   const [sort, setSort] =
     useState<SortOption>('az')
-
-  // =========================
-  // NORMALISATION
-  // =========================
 
   const normalizedOffers = useMemo<
     InvestmentCardOffer[]
@@ -130,10 +141,6 @@ export default function MarketFilters({
       )
   }, [offers])
 
-  // =========================
-  // RECHERCHE + TRI
-  // =========================
-
   const filteredOffers = useMemo(() => {
     const query =
       search.trim().toLowerCase()
@@ -172,52 +179,36 @@ export default function MarketFilters({
     result = [...result].sort(
       (a, b) => {
         const nameA =
-          a.title
-            .trim()
-            .toLowerCase()
+          a.title.trim().toLowerCase()
 
         const nameB =
-          b.title
-            .trim()
-            .toLowerCase()
+          b.title.trim().toLowerCase()
 
         const priceA =
-          Number(
-            a.price_per_share
-          )
+          Number(a.price_per_share)
 
         const priceB =
-          Number(
-            b.price_per_share
-          )
+          Number(b.price_per_share)
 
         const variationA =
-          Number(
-            a.roi_percentage ?? 0
-          )
+          Number(a.roi_percentage ?? 0)
 
         const variationB =
-          Number(
-            b.roi_percentage ?? 0
-          )
+          Number(b.roi_percentage ?? 0)
 
         switch (sort) {
           case 'az':
             return nameA.localeCompare(
               nameB,
               'fr',
-              {
-                sensitivity: 'base',
-              }
+              { sensitivity: 'base' }
             )
 
           case 'za':
             return nameB.localeCompare(
               nameA,
               'fr',
-              {
-                sensitivity: 'base',
-              }
+              { sensitivity: 'base' }
             )
 
           case 'priceAsc':
@@ -227,24 +218,16 @@ export default function MarketFilters({
             return priceB - priceA
 
           case 'variationAsc':
-            return (
-              variationA -
-              variationB
-            )
+            return variationA - variationB
 
           case 'variationDesc':
-            return (
-              variationB -
-              variationA
-            )
+            return variationB - variationA
 
           default:
             return nameA.localeCompare(
               nameB,
               'fr',
-              {
-                sensitivity: 'base',
-              }
+              { sensitivity: 'base' }
             )
         }
       }
@@ -259,10 +242,6 @@ export default function MarketFilters({
 
   return (
     <div className="space-y-5">
-
-      {/* =========================
-          EN-TÊTE
-      ========================== */}
 
       <div className="flex flex-col gap-1">
 
@@ -299,10 +278,6 @@ export default function MarketFilters({
 
       </div>
 
-      {/* =========================
-          RECHERCHE
-      ========================== */}
-
       <div className="relative">
 
         <Search
@@ -314,19 +289,13 @@ export default function MarketFilters({
           type="search"
           value={search}
           onChange={(event) =>
-            setSearch(
-              event.target.value
-            )
+            setSearch(event.target.value)
           }
           placeholder="Rechercher une valeur, une société ou un symbole..."
           className="w-full rounded-2xl border border-slate-200 bg-white py-3.5 pl-11 pr-4 text-sm text-slate-900 outline-none shadow-sm transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
         />
 
       </div>
-
-      {/* =========================
-          TRI
-      ========================== */}
 
       <div className="flex items-center justify-end">
 
@@ -377,10 +346,6 @@ export default function MarketFilters({
 
       </div>
 
-      {/* =========================
-          AUCUN RÉSULTAT
-      ========================== */}
-
       {filteredOffers.length === 0 ? (
 
         <div className="rounded-3xl border border-slate-200 bg-white p-10 text-center shadow-sm">
@@ -405,9 +370,7 @@ export default function MarketFilters({
           {search && (
             <button
               type="button"
-              onClick={() =>
-                setSearch('')
-              }
+              onClick={() => setSearch('')}
               className="mt-4 text-sm font-semibold text-blue-600 hover:text-blue-700"
             >
               Réinitialiser la recherche
@@ -418,10 +381,6 @@ export default function MarketFilters({
 
       ) : (
 
-        /* =========================
-           CARTES
-        ========================== */
-
         <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
 
           {filteredOffers.map(
@@ -430,13 +389,13 @@ export default function MarketFilters({
               <InvestmentCard
                 key={offer.id}
                 offer={offer}
-                userBalance={
-                  userBalance
-                }
-                isKycValid={
-                  isKycValid
+                userBalance={userBalance}
+                isKycValid={isKycValid}
+                ownedShares={
+                  ownedShares[offer.id] ?? 0
                 }
                 onBuy={onBuy}
+                onSell={onSell}
               />
 
             )

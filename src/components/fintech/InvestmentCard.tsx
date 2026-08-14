@@ -11,6 +11,7 @@ import {
   ChevronDown,
   ChevronUp,
   ShieldCheck,
+  Wallet,
 } from 'lucide-react'
 
 import { GlassCard } from '@/components/ui/GlassCard'
@@ -37,40 +38,51 @@ type InvestmentOffer = {
   company_name?: string | null
 }
 
+type OrderResult = {
+  error?: string
+  success?: boolean
+}
+
 type InvestmentCardProps = {
   offer: InvestmentOffer
   userBalance: number
   isKycValid: boolean
 
-  /*
-   * L'achat transmet maintenant :
-   * - l'identifiant de l'offre
-   * - le nombre de titres
-   *
-   * L'ordre sera ensuite créé côté serveur
-   * avec le statut "pending".
-   */
+  ownedShares: number
+
   onBuy: (
     offerId: string,
     shares: number
-  ) => Promise<{ error?: string } | void>
+  ) => Promise<OrderResult | void>
+
+  onSell: (
+    offerId: string,
+    shares: number
+  ) => Promise<OrderResult | void>
 }
 
 export function InvestmentCard({
   offer,
   userBalance,
   isKycValid,
+  ownedShares,
   onBuy,
+  onSell,
 }: InvestmentCardProps) {
   const [shares, setShares] = useState(1)
-  const [pending, setPending] = useState(false)
-  const [success, setSuccess] = useState(false)
-  const [error, setError] = useState('')
-  const [showDetails, setShowDetails] = useState(false)
+  const [sellShares, setSellShares] = useState(1)
 
-  // =========================
-  // DONNÉES
-  // =========================
+  const [pending, setPending] = useState(false)
+  const [sellPending, setSellPending] = useState(false)
+
+  const [success, setSuccess] = useState(false)
+  const [sellSuccess, setSellSuccess] = useState(false)
+
+  const [error, setError] = useState('')
+  const [sellError, setSellError] = useState('')
+
+  const [showDetails, setShowDetails] =
+    useState(false)
 
   const price = Number(
     offer.price_per_share ?? 0
@@ -100,12 +112,11 @@ export function InvestmentCard({
     productType.toLowerCase() ===
     'obligation'
 
-  // =========================
-  // CALCULS
-  // =========================
+  // =====================================================
+  // ACHAT
+  // =====================================================
 
-  const total =
-    shares * price
+  const total = shares * price
 
   const canAfford =
     userBalance >= total
@@ -114,16 +125,25 @@ export function InvestmentCard({
     minimumInvestment <= 0 ||
     total >= minimumInvestment
 
-  // =========================
-  // ACHAT
-  // =========================
+  // =====================================================
+  // VENTE
+  // =====================================================
+
+  const sellTotal =
+    sellShares * price
+
+  const canSell =
+    ownedShares > 0 &&
+    sellShares >= 1 &&
+    sellShares <= ownedShares &&
+    price > 0
+
+  // =====================================================
+  // ACHETER
+  // =====================================================
 
   const submit = async () => {
     setError('')
-
-    // =========================
-    // KYC
-    // =========================
 
     if (!isKycValid) {
       setError(
@@ -132,20 +152,12 @@ export function InvestmentCard({
       return
     }
 
-    // =========================
-    // COURS
-    // =========================
-
     if (price <= 0) {
       setError(
         'Le cours de cette valeur est actuellement indisponible.'
       )
       return
     }
-
-    // =========================
-    // MINIMUM
-    // =========================
 
     if (!meetsMinimum) {
       setError(
@@ -156,42 +168,19 @@ export function InvestmentCard({
       return
     }
 
-    // =========================
-    // SOLDE
-    // =========================
-
     if (!canAfford) {
-      setError(
-        'Fonds insuffisants.'
-      )
+      setError('Fonds insuffisants.')
       return
     }
-
-    // =========================
-    // TRAITEMENT
-    // =========================
 
     setPending(true)
 
     try {
-      /*
-       * On transmet maintenant l'ID
-       * de la valeur ainsi que la quantité.
-       *
-       * L'ID permettra au serveur de
-       * récupérer le cours directement
-       * depuis Supabase.
-       */
-
       const result =
         await onBuy(
           offer.id,
           shares
         )
-
-      // =========================
-      // ERREUR SERVEUR
-      // =========================
 
       if (
         result &&
@@ -202,19 +191,7 @@ export function InvestmentCard({
         return
       }
 
-      // =========================
-      // SUCCÈS
-      // =========================
-
       setSuccess(true)
-
-      /*
-       * L'ordre n'est pas encore
-       * considéré comme exécuté.
-       *
-       * Il est envoyé à
-       * l'administrateur pour validation.
-       */
 
       setTimeout(() => {
         setSuccess(false)
@@ -230,23 +207,98 @@ export function InvestmentCard({
     }
   }
 
+  // =====================================================
+  // VENDRE
+  // =====================================================
+
+  const submitSell = async () => {
+    setSellError('')
+
+    if (!isKycValid) {
+      setSellError(
+        'KYC requis avant toute opération.'
+      )
+      return
+    }
+
+    if (ownedShares <= 0) {
+      setSellError(
+        'Vous ne possédez aucune action de cette valeur.'
+      )
+      return
+    }
+
+    if (
+      !Number.isInteger(sellShares) ||
+      sellShares < 1
+    ) {
+      setSellError(
+        'Le nombre d’actions à vendre est invalide.'
+      )
+      return
+    }
+
+    if (sellShares > ownedShares) {
+      setSellError(
+        `Vous ne pouvez vendre que ${ownedShares.toLocaleString(
+          'fr-FR'
+        )} action(s).`
+      )
+      return
+    }
+
+    if (price <= 0) {
+      setSellError(
+        'Le cours actuel est indisponible.'
+      )
+      return
+    }
+
+    setSellPending(true)
+
+    try {
+      const result =
+        await onSell(
+          offer.id,
+          sellShares
+        )
+
+      if (
+        result &&
+        'error' in result &&
+        result.error
+      ) {
+        setSellError(result.error)
+        return
+      }
+
+      setSellSuccess(true)
+
+      setTimeout(() => {
+        setSellSuccess(false)
+        setSellShares(1)
+      }, 3000)
+
+    } catch {
+      setSellError(
+        'Une erreur est survenue lors de la création de la vente.'
+      )
+    } finally {
+      setSellPending(false)
+    }
+  }
+
   return (
     <GlassCard
       className="relative overflow-hidden flex flex-col gap-4"
       hover={false}
     >
 
-      {/* =========================
-          DÉCORATION
-      ========================== */}
-
       <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-blue-500/10 blur-2xl pointer-events-none" />
 
       <div className="absolute -bottom-10 -left-10 w-24 h-24 rounded-full bg-orange-500/5 blur-2xl pointer-events-none" />
 
-      {/* =========================
-          EN-TÊTE
-      ========================== */}
+      {/* EN-TÊTE */}
 
       <div className="flex items-start justify-between gap-3 relative">
 
@@ -272,8 +324,6 @@ export function InvestmentCard({
 
         </div>
 
-        {/* Rendement */}
-
         <div className="text-right shrink-0">
 
           <p
@@ -284,7 +334,6 @@ export function InvestmentCard({
                 : 'text-fin-danger'
             )}
           >
-
             {roi >= 0 ? (
               <TrendingUp size={14} />
             ) : (
@@ -300,7 +349,6 @@ export function InvestmentCard({
             )}
 
             %
-
           </p>
 
           <p className="text-[10px] text-fin-mute uppercase tracking-wider">
@@ -311,9 +359,7 @@ export function InvestmentCard({
 
       </div>
 
-      {/* =========================
-          COURS + TOTAL
-      ========================== */}
+      {/* COURS + TOTAL */}
 
       <div className="grid grid-cols-2 gap-3 text-sm">
 
@@ -347,9 +393,47 @@ export function InvestmentCard({
 
       </div>
 
-      {/* =========================
-          BOUTON DÉTAILS
-      ========================== */}
+      {/* POSSESSION */}
+
+      {ownedShares > 0 && (
+
+        <div className="rounded-2xl border border-blue-100 bg-blue-50 p-3">
+
+          <div className="flex items-center justify-between gap-3">
+
+            <div className="flex items-center gap-2">
+
+              <Wallet
+                size={16}
+                className="text-blue-600"
+              />
+
+              <span className="text-xs font-semibold text-blue-700">
+                Vos actions
+              </span>
+
+            </div>
+
+            <span className="font-bold text-blue-900">
+              {ownedShares.toLocaleString(
+                'fr-FR'
+              )}
+            </span>
+
+          </div>
+
+          <p className="mt-1 text-[11px] text-blue-600">
+            Valeur actuelle :{' '}
+            {formatFcfa(
+              ownedShares * price
+            )}
+          </p>
+
+        </div>
+
+      )}
+
+      {/* DÉTAILS */}
 
       <button
         type="button"
@@ -360,7 +444,6 @@ export function InvestmentCard({
         }
         className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
       >
-
         {showDetails ? (
           <>
             Masquer les détails
@@ -372,12 +455,7 @@ export function InvestmentCard({
             <ChevronDown size={16} />
           </>
         )}
-
       </button>
-
-      {/* =========================
-          FICHE DÉTAILLÉE
-      ========================== */}
 
       {showDetails && (
 
@@ -395,12 +473,9 @@ export function InvestmentCard({
 
           </div>
 
-          {/* Informations */}
-
           <div className="grid grid-cols-2 gap-3">
 
             <div className="rounded-xl bg-white border border-slate-200 p-3">
-
               <p className="text-[10px] uppercase tracking-wider text-slate-400">
                 Symbole
               </p>
@@ -408,11 +483,9 @@ export function InvestmentCard({
               <p className="mt-1 font-bold text-slate-900">
                 {symbol}
               </p>
-
             </div>
 
             <div className="rounded-xl bg-white border border-slate-200 p-3">
-
               <p className="text-[10px] uppercase tracking-wider text-slate-400">
                 Type
               </p>
@@ -420,11 +493,9 @@ export function InvestmentCard({
               <p className="mt-1 font-bold text-slate-900">
                 {productType}
               </p>
-
             </div>
 
             <div className="rounded-xl bg-white border border-slate-200 p-3">
-
               <p className="text-[10px] uppercase tracking-wider text-slate-400">
                 Cours
               </p>
@@ -436,11 +507,9 @@ export function InvestmentCard({
                     )} FCFA`
                   : 'Indisponible'}
               </p>
-
             </div>
 
             <div className="rounded-xl bg-white border border-slate-200 p-3">
-
               <p className="text-[10px] uppercase tracking-wider text-slate-400">
                 Rendement
               </p>
@@ -461,12 +530,9 @@ export function InvestmentCard({
                 )}
                 %
               </p>
-
             </div>
 
           </div>
-
-          {/* Description */}
 
           {offer.description && (
 
@@ -483,8 +549,6 @@ export function InvestmentCard({
             </div>
 
           )}
-
-          {/* Minimum */}
 
           {minimumInvestment > 0 && (
 
@@ -507,14 +571,14 @@ export function InvestmentCard({
         </div>
       )}
 
-      {/* =========================
-          QUANTITÉ
-      ========================== */}
+      {/* =====================================================
+          ACHAT
+      ===================================================== */}
 
       <div>
 
         <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-          Nombre de titres
+          Nombre de titres à acheter
         </p>
 
         <div className="flex items-center gap-2">
@@ -531,7 +595,7 @@ export function InvestmentCard({
                   )
               )
             }
-            disabled={pending}
+            disabled={pending || sellPending}
             className="!px-3"
           >
             −
@@ -541,7 +605,7 @@ export function InvestmentCard({
             type="number"
             min={1}
             value={shares}
-            disabled={pending}
+            disabled={pending || sellPending}
             onChange={(event) => {
 
               const value =
@@ -573,7 +637,7 @@ export function InvestmentCard({
                   current + 1
               )
             }
-            disabled={pending}
+            disabled={pending || sellPending}
             className="!px-3"
           >
             +
@@ -583,9 +647,7 @@ export function InvestmentCard({
 
       </div>
 
-      {/* =========================
-          INFORMATIONS ACHAT
-      ========================== */}
+      {/* INFORMATIONS ACHAT */}
 
       <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
 
@@ -615,18 +677,213 @@ export function InvestmentCard({
                 : 'text-fin-danger'
             )}
           >
-            {formatFcfa(
-              userBalance
-            )}
+            {formatFcfa(userBalance)}
           </span>
 
         </div>
 
       </div>
 
-      {/* =========================
-          KYC
-      ========================== */}
+      {/* =====================================================
+          VENTE
+      ===================================================== */}
+
+      {ownedShares > 0 && (
+
+        <div className="rounded-2xl border border-orange-200 bg-orange-50 p-4 space-y-3">
+
+          <div className="flex items-center justify-between">
+
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-orange-700">
+                Vente
+              </p>
+
+              <p className="mt-1 text-[11px] text-orange-600">
+                Vos actions seront débitées après validation administrative.
+              </p>
+            </div>
+
+            <span className="text-xs font-bold text-orange-800">
+              {ownedShares} disponible
+              {ownedShares > 1 ? 's' : ''}
+            </span>
+
+          </div>
+
+          <div>
+
+            <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-orange-600">
+              Nombre de titres à vendre
+            </p>
+
+            <div className="flex items-center gap-2">
+
+              <SecondaryButton
+                type="button"
+                size="sm"
+                onClick={() =>
+                  setSellShares(
+                    (current) =>
+                      Math.max(
+                        1,
+                        current - 1
+                      )
+                  )
+                }
+                disabled={
+                  pending ||
+                  sellPending
+                }
+                className="!px-3"
+              >
+                −
+              </SecondaryButton>
+
+              <input
+                type="number"
+                min={1}
+                max={ownedShares}
+                value={sellShares}
+                disabled={
+                  pending ||
+                  sellPending
+                }
+                onChange={(event) => {
+
+                  const value =
+                    parseInt(
+                      event.target.value ||
+                        '1',
+                      10
+                    )
+
+                  setSellShares(
+                    Math.min(
+                      ownedShares,
+                      Math.max(
+                        1,
+                        Number.isNaN(
+                          value
+                        )
+                          ? 1
+                          : value
+                      )
+                    )
+                  )
+
+                }}
+                className="fin-input text-center font-bold !py-2.5"
+              />
+
+              <SecondaryButton
+                type="button"
+                size="sm"
+                onClick={() =>
+                  setSellShares(
+                    (current) =>
+                      Math.min(
+                        ownedShares,
+                        current + 1
+                      )
+                  )
+                }
+                disabled={
+                  pending ||
+                  sellPending
+                }
+                className="!px-3"
+              >
+                +
+              </SecondaryButton>
+
+            </div>
+
+          </div>
+
+          <div className="rounded-xl border border-orange-200 bg-white p-3">
+
+            <div className="flex items-center justify-between">
+
+              <span className="text-xs text-slate-500">
+                Valeur de la vente
+              </span>
+
+              <span className="font-bold text-orange-700">
+                {formatFcfa(sellTotal)}
+              </span>
+
+            </div>
+
+            <p className="mt-1 text-[10px] text-slate-400">
+              Calculée au cours actuel de{' '}
+              {formatFcfa(price)} par action.
+            </p>
+
+          </div>
+
+          {sellError && (
+
+            <p className="text-xs text-fin-danger flex items-center gap-1.5 bg-fin-danger/10 border border-fin-danger/20 rounded-xl px-3 py-2">
+
+              <AlertCircle size={14} />
+
+              {sellError}
+
+            </p>
+
+          )}
+
+          {sellSuccess && (
+
+            <p className="text-xs text-fin-success flex items-center gap-1.5 bg-fin-success/10 border border-fin-success/20 rounded-xl px-3 py-2">
+
+              <CheckCircle size={14} />
+
+              Demande de vente enregistrée — en attente de validation.
+
+            </p>
+
+          )}
+
+          <SecondaryButton
+            type="button"
+            fullWidth
+            disabled={
+              sellPending ||
+              sellSuccess ||
+              !canSell
+            }
+            onClick={submitSell}
+            className="!border-orange-300 !text-orange-700 hover:!bg-orange-100"
+          >
+
+            {sellPending ? (
+
+              <Loader2
+                className="animate-spin"
+                size={16}
+              />
+
+            ) : (
+
+              <TrendingDown
+                size={16}
+              />
+
+            )}
+
+            {sellPending
+              ? 'Traitement…'
+              : 'Vendre'}
+
+          </SecondaryButton>
+
+        </div>
+
+      )}
+
+      {/* KYC */}
 
       {!isKycValid && (
 
@@ -644,8 +901,7 @@ export function InvestmentCard({
             </p>
 
             <p className="mt-0.5 text-[11px] leading-relaxed text-orange-600">
-              Votre compte doit être validé avant
-              de pouvoir investir sur le marché.
+              Votre compte doit être validé avant de pouvoir investir sur le marché.
             </p>
 
           </div>
@@ -653,9 +909,7 @@ export function InvestmentCard({
         </div>
       )}
 
-      {/* =========================
-          ERREUR
-      ========================== */}
+      {/* ERREUR ACHAT */}
 
       {error && (
 
@@ -666,11 +920,10 @@ export function InvestmentCard({
           {error}
 
         </p>
+
       )}
 
-      {/* =========================
-          SUCCÈS
-      ========================== */}
+      {/* SUCCÈS ACHAT */}
 
       {success && (
 
@@ -681,17 +934,17 @@ export function InvestmentCard({
           Ordre enregistré — en attente de validation
 
         </p>
+
       )}
 
-      {/* =========================
-          ACHETER
-      ========================== */}
+      {/* ACHETER */}
 
       <PrimaryButton
         type="button"
         fullWidth
         disabled={
           pending ||
+          sellPending ||
           success ||
           price <= 0
         }
