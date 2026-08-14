@@ -63,10 +63,14 @@ export default function Navbar({
   const supabase = createClient()
 
   const [open, setOpen] = useState(false)
-  const [profile, setProfile] = useState<Profile | null>(null)
-  const [loadingProfile, setLoadingProfile] = useState(false)
+  const [profile, setProfile] =
+    useState<Profile | null>(null)
 
-  const menuRef = useRef<HTMLDivElement>(null)
+  const [loadingProfile, setLoadingProfile] =
+    useState(false)
+
+  const menuRef =
+    useRef<HTMLDivElement>(null)
 
   const title =
     titles[pathname] ||
@@ -78,7 +82,12 @@ export default function Navbar({
 
   const showBack =
     pathname.startsWith('/dashboard/') ||
-    (pathname.startsWith('/admin/') && pathname !== '/admin')
+    (pathname.startsWith('/admin/') &&
+      pathname !== '/admin')
+
+  // =====================================================
+  // CHARGEMENT DU PROFIL
+  // =====================================================
 
   useEffect(() => {
     if (!userEmail) {
@@ -96,9 +105,14 @@ export default function Navbar({
           data: { user },
         } = await supabase.auth.getUser()
 
-        if (!user || !active) return
+        if (!user || !active) {
+          return
+        }
 
-        const { data, error } = await supabase
+        const {
+          data,
+          error,
+        } = await supabase
           .from('users')
           .select(
             'first_name, last_name, balance, kyc_status'
@@ -136,6 +150,10 @@ export default function Navbar({
     }
   }, [userEmail, supabase])
 
+  // =====================================================
+  // FERMETURE DU MENU EN CLIQUANT À L'EXTÉRIEUR
+  // =====================================================
+
   useEffect(() => {
     const handleClickOutside = (
       event: MouseEvent
@@ -165,14 +183,57 @@ export default function Navbar({
     }
   }, [open])
 
+  // =====================================================
+  // DÉCONNEXION
+  // =====================================================
+
   const logout = async () => {
     setOpen(false)
 
-    await supabase.auth.signOut()
+    try {
+      const { error } =
+        await supabase.auth.signOut({
+          scope: 'local',
+        })
 
-    router.push('/login')
-    router.refresh()
+      if (error) {
+        console.error(
+          'Erreur déconnexion Supabase:',
+          error.message
+        )
+
+        return
+      }
+
+      // Vérifie que la session locale
+      // a bien été supprimée.
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+
+      if (session) {
+        console.error(
+          'La session Supabase est toujours présente après la déconnexion.'
+        )
+
+        return
+      }
+
+      // Recharge complètement l'application.
+      // Le middleware et le layout serveur
+      // verront alors user = null.
+      window.location.replace('/login')
+    } catch (error) {
+      console.error(
+        'Erreur lors de la déconnexion:',
+        error
+      )
+    }
   }
+
+  // =====================================================
+  // INFORMATIONS PROFIL
+  // =====================================================
 
   const firstName =
     profile?.first_name?.trim() || ''
@@ -195,7 +256,9 @@ export default function Navbar({
     Number(profile?.balance ?? 0)
 
   const normalizedKyc =
-    profile?.kyc_status?.toLowerCase().trim()
+    profile?.kyc_status
+      ?.toLowerCase()
+      .trim()
 
   const isKycValid =
     normalizedKyc === 'valid' ||
@@ -210,10 +273,16 @@ export default function Navbar({
     <header
       className="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur-xl"
       style={{
-        paddingTop: 'env(safe-area-inset-top)',
+        paddingTop:
+          'env(safe-area-inset-top)',
       }}
     >
+      {/* =====================================================
+          MOBILE
+      ===================================================== */}
+
       <div className="lg:hidden flex h-14 items-center justify-between gap-2 px-4">
+
         {showBack ? (
           <button
             type="button"
@@ -225,7 +294,11 @@ export default function Navbar({
           </button>
         ) : (
           <Link
-            href={userEmail ? '/dashboard' : '/'}
+            href={
+              userEmail
+                ? '/dashboard'
+                : '/'
+            }
             className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary-gradient text-xs font-black text-white shadow-glow"
           >
             IB
@@ -233,6 +306,7 @@ export default function Navbar({
         )}
 
         <div className="min-w-0 flex-1 text-center">
+
           <p className="truncate text-sm font-bold text-slate-900">
             {title}
           </p>
@@ -242,6 +316,7 @@ export default function Navbar({
               {fullName}
             </p>
           )}
+
         </div>
 
         {userEmail ? (
@@ -249,17 +324,27 @@ export default function Navbar({
             className="relative"
             ref={menuRef}
           >
+
             <button
               type="button"
-              onClick={() => setOpen((value) => !value)}
+              onClick={() =>
+                setOpen(
+                  (value) => !value
+                )
+              }
               className={cn(
                 'flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-900 text-xs font-bold text-white shadow-sm',
-                open && 'ring-2 ring-blue-100'
+                open &&
+                  'ring-2 ring-blue-100'
               )}
               aria-label="Mon profil"
               aria-expanded={open}
             >
-              {open ? <X size={18} /> : initials}
+              {open ? (
+                <X size={18} />
+              ) : (
+                initials
+              )}
             </button>
 
             {open && (
@@ -274,21 +359,37 @@ export default function Navbar({
                 onLogout={logout}
               />
             )}
+
           </div>
         ) : (
           <button
             type="button"
-            onClick={() => setOpen((value) => !value)}
+            onClick={() =>
+              setOpen(
+                (value) => !value
+              )
+            }
             className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm"
             aria-label="Menu"
           >
-            {open ? <X size={18} /> : <Menu size={18} />}
+            {open ? (
+              <X size={18} />
+            ) : (
+              <Menu size={18} />
+            )}
           </button>
         )}
+
       </div>
 
+      {/* =====================================================
+          DESKTOP
+      ===================================================== */}
+
       <div className="hidden h-16 items-center justify-between px-6 lg:flex">
+
         <div>
+
           <p className="text-sm font-bold text-slate-900">
             {title}
           </p>
@@ -296,11 +397,14 @@ export default function Navbar({
           <p className="text-[11px] text-fin-mute">
             Marches regionaux - Temps reel
           </p>
+
         </div>
 
         <div className="flex items-center gap-3">
+
           {userEmail ? (
             <>
+
               <button
                 type="button"
                 className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:text-slate-900"
@@ -313,9 +417,14 @@ export default function Navbar({
                 className="relative"
                 ref={menuRef}
               >
+
                 <button
                   type="button"
-                  onClick={() => setOpen((value) => !value)}
+                  onClick={() =>
+                    setOpen(
+                      (value) => !value
+                    )
+                  }
                   className={cn(
                     'flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-2 shadow-sm transition',
                     'hover:border-blue-200 hover:bg-blue-50/30'
@@ -323,11 +432,13 @@ export default function Navbar({
                   aria-label="Mon profil"
                   aria-expanded={open}
                 >
+
                   <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900 text-xs font-bold text-white">
                     {initials}
                   </div>
 
                   <div className="max-w-[150px] text-left">
+
                     <p className="truncate text-xs font-bold text-slate-900">
                       {fullName}
                     </p>
@@ -335,15 +446,18 @@ export default function Navbar({
                     <p className="truncate text-[10px] text-slate-400">
                       Mon profil
                     </p>
+
                   </div>
 
                   <ChevronDown
                     size={15}
                     className={cn(
                       'text-slate-400 transition-transform',
-                      open && 'rotate-180'
+                      open &&
+                        'rotate-180'
                     )}
                   />
+
                 </button>
 
                 {open && (
@@ -358,10 +472,13 @@ export default function Navbar({
                     onLogout={logout}
                   />
                 )}
+
               </div>
+
             </>
           ) : (
             <>
+
               <Link
                 href="/login"
                 className="text-sm font-semibold text-slate-600 hover:text-slate-900"
@@ -374,16 +491,26 @@ export default function Navbar({
                   Creer un compte
                 </PrimaryButton>
               </Link>
+
             </>
           )}
+
         </div>
+
       </div>
+
+      {/* =====================================================
+          MENU MOBILE NON CONNECTÉ
+      ===================================================== */}
 
       {open && !userEmail && (
         <div className="space-y-2 border-t border-slate-200 bg-white p-4 lg:hidden">
+
           <Link
             href="/login"
-            onClick={() => setOpen(false)}
+            onClick={() =>
+              setOpen(false)
+            }
             className="block rounded-2xl bg-slate-100 p-4 text-center text-sm font-semibold text-slate-900"
           >
             Se connecter
@@ -391,16 +518,24 @@ export default function Navbar({
 
           <Link
             href="/register"
-            onClick={() => setOpen(false)}
+            onClick={() =>
+              setOpen(false)
+            }
             className="block rounded-2xl bg-primary-gradient p-4 text-center text-sm font-semibold text-white"
           >
             Creer un compte
           </Link>
+
         </div>
       )}
+
     </header>
   )
 }
+
+// =========================================================
+// MENU PROFIL
+// =========================================================
 
 function ProfileMenu({
   fullName,
@@ -414,13 +549,19 @@ function ProfileMenu({
 }: ProfileMenuProps) {
   return (
     <div className="absolute right-0 top-[calc(100%+10px)] z-[100] w-[310px] max-w-[calc(100vw-24px)] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/10">
+
+      {/* HEADER PROFIL */}
+
       <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-blue-900 p-5 text-white">
+
         <div className="flex items-center gap-3">
+
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/20 bg-white/15 text-sm font-black">
             {initials}
           </div>
 
           <div className="min-w-0">
+
             <p className="truncate text-base font-bold">
               {fullName}
             </p>
@@ -428,25 +569,37 @@ function ProfileMenu({
             <p className="truncate text-xs text-white/60">
               {email}
             </p>
+
           </div>
+
         </div>
 
         <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1.5">
+
           <User size={12} />
 
           <span className="text-[10px] font-semibold uppercase tracking-wider">
             Profil client
           </span>
+
         </div>
+
       </div>
 
+      {/* INFORMATIONS */}
+
       <div className="space-y-2 p-4">
+
+        {/* EMAIL */}
+
         <div className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-3">
+
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
             <Mail size={16} />
           </div>
 
           <div className="min-w-0">
+
             <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
               Adresse e-mail
             </p>
@@ -454,15 +607,21 @@ function ProfileMenu({
             <p className="mt-0.5 truncate text-xs font-semibold text-slate-700">
               {email}
             </p>
+
           </div>
+
         </div>
 
+        {/* SOLDE */}
+
         <div className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-3">
+
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-50 text-orange-600">
             <Wallet size={16} />
           </div>
 
           <div>
+
             <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
               Solde disponible
             </p>
@@ -474,10 +633,15 @@ function ProfileMenu({
                 {formatFcfa(balance)}
               </p>
             )}
+
           </div>
+
         </div>
 
+        {/* KYC */}
+
         <div className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-3">
+
           <div
             className={cn(
               'flex h-9 w-9 items-center justify-center rounded-xl',
@@ -490,6 +654,7 @@ function ProfileMenu({
           </div>
 
           <div>
+
             <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
               Verification
             </p>
@@ -504,12 +669,19 @@ function ProfileMenu({
             >
               {kycLabel}
             </p>
+
           </div>
+
         </div>
+
       </div>
 
+      {/* INFORMATION */}
+
       <div className="mx-4 mb-3 rounded-2xl border border-blue-100 bg-blue-50/70 px-3 py-2.5">
+
         <div className="flex items-start gap-2">
+
           <CircleUserRound
             size={15}
             className="mt-0.5 shrink-0 text-blue-600"
@@ -520,22 +692,38 @@ function ProfileMenu({
             Pour toute modification, veuillez contacter le
             service client.
           </p>
+
         </div>
+
       </div>
 
+      {/* =====================================================
+          DÉCONNEXION
+      ===================================================== */}
+
       <div className="border-t border-slate-100 p-3">
+
         <button
           type="button"
           onClick={onLogout}
           className="flex w-full items-center justify-center gap-2 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold text-red-600 transition hover:bg-red-100 hover:text-red-700"
         >
+
           <LogOut size={16} />
+
           Deconnexion
+
         </button>
+
       </div>
+
     </div>
   )
 }
+
+// =========================================================
+// BOUTON NOTIFICATION
+// =========================================================
 
 export function NotificationButton() {
   return (
@@ -549,6 +737,10 @@ export function NotificationButton() {
   )
 }
 
+// =========================================================
+// USER DROPDOWN
+// =========================================================
+
 export function UserDropdown({
   email,
 }: {
@@ -556,6 +748,7 @@ export function UserDropdown({
 }) {
   return (
     <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-100 px-3 py-2">
+
       <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-900 text-[10px] font-bold text-white">
         {email.charAt(0).toUpperCase()}
       </div>
@@ -563,6 +756,7 @@ export function UserDropdown({
       <span className="max-w-[160px] truncate text-xs font-semibold text-slate-700">
         {email}
       </span>
+
     </div>
   )
 }
