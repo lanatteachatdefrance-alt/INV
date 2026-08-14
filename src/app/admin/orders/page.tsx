@@ -43,13 +43,15 @@ type Order = {
 function formatStatus(status: string | null) {
   const normalized =
     status?.toLowerCase().trim() ?? ''
-if (normalized === 'approved') {
-  return 'Complété'
-}
 
-if (normalized === 'rejected') {
-  return 'Annulé'
-}
+  if (normalized === 'approved') {
+    return 'Complété'
+  }
+
+  if (normalized === 'rejected') {
+    return 'Annulé'
+  }
+
   if (
     normalized === 'pending' ||
     normalized === 'en_attente' ||
@@ -143,11 +145,8 @@ async function updateOrderStatus(formData: FormData) {
 
   /*
    * =====================================================
-   * VÉRIFICATION DE L'ORDRE
+   * RÉCUPÉRATION DE L'ORDRE
    * =====================================================
-   *
-   * On ne peut modifier qu'un ordre
-   * qui est encore en attente.
    */
 
   const {
@@ -156,7 +155,16 @@ async function updateOrderStatus(formData: FormData) {
   } = await supabase
     .from('transactions')
     .select(
-      'id, status, type'
+      `
+        id,
+        user_id,
+        status,
+        type,
+        amount,
+        offer_id,
+        quantity,
+        unit_price
+      `
     )
     .eq('id', orderId)
     .eq(
@@ -171,6 +179,12 @@ async function updateOrderStatus(formData: FormData) {
     )
   }
 
+  /*
+   * =====================================================
+   * VÉRIFICATION DU STATUT
+   * =====================================================
+   */
+
   const currentStatus =
     order.status
       ?.toLowerCase()
@@ -184,38 +198,6 @@ async function updateOrderStatus(formData: FormData) {
     throw new Error(
       'Cet ordre a déjà été traité.'
     )
-  }
-
-  /*
-   * =====================================================
-   * VALIDATION
-   * =====================================================
-   */
-
-  if (action === 'approve') {
-    const {
-      error,
-    } = await supabase
-      .from('transactions')
-      .update({
-        status: 'approved',
-        approved_by: user.id,
-        approved_at:
-          new Date().toISOString(),
-        updated_at:
-          new Date().toISOString(),
-      })
-      .eq('id', orderId)
-      .eq(
-        'type',
-        'achat_investissement'
-      )
-
-    if (error) {
-      throw new Error(
-        `Impossible de valider l’ordre : ${error.message}`
-      )
-    }
   }
 
   /*
@@ -245,15 +227,316 @@ async function updateOrderStatus(formData: FormData) {
         `Impossible de refuser l’ordre : ${error.message}`
       )
     }
+
+    revalidatePath('/admin/orders')
+    revalidatePath('/dashboard/orders')
+
+    return
   }
 
   /*
    * =====================================================
-   * RAFRAÎCHISSEMENT DE LA PAGE ADMIN
+   * VALIDATION
+   * =====================================================
+   */
+
+  if (action === 'approve') {
+
+    /*
+     * ---------------------------------------------------
+     * OFFRE ASSOCIÉE
+     * ---------------------------------------------------
+     */
+
+    if (!order.offer_id) {
+      throw new Error(
+        'Cette commande ne possède aucune valeur associée.'
+      )
+    }
+
+    /*
+     * ---------------------------------------------------
+     * RÉCUPÉRATION DE L'OFFRE
+     * ---------------------------------------------------
+     */
+
+    const {
+      data: offer,
+      error: offerError,
+    } = await supabase
+      .from('investment_offers')
+      .select(
+        `
+          id,
+          title,
+          price_per_share,
+          is_active
+        `
+      )
+      .eq(
+        'id',
+        order.offer_id
+      )
+      .single()
+
+    if (
+      offerError ||
+      !offer
+    ) {
+      throw new Error(
+        'La valeur associée à cet ordre est introuvable.'
+      )
+    }
+
+    if (!offer.is_active) {
+      throw new Error(
+        'Cette valeur n’est plus active.'
+      )
+    }
+
+    /*
+     * ---------------------------------------------------
+     * QUANTITÉ
+     * ---------------------------------------------------
+     */
+
+    const quantity =
+      Number(
+        order.quantity ?? 0
+      )
+
+    if (
+      !Number.isInteger(quantity) ||
+      quantity < 1
+    ) {
+      throw new Error(
+        'La quantité de titres est invalide.'
+      )
+    }
+
+    /*
+     * ---------------------------------------------------
+     * COURS D'ACHAT
+     * ---------------------------------------------------
+     */
+
+    const purchasePrice =
+      Number(
+        order.unit_price ?? 0
+      )
+
+    if (
+      !Number.isFinite(
+        purchasePrice
+      ) ||
+      purchasePrice <= 0
+    ) {
+      throw new Error(
+        'Le cours d’achat est invalide.'
+      )
+    }
+
+    /*
+     * ---------------------------------------------------
+     * MONTANT
+     * ---------------------------------------------------
+     */
+
+    const amount =
+      Number(
+        order.amount ?? 0
+      )
+
+    if (
+      !Number.isFinite(amount) ||
+      amount <= 0
+    ) {
+      throw new Error(
+        'Le montant de l’ordre est invalide.'
+      )
+    }
+
+    /*
+     * ---------------------------------------------------
+     * VÉRIFICATION DU CALCUL
+     * ---------------------------------------------------
+     */
+
+    const expectedAmount =
+      quantity *
+      purchasePrice
+
+    if (
+      Math.abs(
+        expectedAmount - amount
+      ) > 0.01
+    ) {
+      throw new Error(
+        'Le montant de l’ordre ne correspond pas à la quantité et au cours.'
+      )
+    }
+
+    /*
+     * ---------------------------------------------------
+     * COURS ACTUEL
+     * ---------------------------------------------------
+     */
+
+    const currentPrice =
+      Number(
+        offer.price_per_share ?? 0
+      )
+
+    if (
+      !Number.isFinite(
+        currentPrice
+      ) ||
+      currentPrice <= 0
+    ) {
+      throw new Error(
+        'Le cours actuel de cette valeur est indisponible.'
+      )
+    }
+
+    /*
+     * ---------------------------------------------------
+     * VALEUR ACTUELLE DE LA POSITION
+     * ---------------------------------------------------
+     */
+
+    const currentValue =
+      quantity *
+      currentPrice
+
+    /*
+     * ---------------------------------------------------
+     * PROTECTION CONTRE LE DOUBLE AJOUT
+     * ---------------------------------------------------
+     *
+     * On vérifie qu'une position identique
+     * n'existe pas déjà pour cet utilisateur.
+     *
+     * Cela évite de créer deux fois la même
+     * position si le bouton est envoyé deux fois.
+     */
+
+    const {
+      data: existingInvestment,
+      error: existingError,
+    } = await supabase
+      .from('user_investments')
+      .select('id')
+      .eq(
+        'user_id',
+        order.user_id
+      )
+      .eq(
+        'offer_id',
+        order.offer_id
+      )
+      .eq(
+        'amount_invested',
+        amount
+      )
+      .eq(
+        'shares_bought',
+        quantity
+      )
+      .limit(1)
+      .maybeSingle()
+
+    if (existingError) {
+      throw new Error(
+        `Impossible de vérifier la position existante : ${existingError.message}`
+      )
+    }
+
+    /*
+     * ---------------------------------------------------
+     * CRÉATION DE LA POSITION
+     * ---------------------------------------------------
+     */
+
+    if (!existingInvestment) {
+      const {
+        error: investmentError,
+      } = await supabase
+        .from('user_investments')
+        .insert({
+          user_id:
+            order.user_id,
+
+          offer_id:
+            order.offer_id,
+
+          amount_invested:
+            amount,
+
+          shares_bought:
+            quantity,
+
+          purchase_price:
+            purchasePrice,
+
+          current_value:
+            currentValue,
+
+          status:
+            'actif',
+        })
+
+      if (investmentError) {
+        throw new Error(
+          `Impossible de créer la position : ${investmentError.message}`
+        )
+      }
+    }
+
+    /*
+     * ---------------------------------------------------
+     * PASSAGE DE L'ORDRE À COMPLÉTÉ
+     * ---------------------------------------------------
+     */
+
+    const {
+      error: updateError,
+    } = await supabase
+      .from('transactions')
+      .update({
+        status: 'approved',
+
+        approved_by:
+          user.id,
+
+        approved_at:
+          new Date().toISOString(),
+
+        updated_at:
+          new Date().toISOString(),
+      })
+      .eq('id', orderId)
+      .eq(
+        'type',
+        'achat_investissement'
+      )
+
+    if (updateError) {
+      throw new Error(
+        `La position a été créée mais l’ordre n’a pas pu être validé : ${updateError.message}`
+      )
+    }
+  }
+
+  /*
+   * =====================================================
+   * RAFRAÎCHISSEMENT DES PAGES
    * =====================================================
    */
 
   revalidatePath('/admin/orders')
+  revalidatePath('/dashboard/orders')
+  revalidatePath('/dashboard/investments')
+  revalidatePath('/dashboard/portfolio')
 }
 
 /*
@@ -283,7 +566,7 @@ export default async function AdminOrdersPage() {
    * =====================================================
    * VÉRIFICATION ADMIN
    * =====================================================
-   */
+ */
 
   const isAdmin =
     await ensureAdminAccess(
