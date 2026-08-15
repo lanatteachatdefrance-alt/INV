@@ -14,25 +14,13 @@ export default function Login({
     <div className="min-h-[100dvh] bg-white flex items-center justify-center px-5 py-8">
       <div className="w-full max-w-md">
 
-        {/* LOGO */}
+        {/* LOGO INVICTUS CAPITAL & FINANCE */}
         <div className="flex justify-center mb-8">
-          <div className="w-52 h-52 rounded-[38px] bg-[#07579c] flex items-center justify-center shadow-lg overflow-hidden">
-            <div className="text-center">
-              <div className="text-white text-3xl font-bold italic">
-                My
-              </div>
-
-              <div className="bg-[#ed1c24] px-5 py-1 mt-1">
-                <span className="text-white text-2xl font-black tracking-wide">
-                  CORIS
-                </span>
-              </div>
-
-              <div className="text-white text-4xl font-black tracking-tight mt-2">
-                BOURSE
-              </div>
-            </div>
-          </div>
+          <img
+            src="/ICONE.jpeg"
+            alt="Invictus Capital & Finance"
+            className="w-52 h-52 object-contain"
+          />
         </div>
 
         {/* FORMULAIRE */}
@@ -60,6 +48,7 @@ export default function Login({
                 name="email"
                 type="email"
                 required
+                autoComplete="username"
                 className="fin-input !rounded-2xl !py-5 !px-6 !text-lg"
                 placeholder="Identifiant"
               />
@@ -75,6 +64,7 @@ export default function Login({
                 name="password"
                 type="password"
                 required
+                autoComplete="current-password"
                 className="fin-input !rounded-2xl !py-5 !px-6 !text-lg"
                 placeholder="Mot de passe"
               />
