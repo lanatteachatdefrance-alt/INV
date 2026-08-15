@@ -1,52 +1,52 @@
-@tailwind base;
+﻿@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /* =========================================================
    IOGF — DESIGN GLOBAL
-   Bleu institutionnel + Orange
+   Bleu nuit + Or premium
    ========================================================= */
 
 :root {
   /* Fonds */
-  --fin-bg: #f6f8fc;
+  --fin-bg: #f7f7f6;
   --fin-surface: #ffffff;
   --fin-card: #ffffff;
-  --fin-hover: #eef5ff;
+  --fin-hover: #f3f1eb;
 
-  /* Bleu principal */
-  --fin-primary: #1455d9;
-  --fin-primary-dark: #0b3d91;
-  --fin-primary-light: #e8f0ff;
+  /* Bleu nuit / Anthracite — Logo */
+  --fin-primary: #252d3a;
+  --fin-primary-dark: #151b24;
+  --fin-primary-light: #eef0f3;
 
-  /* Orange accent */
-  --fin-accent: #ff7a00;
-  --fin-accent-dark: #e56500;
-  --fin-accent-light: #fff1e6;
+  /* Or — Accent premium */
+  --fin-accent: #c99a2e;
+  --fin-accent-dark: #a97d18;
+  --fin-accent-light: #faf4e4;
 
   /* Performances */
-  --fin-success: #159a6a;
-  --fin-success-light: #e9f8f1;
+  --fin-success: #16805b;
+  --fin-success-light: #e8f5ef;
 
-  --fin-danger: #dc4c4c;
-  --fin-danger-light: #fceeee;
+  --fin-danger: #c94a4a;
+  --fin-danger-light: #fbeeee;
 
-  --fin-warning: #d97706;
-  --fin-warning-light: #fff7e6;
+  --fin-warning: #b7791f;
+  --fin-warning-light: #fbf4e5;
 
   /* Textes */
-  --fin-text: #0f172a;
-  --fin-text-secondary: #334155;
-  --fin-mute: #64748b;
-  --fin-placeholder: #94a3b8;
+  --fin-text: #171c24;
+  --fin-text-secondary: #3f4650;
+  --fin-mute: #69717c;
+  --fin-placeholder: #9aa1aa;
 
   /* Bordures */
-  --fin-border: #e2e8f0;
-  --fin-border-strong: #cbd5e1;
+  --fin-border: #e3e3e0;
+  --fin-border-strong: #cfd0cc;
 
   /* Ombres */
-  --fin-shadow: 0 4px 20px rgba(15, 23, 42, 0.06);
-  --fin-shadow-hover: 0 10px 30px rgba(15, 23, 42, 0.10);
+  --fin-shadow: 0 4px 20px rgba(25, 30, 38, 0.06);
+  --fin-shadow-hover: 0 10px 30px rgba(25, 30, 38, 0.12);
 }
 
 /* =========================================================
@@ -84,7 +84,7 @@ body {
    ========================================================= */
 
 ::selection {
-  background: rgba(20, 85, 217, 0.18);
+  background: rgba(201, 154, 46, 0.20);
   color: var(--fin-text);
 }
 
@@ -107,7 +107,7 @@ body {
 }
 
 .glass-card:hover {
-  border-color: rgba(20, 85, 217, 0.20);
+  border-color: rgba(201, 154, 46, 0.35);
   box-shadow: var(--fin-shadow-hover);
   transform: translateY(-1px);
 }
@@ -142,18 +142,18 @@ body {
 }
 
 .fin-input:hover {
-  border-color: #94a3b8;
+  border-color: #9da0a5;
 }
 
 .fin-input:focus {
-  border-color: var(--fin-primary);
+  border-color: var(--fin-accent);
 
   box-shadow:
-    0 0 0 3px rgba(20, 85, 217, 0.14);
+    0 0 0 3px rgba(201, 154, 46, 0.16);
 }
 
 /* =========================================================
-   BOUTON BLEU
+   BOUTON PRINCIPAL
    ========================================================= */
 
 .fin-button-primary {
@@ -185,7 +185,7 @@ body {
   background: var(--fin-primary-dark);
 
   box-shadow:
-    0 6px 18px rgba(20, 85, 217, 0.22);
+    0 6px 18px rgba(37, 45, 58, 0.22);
 
   transform: translateY(-1px);
 }
@@ -195,7 +195,7 @@ body {
 }
 
 /* =========================================================
-   BOUTON ORANGE
+   BOUTON OR
    ========================================================= */
 
 .fin-button-accent {
@@ -227,7 +227,7 @@ body {
   background: var(--fin-accent-dark);
 
   box-shadow:
-    0 6px 18px rgba(255, 122, 0, 0.22);
+    0 6px 18px rgba(201, 154, 46, 0.25);
 
   transform: translateY(-1px);
 }
@@ -359,7 +359,7 @@ body {
 }
 
 .fin-value-card:hover {
-  border-color: rgba(20, 85, 217, 0.20);
+  border-color: rgba(201, 154, 46, 0.35);
 
   box-shadow: var(--fin-shadow-hover);
 
@@ -367,7 +367,7 @@ body {
 }
 
 .fin-stock-symbol {
-  color: var(--fin-primary);
+  color: var(--fin-accent);
 
   font-weight: 700;
 
@@ -434,7 +434,7 @@ body {
 
 .recharts-cartesian-grid-horizontal line,
 .recharts-cartesian-grid-vertical line {
-  stroke: rgba(15, 23, 42, 0.06);
+  stroke: rgba(37, 45, 58, 0.07);
 }
 
 .recharts-text {
@@ -450,7 +450,7 @@ a:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline: 3px solid rgba(20, 85, 217, 0.25);
+  outline: 3px solid rgba(201, 154, 46, 0.28);
   outline-offset: 2px;
 }
 
