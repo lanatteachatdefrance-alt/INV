@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
+import { logout as serverLogout } from '@/app/(auth)/login/actions'
 import { createClient } from '@/utils/supabase/client'
 import { PrimaryButton } from '@/components/ui/Buttons'
 import { cn, formatFcfa } from '@/lib/utils'
@@ -24,9 +25,9 @@ import { cn, formatFcfa } from '@/lib/utils'
 const titles: Record<string, string> = {
   '/': 'Investir Bourse',
   '/dashboard': 'Accueil',
-  '/dashboard/investments': 'Marché',
+  '/dashboard/investments': 'Marche',
   '/dashboard/orders': 'Ordres',
-  '/dashboard/kyc': 'Conformité',
+  '/dashboard/kyc': 'Conformite',
   '/login': 'Connexion',
   '/register': 'Inscription',
   '/admin': 'Administration',
@@ -60,7 +61,6 @@ export default function Navbar({
 }) {
   const pathname = usePathname() || '/'
   const router = useRouter()
-
   const supabase = createClient()
 
   const [open, setOpen] = useState(false)
@@ -73,21 +73,13 @@ export default function Navbar({
   const menuRef =
     useRef<HTMLDivElement>(null)
 
-  // =====================================================
-  // TITRE DE LA PAGE
-  // =====================================================
-
   const title =
     titles[pathname] ||
     (pathname.startsWith('/admin')
-      ? 'Administration'
+      ? 'Admin'
       : pathname.startsWith('/dashboard')
         ? 'Espace client'
         : 'Investir Bourse')
-
-  // =====================================================
-  // BOUTON RETOUR
-  // =====================================================
 
   const showBack =
     pathname.startsWith('/dashboard/') ||
@@ -157,10 +149,7 @@ export default function Navbar({
     return () => {
       active = false
     }
-
-    // On recharge uniquement lorsque l'utilisateur connecté change.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userEmail])
+  }, [userEmail, supabase])
 
   // =====================================================
   // FERMETURE DU MENU EN CLIQUANT À L'EXTÉRIEUR
@@ -200,35 +189,18 @@ export default function Navbar({
   // =====================================================
 
   const logout = async () => {
-    // Ferme immédiatement le menu
     setOpen(false)
 
-    try {
-      // Déconnexion Supabase
-      const { error } =
-        await supabase.auth.signOut()
-
-      if (error) {
-        console.error(
-          'Erreur déconnexion Supabase:',
-          error.message
-        )
-
-        return
-      }
-
-      // Redirection vers la connexion
-      router.replace('/login')
-
-      // Force Next.js à actualiser les données serveur
-      router.refresh()
-
-    } catch (error) {
-      console.error(
-        'Erreur lors de la déconnexion:',
-        error
-      )
-    }
+    /*
+     * La déconnexion est maintenant effectuée
+     * par l'action serveur Supabase.
+     *
+     * IMPORTANT :
+     * Ne pas mettre serverLogout() dans un try/catch.
+     * redirect('/login') côté serveur utilise une
+     * interruption interne de Next.js.
+     */
+    await serverLogout()
   }
 
   // =====================================================
@@ -269,10 +241,6 @@ export default function Navbar({
     ? 'KYC valide'
     : 'KYC en attente'
 
-  // =====================================================
-  // AFFICHAGE
-  // =====================================================
-
   return (
     <header
       className="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur-xl"
@@ -282,13 +250,11 @@ export default function Navbar({
       }}
     >
 
-      {/* =================================================
+      {/* =====================================================
           MOBILE
-      ================================================= */}
+      ===================================================== */}
 
-      <div className="flex h-14 items-center justify-between gap-2 px-4 lg:hidden">
-
-        {/* LOGO / RETOUR */}
+      <div className="lg:hidden flex h-14 items-center justify-between gap-2 px-4">
 
         {showBack ? (
           <button
@@ -312,8 +278,6 @@ export default function Navbar({
           </Link>
         )}
 
-        {/* TITRE */}
-
         <div className="min-w-0 flex-1 text-center">
 
           <p className="truncate text-sm font-bold text-slate-900">
@@ -328,10 +292,7 @@ export default function Navbar({
 
         </div>
 
-        {/* PROFIL CONNECTÉ */}
-
         {userEmail ? (
-
           <div
             className="relative"
             ref={menuRef}
@@ -352,13 +313,11 @@ export default function Navbar({
               aria-label="Mon profil"
               aria-expanded={open}
             >
-
               {open ? (
                 <X size={18} />
               ) : (
                 initials
               )}
-
             </button>
 
             {open && (
@@ -375,11 +334,7 @@ export default function Navbar({
             )}
 
           </div>
-
         ) : (
-
-          /* MENU NON CONNECTÉ */
-
           <button
             type="button"
             onClick={() =>
@@ -390,21 +345,19 @@ export default function Navbar({
             className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm"
             aria-label="Menu"
           >
-
             {open ? (
               <X size={18} />
             ) : (
               <Menu size={18} />
             )}
-
           </button>
         )}
 
       </div>
 
-      {/* =================================================
+      {/* =====================================================
           DESKTOP
-      ================================================= */}
+      ===================================================== */}
 
       <div className="hidden h-16 items-center justify-between px-6 lg:flex">
 
@@ -415,7 +368,7 @@ export default function Navbar({
           </p>
 
           <p className="text-[11px] text-fin-mute">
-            Marchés régionaux - Temps réel
+            Marches regionaux - Temps reel
           </p>
 
         </div>
@@ -423,10 +376,7 @@ export default function Navbar({
         <div className="flex items-center gap-3">
 
           {userEmail ? (
-
             <>
-
-              {/* NOTIFICATIONS */}
 
               <button
                 type="button"
@@ -435,8 +385,6 @@ export default function Navbar({
               >
                 <Bell size={18} />
               </button>
-
-              {/* PROFIL */}
 
               <div
                 className="relative"
@@ -501,11 +449,7 @@ export default function Navbar({
               </div>
 
             </>
-
           ) : (
-
-            /* UTILISATEUR NON CONNECTÉ */
-
             <>
 
               <Link
@@ -516,11 +460,9 @@ export default function Navbar({
               </Link>
 
               <Link href="/register">
-
                 <PrimaryButton size="sm">
-                  Créer un compte
+                  Creer un compte
                 </PrimaryButton>
-
               </Link>
 
             </>
@@ -530,12 +472,11 @@ export default function Navbar({
 
       </div>
 
-      {/* =================================================
+      {/* =====================================================
           MENU MOBILE NON CONNECTÉ
-      ================================================= */}
+      ===================================================== */}
 
       {open && !userEmail && (
-
         <div className="space-y-2 border-t border-slate-200 bg-white p-4 lg:hidden">
 
           <Link
@@ -555,7 +496,7 @@ export default function Navbar({
             }
             className="block rounded-2xl bg-primary-gradient p-4 text-center text-sm font-semibold text-white"
           >
-            Créer un compte
+            Creer un compte
           </Link>
 
         </div>
@@ -564,7 +505,6 @@ export default function Navbar({
     </header>
   )
 }
-
 
 // =========================================================
 // MENU PROFIL
@@ -582,12 +522,9 @@ function ProfileMenu({
 }: ProfileMenuProps) {
 
   return (
-
     <div className="absolute right-0 top-[calc(100%+10px)] z-[100] w-[310px] max-w-[calc(100vw-24px)] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/10">
 
-      {/* =================================================
-          HEADER PROFIL
-      ================================================= */}
+      {/* HEADER PROFIL */}
 
       <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-blue-900 p-5 text-white">
 
@@ -623,10 +560,7 @@ function ProfileMenu({
 
       </div>
 
-
-      {/* =================================================
-          INFORMATIONS
-      ================================================= */}
+      {/* INFORMATIONS */}
 
       <div className="space-y-2 p-4">
 
@@ -652,7 +586,6 @@ function ProfileMenu({
 
         </div>
 
-
         {/* SOLDE */}
 
         <div className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-3">
@@ -668,21 +601,16 @@ function ProfileMenu({
             </p>
 
             {loading ? (
-
               <div className="mt-1 h-4 w-24 animate-pulse rounded bg-slate-200" />
-
             ) : (
-
               <p className="mt-0.5 text-xs font-bold text-slate-900">
                 {formatFcfa(balance)}
               </p>
-
             )}
 
           </div>
 
         </div>
-
 
         {/* KYC */}
 
@@ -696,15 +624,13 @@ function ProfileMenu({
                 : 'bg-orange-50 text-orange-600'
             )}
           >
-
             <ShieldCheck size={16} />
-
           </div>
 
           <div>
 
             <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
-              Vérification
+              Verification
             </p>
 
             <p
@@ -724,10 +650,7 @@ function ProfileMenu({
 
       </div>
 
-
-      {/* =================================================
-          INFORMATION
-      ================================================= */}
+      {/* INFORMATION */}
 
       <div className="mx-4 mb-3 rounded-2xl border border-blue-100 bg-blue-50/70 px-3 py-2.5">
 
@@ -748,22 +671,21 @@ function ProfileMenu({
 
       </div>
 
-
-      {/* =================================================
+      {/* =====================================================
           DÉCONNEXION
-      ================================================= */}
+      ===================================================== */}
 
       <div className="border-t border-slate-100 p-3">
 
         <button
           type="button"
           onClick={onLogout}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold text-red-600 transition hover:bg-red-100 hover:text-red-700 active:scale-[0.98]"
+          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold text-red-600 transition hover:bg-red-100 hover:text-red-700 active:bg-red-200"
         >
 
           <LogOut size={16} />
 
-          Déconnexion
+          Deconnexion
 
         </button>
 
@@ -773,27 +695,21 @@ function ProfileMenu({
   )
 }
 
-
 // =========================================================
 // BOUTON NOTIFICATION
 // =========================================================
 
 export function NotificationButton() {
-
   return (
-
     <button
       type="button"
       className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm hover:text-slate-900"
       aria-label="Notifications"
     >
-
       <Bell size={18} />
-
     </button>
   )
 }
-
 
 // =========================================================
 // USER DROPDOWN
@@ -804,9 +720,7 @@ export function UserDropdown({
 }: {
   email: string
 }) {
-
   return (
-
     <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-100 px-3 py-2">
 
       <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-900 text-[10px] font-bold text-white">
