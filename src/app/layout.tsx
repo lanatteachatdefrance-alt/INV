@@ -10,6 +10,7 @@ import MobileBottomNav from '@/components/MobileBottomNav'
 import AppInstallHint from '@/components/AppInstallHint'
 import ServiceWorkerRegister from '@/components/ServiceWorkerRegister'
 import { Sidebar } from '@/components/Sidebar'
+import SplashScreen from '@/components/SplashScreen'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -61,13 +62,8 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-
-  // Permet à l'application d'utiliser toute la surface
-  // disponible sur les téléphones avec encoche/barre système.
   viewportFit: 'cover',
-
   themeColor: '#FFFFFF',
-
   colorScheme: 'light',
 }
 
@@ -110,6 +106,13 @@ export default async function RootLayout({
           overflow-x-hidden
         `}
       >
+
+        {/* =====================================================
+            ÉCRAN DE CHARGEMENT INVICTUS
+            ===================================================== */}
+
+        <SplashScreen />
+
         {/* =====================================================
             CONTENEUR PRINCIPAL DE L'APPLICATION
             ===================================================== */}
@@ -159,7 +162,7 @@ export default async function RootLayout({
             />
 
             {/* ===================================================
-                CONTENU
+                CONTENU PRINCIPAL
                 =================================================== */}
 
             <main
@@ -167,11 +170,8 @@ export default async function RootLayout({
                 w-full
                 min-w-0
                 flex-1
-
                 mx-0
-
                 pb-[calc(5.75rem+env(safe-area-inset-bottom))]
-
                 lg:mx-auto
                 lg:max-w-[1400px]
                 lg:pb-8
