@@ -1,7 +1,9 @@
-import { login } from './actions'
+import { register } from './actions'
 import Link from 'next/link'
+import { GlassCard } from '@/components/ui/GlassCard'
+import { PrimaryButton } from '@/components/ui/Buttons'
 
-export default function Login({
+export default function Register({
   searchParams,
 }: {
   searchParams: { error?: string }
@@ -97,7 +99,7 @@ export default function Login({
             </div>
           )}
 
-          <form action={login} className="space-y-4">
+          <form action={register} className="space-y-4">
 
             {/* IDENTIFIANT */}
 
