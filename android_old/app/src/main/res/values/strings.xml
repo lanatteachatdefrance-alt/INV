@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Investir en Bourse</string>
+    <string name="title_activity_main">Investir en Bourse</string>
+    <string name="package_name">com.investirbourse.app</string>
+    <string name="custom_url_scheme">com.investirbourse.app</string>
+</resources>

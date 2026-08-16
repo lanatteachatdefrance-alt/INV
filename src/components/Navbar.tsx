@@ -25,9 +25,9 @@ import { cn, formatFcfa } from '@/lib/utils'
 const titles: Record<string, string> = {
   '/': 'Investir Bourse',
   '/dashboard': 'Accueil',
-  '/dashboard/investments': 'Marche',
+  '/dashboard/investments': 'Marché',
   '/dashboard/orders': 'Ordres',
-  '/dashboard/kyc': 'Conformite',
+  '/dashboard/kyc': 'Conformité',
   '/login': 'Connexion',
   '/register': 'Inscription',
   '/admin': 'Administration',
@@ -192,7 +192,7 @@ export default function Navbar({
     setOpen(false)
 
     /*
-     * La déconnexion est maintenant effectuée
+     * La déconnexion est effectuée
      * par l'action serveur Supabase.
      *
      * IMPORTANT :
@@ -272,9 +272,13 @@ export default function Navbar({
                 ? '/dashboard'
                 : '/'
             }
-            className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary-gradient text-xs font-black text-white shadow-glow"
+            className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-[0_4px_16px_rgba(20,40,59,0.12)]"
           >
-            IB
+            <img
+              src="/ICONE.jpeg"
+              alt="Investir en Bourse"
+              className="h-full w-full object-contain p-1.5"
+            />
           </Link>
         )}
 
@@ -368,7 +372,7 @@ export default function Navbar({
           </p>
 
           <p className="text-[11px] text-fin-mute">
-            Marches regionaux - Temps reel
+            Marchés régionaux - Temps réel
           </p>
 
         </div>
@@ -461,7 +465,7 @@ export default function Navbar({
 
               <Link href="/register">
                 <PrimaryButton size="sm">
-                  Creer un compte
+                  Créer un compte
                 </PrimaryButton>
               </Link>
 
@@ -496,7 +500,7 @@ export default function Navbar({
             }
             className="block rounded-2xl bg-primary-gradient p-4 text-center text-sm font-semibold text-white"
           >
-            Creer un compte
+            Créer un compte
           </Link>
 
         </div>
@@ -630,7 +634,7 @@ function ProfileMenu({
           <div>
 
             <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
-              Verification
+              Vérification
             </p>
 
             <p
@@ -685,7 +689,7 @@ function ProfileMenu({
 
           <LogOut size={16} />
 
-          Deconnexion
+          Déconnexion
 
         </button>
 
