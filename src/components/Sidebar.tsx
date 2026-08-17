@@ -57,7 +57,7 @@ const adminLinks = [
     icon: Users,
   },
   {
-    href: '/admin/offers',
+    href: '/admin/orders',
     label: 'Offres',
     icon: Package,
   },
