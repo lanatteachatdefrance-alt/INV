@@ -6,20 +6,34 @@ import { redirect } from 'next/navigation'
 export async function register(formData: FormData) {
   const supabase = createClient()
 
-  const email = formData.get('email') as string
-  const password = formData.get('password') as string
-  const firstName = formData.get('firstName') as string
-  const lastName = formData.get('lastName') as string
-  const phone = formData.get('phone') as string
-  const dateOfBirth = formData.get('dateOfBirth') as string
-  const nationality = formData.get('nationality') as string
-  const address = formData.get('address') as string
+  const email = String(formData.get('email') ?? '').trim()
+  const password = String(formData.get('password') ?? '')
+  const firstName = String(formData.get('firstName') ?? '').trim()
+  const lastName = String(formData.get('lastName') ?? '').trim()
+  const phone = String(formData.get('phone') ?? '').trim()
+  const dateOfBirth = String(formData.get('dateOfBirth') ?? '').trim()
+  const nationality = String(formData.get('nationality') ?? '').trim()
+  const address = String(formData.get('address') ?? '').trim()
 
-  if (!email || !password || !firstName || !lastName || !phone || !dateOfBirth || !nationality || !address) {
-    redirect('/register?error=Tous+les+champs+sont+requis')
+  // Vérification des champs
+  if (
+    !email ||
+    !password ||
+    !firstName ||
+    !lastName ||
+    !phone ||
+    !dateOfBirth ||
+    !nationality ||
+    !address
+  ) {
+    redirect(
+      '/register?error=' +
+        encodeURIComponent('Tous les champs sont requis.')
+    )
   }
 
-  const { error, data } = await supabase.auth.signUp({
+  // Création du compte Supabase
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
@@ -34,17 +48,34 @@ export async function register(formData: FormData) {
     },
   })
 
+  // Erreur Supabase
   if (error) {
-    redirect('/register?error=' + encodeURIComponent(error.message))
+    redirect(
+      '/register?error=' +
+        encodeURIComponent(error.message)
+    )
   }
 
-  if (!data?.user) {
-    redirect('/register?error=Impossible de créer le compte pour le moment')
+  // Aucun utilisateur créé
+  if (!data.user) {
+    redirect(
+      '/register?error=' +
+        encodeURIComponent(
+          'Impossible de créer le compte pour le moment.'
+        )
+    )
   }
 
+  // Si Supabase ouvre directement une session
   if (data.session) {
     redirect('/dashboard/kyc')
   }
 
-  redirect('/login?error=' + encodeURIComponent('Compte créé. Vérifiez votre boîte mail pour confirmer l’inscription.'))
+  // Si la confirmation e-mail est activée
+  redirect(
+    '/login?success=' +
+      encodeURIComponent(
+        'Compte créé avec succès. Vérifiez votre boîte mail pour confirmer votre inscription.'
+      )
+  )
 }
