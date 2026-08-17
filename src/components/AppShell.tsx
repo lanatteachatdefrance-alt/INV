@@ -1,6 +1,7 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
+
 import Navbar from '@/components/Navbar'
 import MobileBottomNav from '@/components/MobileBottomNav'
 import { Sidebar } from '@/components/Sidebar'
@@ -20,17 +21,15 @@ export default function AppShell({
 }: AppShellProps) {
   const pathname = usePathname() || '/'
 
-  // =====================================================
-  // PAGES D'AUTHENTIFICATION
-  // =====================================================
-
+  // Pages qui doivent avoir leur propre design
   const isAuthPage =
     pathname === '/login' ||
     pathname === '/register' ||
     pathname === '/forgot-password'
 
   // =====================================================
-  // AUTH : PAS DE NAVBAR / SIDEBAR / BOTTOM NAV
+  // PAGES AUTHENTIFICATION
+  // Aucun Navbar / Sidebar / BottomNav
   // =====================================================
 
   if (isAuthPage) {
@@ -42,7 +41,7 @@ export default function AppShell({
   }
 
   // =====================================================
-  // APPLICATION NORMALE
+  // APPLICATION
   // =====================================================
 
   return (
@@ -58,7 +57,7 @@ export default function AppShell({
           />
         )}
 
-        {/* ZONE PRINCIPALE */}
+        {/* CONTENU */}
 
         <div className="flex min-h-[100dvh] min-w-0 flex-1 flex-col overflow-x-hidden">
 

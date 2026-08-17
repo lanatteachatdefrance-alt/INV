@@ -1,95 +1,139 @@
-'use client'
+import type { Metadata, Viewport } from 'next'
+import { Inter } from 'next/font/google'
+import './globals.css'
 
-import { usePathname } from 'next/navigation'
-import Navbar from '@/components/Navbar'
-import MobileBottomNav from '@/components/MobileBottomNav'
-import { Sidebar } from '@/components/Sidebar'
+import { ensureAdminAccess } from '@/lib/admin'
+import { createClient } from '@/utils/supabase/server'
 
-type AppShellProps = {
-  children: React.ReactNode
-  isLoggedIn: boolean
-  isAdmin: boolean
-  userEmail?: string
+import AppInstallHint from '@/components/AppInstallHint'
+import ServiceWorkerRegister from '@/components/ServiceWorkerRegister'
+import SplashScreen from '@/components/SplashScreen'
+import AppShell from '@/components/AppShell'
+
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+})
+
+export const metadata: Metadata = {
+  title: 'Investir Bourse',
+  description: 'Plateforme d’investissement boursier.',
+  applicationName: 'Investir Bourse',
+
+  manifest: '/manifest.webmanifest',
+
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'IB Bourse',
+  },
+
+  formatDetection: {
+    telephone: false,
+  },
+
+  icons: {
+    icon: [
+      {
+        url: '/icons/icon-192.png',
+        sizes: '192x192',
+        type: 'image/png',
+      },
+      {
+        url: '/icons/icon-512.png',
+        sizes: '512x512',
+        type: 'image/png',
+      },
+    ],
+
+    apple: [
+      {
+        url: '/icons/apple-touch-icon.png',
+        sizes: '180x180',
+      },
+    ],
+  },
 }
 
-export default function AppShell({
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: 'cover',
+  themeColor: '#FFFFFF',
+  colorScheme: 'light',
+}
+
+export default async function RootLayout({
   children,
-  isLoggedIn,
-  isAdmin,
-  userEmail,
-}: AppShellProps) {
-  const pathname = usePathname() || '/'
+}: {
+  children: React.ReactNode
+}) {
+  const supabase = createClient()
 
-  // =====================================================
-  // PAGES D'AUTHENTIFICATION
-  // =====================================================
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
-  const isAuthPage =
-    pathname === '/login' ||
-    pathname === '/register' ||
-    pathname === '/forgot-password'
+  let isAdmin = false
 
-  // =====================================================
-  // AUTH : PAS DE NAVBAR / SIDEBAR / BOTTOM NAV
-  // =====================================================
-
-  if (isAuthPage) {
-    return (
-      <main className="w-full min-w-0">
-        {children}
-      </main>
+  if (user) {
+    isAdmin = await ensureAdminAccess(
+      supabase,
+      user
     )
   }
 
-  // =====================================================
-  // APPLICATION NORMALE
-  // =====================================================
-
   return (
-    <>
-      <div className="flex min-h-[100dvh] w-full min-w-0 overflow-x-hidden">
+    <html
+      lang="fr"
+      className="scroll-smooth"
+    >
+      <body
+        className={`
+          ${inter.className}
+          bg-fin-bg
+          text-fin-text
+          antialiased
+          w-full
+          min-w-0
+          min-h-[100dvh]
+          overflow-x-hidden
+        `}
+      >
 
-        {/* SIDEBAR DESKTOP */}
+        {/* =====================================================
+            ÉCRAN DE CHARGEMENT
+            ===================================================== */}
 
-        {isLoggedIn && (
-          <Sidebar
-            isAdmin={isAdmin}
-            userEmail={userEmail}
-          />
-        )}
+        <SplashScreen />
 
-        {/* ZONE PRINCIPALE */}
+        {/* =====================================================
+            APPLICATION
+            ===================================================== */}
 
-        <div className="flex min-h-[100dvh] min-w-0 flex-1 flex-col overflow-x-hidden">
+        <AppShell
+          isLoggedIn={!!user}
+          isAdmin={isAdmin}
+          userEmail={user?.email}
+        >
+          {children}
+        </AppShell>
 
-          <Navbar
-            userEmail={userEmail}
-          />
+        {/* =====================================================
+            INSTALLATION PWA
+            ===================================================== */}
 
-          <main
-            className="
-              w-full
-              min-w-0
-              flex-1
-              mx-0
-              pb-[calc(5.75rem+env(safe-area-inset-bottom))]
-              lg:mx-auto
-              lg:max-w-[1400px]
-              lg:pb-8
-            "
-          >
-            {children}
-          </main>
+        <AppInstallHint />
 
-        </div>
-      </div>
+        {/* =====================================================
+            SERVICE WORKER
+            ===================================================== */}
 
-      {/* NAVIGATION MOBILE */}
+        <ServiceWorkerRegister />
 
-      <MobileBottomNav
-        isLoggedIn={isLoggedIn}
-        isAdmin={isAdmin}
-      />
-    </>
+      </body>
+    </html>
   )
 }
