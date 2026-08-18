@@ -21,7 +21,7 @@ export default function AppShell({
 }: AppShellProps) {
   const pathname = usePathname() || '/'
 
-  // Pages qui doivent avoir leur propre design
+  // Pages qui ont leur propre design
   const isAuthPage =
     pathname === '/login' ||
     pathname === '/register' ||
@@ -83,12 +83,15 @@ export default function AppShell({
         </div>
       </div>
 
-      {/* NAVIGATION MOBILE */}
+      {/* NAVIGATION MOBILE
+          UNIQUEMENT SI L'UTILISATEUR EST CONNECTÉ */}
 
-      <MobileBottomNav
-        isLoggedIn={isLoggedIn}
-        isAdmin={isAdmin}
-      />
+      {isLoggedIn && (
+        <MobileBottomNav
+          isLoggedIn={true}
+          isAdmin={isAdmin}
+        />
+      )}
     </>
   )
 }
