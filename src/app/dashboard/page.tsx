@@ -113,9 +113,14 @@ async function getDashboardData() {
       : 0
 
   return {
+    firstName:
+      profile.first_name?.trim() || 'Client',
+
     accountLabel:
-      `${profile.first_name || 'Client'} ${profile.last_name || ''}`.trim() ||
-      'Portefeuille',
+      `${profile.first_name || 'Client'} ${
+        profile.last_name || ''
+      }`.trim() || 'Portefeuille',
+
     cashBalance,
     totalPortfolioValue,
     portfolioChangePct,
@@ -126,6 +131,7 @@ async function getDashboardData() {
 
 export default async function DashboardPage() {
   const {
+    firstName,
     accountLabel,
     cashBalance,
     totalPortfolioValue,
@@ -134,150 +140,254 @@ export default async function DashboardPage() {
     totalInvested,
   } = await getDashboardData()
 
+  const positive = portfolioChangePct >= 0
+
   return (
-    <div className="fin-page fin-section space-y-6">
+    <div className="min-h-[100dvh] bg-[#F5F7FA]">
 
-      {/* =========================================================
-          PORTEFEUILLE PRINCIPAL
-      ========================================================== */}
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.8fr_1.2fr]">
+      {/* =====================================================
+          CONTENU
+          ===================================================== */}
 
-        {/* Balance */}
-        <BalanceCard
-          accountLabel={accountLabel}
-          balance={cashBalance}
-          portfolioValue={totalPortfolioValue}
-          portfolioChangePct={portfolioChangePct}
-          status="ACTIF"
-        />
+      <div className="mx-auto w-full max-w-[1400px] px-4 py-5 sm:px-6 sm:py-7 lg:px-8 lg:py-8">
 
-        <div className="grid gap-6">
+        {/* ===================================================
+            BIENVENUE
+            =================================================== */}
 
-          {/* =====================================================
-              RÉSUMÉ DU PORTEFEUILLE
-          ====================================================== */}
-          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section className="mb-6">
 
-            <div className="mb-5 flex items-center justify-between">
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">
-                  Résumé
-                </p>
+          <div className="flex items-end justify-between gap-4">
 
-                <h2 className="mt-1 text-lg font-bold tracking-tight text-slate-900">
-                  Portefeuille
-                </h2>
-              </div>
+            <div>
 
-              <div className="h-2.5 w-2.5 rounded-full bg-orange-500" />
+              <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#A77C12]">
+                ESPACE INVESTISSEUR
+              </p>
+
+              <h1 className="mt-1.5 text-2xl font-black tracking-tight text-[#061B31] sm:text-3xl">
+                Bonjour, {firstName} 👋
+              </h1>
+
+              <p className="mt-1.5 max-w-xl text-sm leading-6 text-slate-500">
+                Retrouvez ici votre portefeuille et le suivi de vos investissements.
+              </p>
+
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+          </div>
 
-              {/* Valeur totale */}
-              <div className="rounded-2xl border border-blue-100 bg-blue-50/60 p-4">
-                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-blue-600">
-                  Valeur totale
-                </p>
+        </section>
 
-                <p className="mt-2 text-xl font-bold tracking-tight text-slate-900">
-                  {formatFcfa(totalPortfolioValue)}
-                </p>
-              </div>
+        {/* ===================================================
+            CARTE PRINCIPALE
+            =================================================== */}
 
-              {/* Investi */}
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
-                  Investi
-                </p>
+        <section className="mb-6">
+          <BalanceCard
+            accountLabel={accountLabel}
+            balance={cashBalance}
+            portfolioValue={totalPortfolioValue}
+            portfolioChangePct={portfolioChangePct}
+            status="ACTIF"
+          />
+        </section>
 
-                <p className="mt-2 text-xl font-bold tracking-tight text-slate-900">
-                  {formatFcfa(totalInvested)}
-                </p>
-              </div>
+        {/* ===================================================
+            RÉSUMÉ
+            =================================================== */}
 
-              {/* Performance */}
-              <div
-                className={`rounded-2xl border p-4 ${
-                  portfolioChangePct >= 0
-                    ? 'border-emerald-100 bg-emerald-50/60'
-                    : 'border-red-100 bg-red-50/60'
-                }`}
+        <section className="mb-6">
+
+          <div className="mb-4">
+
+            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">
+              Vue d'ensemble
+            </p>
+
+            <h2 className="mt-1 text-lg font-black tracking-tight text-[#061B31]">
+              Votre portefeuille
+            </h2>
+
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+
+            {/* VALEUR */}
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+
+              <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-slate-400">
+                Valeur totale
+              </p>
+
+              <p className="mt-2 text-lg font-black tracking-tight text-[#061B31] sm:text-xl">
+                {formatFcfa(totalPortfolioValue)}
+              </p>
+
+            </div>
+
+            {/* INVESTI */}
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+
+              <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-slate-400">
+                Montant investi
+              </p>
+
+              <p className="mt-2 text-lg font-black tracking-tight text-[#061B31] sm:text-xl">
+                {formatFcfa(totalInvested)}
+              </p>
+
+            </div>
+
+            {/* PERFORMANCE */}
+
+            <div
+              className={`
+                rounded-2xl
+                border
+                p-4
+                shadow-sm
+                ${
+                  positive
+                    ? 'border-emerald-100 bg-emerald-50/70'
+                    : 'border-red-100 bg-red-50/70'
+                }
+              `}
+            >
+
+              <p
+                className={`
+                  text-[9px]
+                  font-bold
+                  uppercase
+                  tracking-[0.16em]
+                  ${
+                    positive
+                      ? 'text-emerald-600'
+                      : 'text-red-600'
+                  }
+                `}
               >
-                <p
-                  className={`text-[10px] font-bold uppercase tracking-[0.16em] ${
-                    portfolioChangePct >= 0
+                Performance
+              </p>
+
+              <p
+                className={`
+                  mt-2
+                  text-lg
+                  font-black
+                  tracking-tight
+                  ${
+                    positive
                       ? 'text-emerald-600'
                       : 'text-red-600'
-                  }`}
-                >
-                  Performance
-                </p>
-
-                <p
-                  className={`mt-2 text-xl font-bold tracking-tight ${
-                    portfolioChangePct >= 0
-                      ? 'text-emerald-600'
-                      : 'text-red-600'
-                  }`}
-                >
-                  {formatPct(portfolioChangePct)}
-                </p>
-              </div>
-
-              {/* Solde disponible */}
-              <div className="rounded-2xl border border-orange-100 bg-orange-50/60 p-4">
-                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-orange-600">
-                  Solde disponible
-                </p>
-
-                <p className="mt-2 text-xl font-bold tracking-tight text-slate-900">
-                  {formatFcfa(cashBalance)}
-                </p>
-              </div>
+                  }
+                `}
+              >
+                {formatPct(portfolioChangePct)}
+              </p>
 
             </div>
+
+            {/* SOLDE */}
+
+            <div className="rounded-2xl border border-[#D4A72C]/20 bg-[#FFFBF0] p-4 shadow-sm">
+
+              <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-[#A77C12]">
+                Solde disponible
+              </p>
+
+              <p className="mt-2 text-lg font-black tracking-tight text-[#061B31] sm:text-xl">
+                {formatFcfa(cashBalance)}
+              </p>
+
+            </div>
+
           </div>
 
-          {/* =====================================================
-              INFORMATIONS PORTEFEUILLE
-          ====================================================== */}
-          <div className="rounded-3xl border border-blue-100 bg-gradient-to-br from-blue-50/70 to-white p-5 shadow-sm">
-            <div className="flex items-start gap-3">
+        </section>
 
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-sm font-bold text-white shadow-sm">
-                i
+        {/* ===================================================
+            INFORMATIONS
+            =================================================== */}
+
+        <section className="mb-6">
+
+          <div className="overflow-hidden rounded-3xl border border-[#D4A72C]/20 bg-[#061B31] p-5 text-white shadow-[0_12px_35px_rgba(6,27,49,0.10)] sm:p-6">
+
+            <div className="flex items-start gap-4">
+
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#D4A72C] text-sm font-black text-[#061B31]">
+                IB
               </div>
 
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-blue-600">
-                  Informations
+
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#D4A72C]">
+                  Suivi du portefeuille
                 </p>
 
-                <h2 className="mt-1 text-base font-bold text-slate-900">
-                  Suivi de votre portefeuille
+                <h2 className="mt-1 text-base font-bold">
+                  Une vision claire de vos investissements
                 </h2>
 
-                <p className="mt-2 text-sm leading-relaxed text-slate-500">
-                  Les valeurs affichées sont calculées à partir des cours
-                  actuels des actions détenues et du solde disponible réel
-                  de votre compte.
+                <p className="mt-2 text-xs leading-5 text-white/55 sm:text-sm sm:leading-6">
+                  La valeur de votre portefeuille est calculée
+                  à partir des investissements actifs et des
+                  cours disponibles sur la plateforme.
                 </p>
+
               </div>
 
             </div>
+
           </div>
 
-        </div>
-      </div>
+        </section>
 
-      {/* =========================================================
-          POSITIONS ACTUELLES
-      ========================================================== */}
-      <PortfolioTable
-        rows={rows}
-        title="Positions actuelles"
-      />
+        {/* ===================================================
+            POSITIONS
+            =================================================== */}
+
+        <section>
+
+          <div className="mb-4 flex items-end justify-between gap-4">
+
+            <div>
+
+              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">
+                Investissements
+              </p>
+
+              <h2 className="mt-1 text-lg font-black tracking-tight text-[#061B31]">
+                Positions actuelles
+              </h2>
+
+            </div>
+
+            <div className="rounded-full border border-[#D4A72C]/20 bg-[#FFFBF0] px-3 py-1.5">
+
+              <span className="text-[10px] font-bold text-[#A77C12]">
+                {rows.length}{' '}
+                {rows.length > 1
+                  ? 'positions'
+                  : 'position'}
+              </span>
+
+            </div>
+
+          </div>
+
+          <PortfolioTable
+            rows={rows}
+            title=""
+          />
+
+        </section>
+
+      </div>
 
     </div>
   )
