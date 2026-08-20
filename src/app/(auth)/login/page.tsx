@@ -221,7 +221,7 @@ export default function Login({
                   type="submit"
                   fullWidth
                   size="lg"
-                  className="!mt-7 !rounded-2xl !bg-[#d4a72c] !py-4 !text-sm !font-black !text-white !shadow-lg !shadow-[#d4a72c]/20 hover:!bg-[#bd9223]"
+                  className="!mt-7 !rounded-2xl !bg-[#d4a72c] !py-4 !text-sm !font-black !text-[#061b31] !shadow-lg !shadow-[#d4a72c]/20 hover:!bg-[#bd9223]"
                 >
                   SE CONNECTER
                 </PrimaryButton>
@@ -280,91 +280,98 @@ export default function Login({
 
 
       {/* =====================================================
-          MOBILE
+          MOBILE — ÉCRAN UNIQUE
       ===================================================== */}
 
-      <div className="min-h-[100dvh] bg-[#061b31] text-white lg:hidden pb-24">
+      <div className="flex h-[100dvh] flex-col overflow-hidden bg-[#061b31] text-white lg:hidden">
 
-        {/* HEADER */}
+        <section className="flex min-h-0 flex-1 flex-col px-5 py-5">
 
-        <header className="sticky top-0 z-50 flex h-[74px] items-center justify-between bg-white px-5 shadow-sm">
+          {/* =================================================
+              LOGO + AIDE
+          ================================================= */}
 
-          <Link
-            href="/"
-            className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-md"
-          >
-            <img
-              src="/ICONE.jpeg"
-              alt="Investir en Bourse"
-              className="h-full w-full object-contain"
-            />
-          </Link>
+          <div className="flex shrink-0 items-center justify-between">
 
-          <h1 className="text-lg font-bold text-[#111827]">
-            Connexion
-          </h1>
+            <Link
+              href="/"
+              className="flex items-center gap-3"
+            >
 
-          <button
-            type="button"
-            aria-label="Menu"
-            className="flex h-12 w-12 flex-col items-center justify-center gap-1.5 rounded-full border border-slate-200 bg-white shadow-sm"
-          >
-            <span className="h-0.5 w-6 bg-slate-700" />
-            <span className="h-0.5 w-6 bg-slate-700" />
-            <span className="h-0.5 w-6 bg-slate-700" />
-          </button>
+              <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl bg-white shadow-lg">
+                <img
+                  src="/ICONE.jpeg"
+                  alt="Investir en Bourse"
+                  className="h-full w-full object-contain"
+                />
+              </div>
 
-        </header>
+              <div className="leading-none">
+                <p className="text-[14px] font-black tracking-tight">
+                  INVESTIR
+                </p>
 
+                <p className="mt-0.5 text-[14px] font-black text-[#d4a72c]">
+                  EN BOURSE
+                </p>
+              </div>
 
-        {/* CONTENU */}
+            </Link>
 
-        <section className="px-5 pb-10 pt-10">
+            {/* MENU AIDE */}
 
-          {/* LOGO */}
+            <details className="relative">
 
-          <div className="flex flex-col items-center">
+              <summary className="flex h-10 cursor-pointer list-none items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 text-xs font-bold text-white/80 transition hover:bg-white/10">
+                <span>?</span>
+                <span>Aide</span>
+              </summary>
 
-            <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-[30px] bg-white shadow-xl">
-              <img
-                src="/ICONE.jpeg"
-                alt="Investir en Bourse"
-                className="h-full w-full object-contain"
-              />
-            </div>
+              <div className="absolute right-0 top-12 z-[100] w-52 overflow-hidden rounded-2xl border border-white/10 bg-[#102b47] p-1 shadow-2xl">
 
-            <div className="mt-7 text-center">
+                <Link
+                  href="/forgot-password"
+                  className="block rounded-xl px-4 py-3 text-xs font-semibold text-white/90 hover:bg-white/10"
+                >
+                  Mot de passe oublié
+                </Link>
 
-              <h2 className="text-[42px] font-black leading-none tracking-tight">
-                INVESTIR
-              </h2>
+                <Link
+                  href="/register"
+                  className="block rounded-xl px-4 py-3 text-xs font-semibold text-white/90 hover:bg-white/10"
+                >
+                  Créer un compte
+                </Link>
 
-              <h3 className="mt-1 text-[40px] font-black leading-none text-[#d4a72c]">
-                EN BOURSE
-              </h3>
+                <a
+                  href="mailto:contact@investirenbourse.org"
+                  className="block rounded-xl px-4 py-3 text-xs font-semibold text-white/90 hover:bg-white/10"
+                >
+                  Nous contacter
+                </a>
 
-              <p className="mt-7 text-[20px] text-slate-300">
-                Votre avenir, notre priorité.
-              </p>
+              </div>
 
-            </div>
+            </details>
 
           </div>
 
 
-          {/* ESPACE CLIENT */}
+          {/* =================================================
+              TITRE
+          ================================================= */}
 
-          <div className="mt-14">
+          <div className="mt-6 shrink-0 text-center">
 
-            <p className="text-[13px] font-black uppercase tracking-[0.35em] text-[#d4a72c]">
+            <p className="text-[9px] font-black uppercase tracking-[0.3em] text-[#d4a72c]">
               ESPACE CLIENT
             </p>
 
-            <h2 className="mt-4 text-[42px] font-black leading-none">
+            <h1 className="mt-2 text-[30px] font-black leading-none tracking-tight">
               Bienvenue
-            </h2>
+            </h1>
 
-            <p className="mt-7 max-w-md text-[20px] leading-8 text-slate-300">
+            <p className="mx-auto mt-2 max-w-xs text-[13px] leading-5 text-slate-300">
               Connectez-vous pour accéder à votre
               portefeuille et suivre vos investissements.
             </p>
@@ -372,31 +379,35 @@ export default function Login({
           </div>
 
 
-          {/* ERREUR */}
+          {/* =================================================
+              ERREUR
+          ================================================= */}
 
           {error && (
-            <div className="mt-8 rounded-[22px] border border-red-400/30 bg-red-500/10 px-5 py-4 text-base text-red-200">
+            <div className="mt-4 shrink-0 rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-2.5 text-xs leading-4 text-red-200">
               {error}
             </div>
           )}
 
 
-          {/* FORMULAIRE */}
+          {/* =================================================
+              FORMULAIRE
+          ================================================= */}
 
           <form
             action={login}
-            className="mt-10 space-y-5"
+            className="mx-auto mt-5 w-full max-w-md shrink-0 space-y-3"
           >
 
-            {/* IDENTIFIANT */}
+            {/* EMAIL */}
 
             <div className="relative">
 
-              <div className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 text-[#d4a72c]">
+              <div className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#d4a72c]">
 
                 <svg
-                  width="30"
-                  height="30"
+                  width="21"
+                  height="21"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -414,8 +425,8 @@ export default function Login({
                 type="email"
                 required
                 autoComplete="username"
-                className="h-[78px] w-full rounded-[24px] border border-white/20 bg-[#153452] pl-[70px] pr-5 text-[18px] text-white outline-none placeholder:text-slate-300 focus:border-[#d4a72c] focus:ring-2 focus:ring-[#d4a72c]/20"
-                placeholder="Identifiant"
+                className="h-[58px] w-full rounded-[18px] border border-white/15 bg-[#153452] pl-12 pr-4 text-[15px] text-white outline-none placeholder:text-slate-400 focus:border-[#d4a72c] focus:ring-2 focus:ring-[#d4a72c]/20"
+                placeholder="Adresse e-mail"
               />
 
             </div>
@@ -425,11 +436,11 @@ export default function Login({
 
             <div className="relative">
 
-              <div className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 text-[#d4a72c]">
+              <div className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#d4a72c]">
 
                 <svg
-                  width="30"
-                  height="30"
+                  width="21"
+                  height="21"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -454,36 +465,20 @@ export default function Login({
                 type="password"
                 required
                 autoComplete="current-password"
-                className="h-[78px] w-full rounded-[24px] border border-white/20 bg-[#153452] pl-[70px] pr-16 text-[18px] text-white outline-none placeholder:text-slate-300 focus:border-[#d4a72c] focus:ring-2 focus:ring-[#d4a72c]/20"
+                className="h-[58px] w-full rounded-[18px] border border-white/15 bg-[#153452] pl-12 pr-4 text-[15px] text-white outline-none placeholder:text-slate-400 focus:border-[#d4a72c] focus:ring-2 focus:ring-[#d4a72c]/20"
                 placeholder="Mot de passe"
               />
-
-              <div className="pointer-events-none absolute right-5 top-1/2 -translate-y-1/2 text-slate-200">
-
-                <svg
-                  width="30"
-                  height="30"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z" />
-                  <circle cx="12" cy="12" r="2.5" />
-                </svg>
-
-              </div>
 
             </div>
 
 
             {/* MOT DE PASSE OUBLIÉ */}
 
-            <div className="flex justify-end pt-1">
+            <div className="flex justify-end">
 
               <Link
                 href="/forgot-password"
-                className="text-[16px] font-bold text-[#d4a72c]"
+                className="text-[12px] font-bold text-[#d4a72c]"
               >
                 Mot de passe oublié ?
               </Link>
@@ -497,7 +492,7 @@ export default function Login({
               type="submit"
               fullWidth
               size="lg"
-              className="!mt-7 !h-[78px] !rounded-[26px] !bg-[#e0ad27] !text-[18px] !font-black !text-white !shadow-xl !shadow-[#d4a72c]/20"
+              className="!mt-2 !h-[58px] !rounded-[18px] !bg-[#d4a72c] !text-[14px] !font-black !text-[#061b31] !shadow-lg !shadow-[#d4a72c]/20 hover:!bg-[#bd9223]"
             >
               SE CONNECTER
             </PrimaryButton>
@@ -505,17 +500,19 @@ export default function Login({
           </form>
 
 
-          {/* SÉCURITÉ */}
+          {/* =================================================
+              SÉCURITÉ
+          ================================================= */}
 
-          <div className="mt-10 rounded-[26px] border border-white/10 bg-[#102b47] px-5 py-5">
+          <div className="mx-auto mt-4 w-full max-w-md shrink-0 rounded-[18px] border border-white/10 bg-[#102b47] px-4 py-3">
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
 
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-[#d4a72c]/40 bg-[#061b31]">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#d4a72c]/30 bg-[#061b31]">
 
                 <svg
-                  width="26"
-                  height="26"
+                  width="19"
+                  height="19"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="#d4a72c"
@@ -527,15 +524,15 @@ export default function Login({
 
               </div>
 
-              <div>
+              <div className="min-w-0">
 
-                <p className="text-[17px] font-black">
+                <p className="text-[12px] font-black">
                   Connexion sécurisée
                 </p>
 
-                <p className="mt-1 text-[12px] leading-5 text-slate-400">
-                  Vos informations sont protégées par
-                  des mesures de sécurité avancées.
+                <p className="mt-0.5 text-[10px] leading-4 text-slate-400">
+                  Vos informations sont protégées par des
+                  mesures de sécurité avancées.
                 </p>
 
               </div>
@@ -545,17 +542,19 @@ export default function Login({
           </div>
 
 
-          {/* CRÉATION DE COMPTE */}
+          {/* =================================================
+              CRÉATION DE COMPTE
+          ================================================= */}
 
-          <div className="mt-8 pb-8 text-center">
+          <div className="mt-auto shrink-0 pt-4 text-center">
 
-            <p className="text-sm text-slate-400">
+            <p className="text-[11px] text-slate-400">
               Vous n’avez pas encore de compte ?
             </p>
 
             <Link
               href="/register"
-              className="mt-2 inline-block font-bold text-[#d4a72c]"
+              className="mt-1 inline-block text-[12px] font-bold text-[#d4a72c]"
             >
               Créer un compte
             </Link>
@@ -563,50 +562,6 @@ export default function Login({
           </div>
 
         </section>
-
-
-        {/* NAVIGATION */}
-
-        <nav className="fixed bottom-0 left-0 right-0 z-50 h-[82px] border-t border-slate-200 bg-white px-8 shadow-[0_-5px_20px_rgba(0,0,0,0.08)]">
-
-          <div className="mx-auto flex h-full max-w-md items-center justify-between">
-
-            <Link
-              href="/"
-              className="flex flex-col items-center gap-1 text-slate-500"
-            >
-              <span className="text-2xl">⌂</span>
-
-              <span className="text-xs font-semibold">
-                Accueil
-              </span>
-            </Link>
-
-            <Link
-              href="/login"
-              className="flex flex-col items-center gap-1 text-[#1455d9]"
-            >
-              <span className="text-2xl">→</span>
-
-              <span className="text-xs font-bold">
-                Connexion
-              </span>
-            </Link>
-
-            <Link
-              href="/register"
-              className="flex flex-col items-center gap-1 text-slate-500"
-            >
-              <span className="text-2xl">♙</span>
-
-              <span className="text-xs font-semibold">
-                Compte
-              </span>
-            </Link>
-
-          </div>
-
-        </nav>
 
       </div>
 
