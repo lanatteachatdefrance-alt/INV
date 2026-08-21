@@ -23,7 +23,6 @@ import { StatusBadge } from '@/components/ui/StatusBadge'
 import {
   cn,
   formatFcfa,
-  tickerFromTitle,
 } from '@/lib/utils'
 
 type InvestmentOffer = {
@@ -47,7 +46,6 @@ type InvestmentCardProps = {
   offer: InvestmentOffer
   userBalance: number
   isKycValid: boolean
-
   ownedShares: number
 
   onBuy: (
@@ -96,9 +94,11 @@ export function InvestmentCard({
     offer.minimum_investment ?? 0
   )
 
+  // IMPORTANT :
+  // Le symbole provient directement de
+  // investment_offers.symbol.
   const symbol =
-    offer.symbol?.trim() ||
-    tickerFromTitle(offer.title)
+    offer.symbol?.trim() || '—'
 
   const companyName =
     offer.company_name?.trim() ||
@@ -294,9 +294,11 @@ export function InvestmentCard({
       hover={false}
     >
 
-      <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-blue-500/10 blur-2xl pointer-events-none" />
+      {/* DÉCORATION PREMIUM */}
 
-      <div className="absolute -bottom-10 -left-10 w-24 h-24 rounded-full bg-orange-500/5 blur-2xl pointer-events-none" />
+      <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-[var(--fin-accent)]/10 blur-2xl pointer-events-none" />
+
+      <div className="absolute -bottom-10 -left-10 w-24 h-24 rounded-full bg-[var(--fin-primary)]/5 blur-2xl pointer-events-none" />
 
       {/* EN-TÊTE */}
 
@@ -314,11 +316,11 @@ export function InvestmentCard({
             {productType}
           </StatusBadge>
 
-          <h3 className="text-base font-bold text-slate-900 mt-3 leading-snug">
+          <h3 className="text-base font-bold text-[var(--fin-primary)] mt-3 leading-snug">
             {companyName}
           </h3>
 
-          <p className="text-[11px] text-fin-mute mt-1 font-bold uppercase tracking-wider">
+          <p className="text-[11px] text-[var(--fin-accent-dark)] mt-1 font-extrabold uppercase tracking-wider">
             {symbol}
           </p>
 
@@ -330,10 +332,11 @@ export function InvestmentCard({
             className={cn(
               'font-bold text-lg inline-flex items-center gap-1',
               roi >= 0
-                ? 'text-fin-success'
-                : 'text-fin-danger'
+                ? 'text-[var(--fin-success)]'
+                : 'text-[var(--fin-danger)]'
             )}
           >
+
             {roi >= 0 ? (
               <TrendingUp size={14} />
             ) : (
@@ -349,9 +352,10 @@ export function InvestmentCard({
             )}
 
             %
+
           </p>
 
-          <p className="text-[10px] text-fin-mute uppercase tracking-wider">
+          <p className="text-[10px] text-[var(--fin-mute)] uppercase tracking-wider">
             Rendement
           </p>
 
@@ -363,13 +367,13 @@ export function InvestmentCard({
 
       <div className="grid grid-cols-2 gap-3 text-sm">
 
-        <div className="rounded-2xl bg-slate-50 border border-slate-200 p-3">
+        <div className="rounded-2xl bg-[var(--fin-bg)] border border-[var(--fin-border)] p-3">
 
-          <p className="text-[10px] text-fin-mute uppercase tracking-wider mb-1">
+          <p className="text-[10px] text-[var(--fin-mute)] uppercase tracking-wider mb-1">
             Cours
           </p>
 
-          <p className="font-bold text-slate-900">
+          <p className="font-bold text-[var(--fin-primary)]">
             {price > 0
               ? `${price.toLocaleString(
                   'fr-FR'
@@ -379,13 +383,13 @@ export function InvestmentCard({
 
         </div>
 
-        <div className="rounded-2xl bg-slate-50 border border-slate-200 p-3">
+        <div className="rounded-2xl bg-[var(--fin-bg)] border border-[var(--fin-border)] p-3">
 
-          <p className="text-[10px] text-fin-mute uppercase tracking-wider mb-1">
+          <p className="text-[10px] text-[var(--fin-mute)] uppercase tracking-wider mb-1">
             Total
           </p>
 
-          <p className="font-bold text-slate-900">
+          <p className="font-bold text-[var(--fin-primary)]">
             {formatFcfa(total)}
           </p>
 
@@ -397,7 +401,7 @@ export function InvestmentCard({
 
       {ownedShares > 0 && (
 
-        <div className="rounded-2xl border border-blue-100 bg-blue-50 p-3">
+        <div className="rounded-2xl border border-[var(--fin-accent)]/20 bg-[var(--fin-accent-light)] p-3">
 
           <div className="flex items-center justify-between gap-3">
 
@@ -405,16 +409,16 @@ export function InvestmentCard({
 
               <Wallet
                 size={16}
-                className="text-blue-600"
+                className="text-[var(--fin-accent-dark)]"
               />
 
-              <span className="text-xs font-semibold text-blue-700">
+              <span className="text-xs font-semibold text-[var(--fin-accent-dark)]">
                 Vos actions
               </span>
 
             </div>
 
-            <span className="font-bold text-blue-900">
+            <span className="font-bold text-[var(--fin-primary)]">
               {ownedShares.toLocaleString(
                 'fr-FR'
               )}
@@ -422,7 +426,7 @@ export function InvestmentCard({
 
           </div>
 
-          <p className="mt-1 text-[11px] text-blue-600">
+          <p className="mt-1 text-[11px] text-[var(--fin-accent-dark)]">
             Valeur actuelle :{' '}
             {formatFcfa(
               ownedShares * price
@@ -442,8 +446,9 @@ export function InvestmentCard({
             (current) => !current
           )
         }
-        className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+        className="flex items-center justify-center gap-2 rounded-xl border border-[var(--fin-border)] bg-white py-2.5 text-sm font-semibold text-[var(--fin-primary)] transition hover:bg-[var(--fin-primary-light)] hover:border-[var(--fin-accent)]/30"
       >
+
         {showDetails ? (
           <>
             Masquer les détails
@@ -455,19 +460,20 @@ export function InvestmentCard({
             <ChevronDown size={16} />
           </>
         )}
+
       </button>
 
       {showDetails && (
 
-        <div className="rounded-2xl border border-blue-100 bg-blue-50/50 p-4 space-y-4">
+        <div className="rounded-2xl border border-[var(--fin-accent)]/20 bg-[var(--fin-accent-light)]/50 p-4 space-y-4">
 
           <div>
 
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-blue-600">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--fin-accent-dark)]">
               Informations sur la valeur
             </p>
 
-            <h4 className="mt-1 text-sm font-bold text-slate-900">
+            <h4 className="mt-1 text-sm font-bold text-[var(--fin-primary)]">
               {companyName}
             </h4>
 
@@ -475,42 +481,49 @@ export function InvestmentCard({
 
           <div className="grid grid-cols-2 gap-3">
 
-            <div className="rounded-xl bg-white border border-slate-200 p-3">
-              <p className="text-[10px] uppercase tracking-wider text-slate-400">
+            <div className="rounded-xl bg-white border border-[var(--fin-border)] p-3">
+
+              <p className="text-[10px] uppercase tracking-wider text-[var(--fin-mute)]">
                 Symbole
               </p>
 
-              <p className="mt-1 font-bold text-slate-900">
+              <p className="mt-1 font-bold text-[var(--fin-accent-dark)]">
                 {symbol}
               </p>
+
             </div>
 
-            <div className="rounded-xl bg-white border border-slate-200 p-3">
-              <p className="text-[10px] uppercase tracking-wider text-slate-400">
+            <div className="rounded-xl bg-white border border-[var(--fin-border)] p-3">
+
+              <p className="text-[10px] uppercase tracking-wider text-[var(--fin-mute)]">
                 Type
               </p>
 
-              <p className="mt-1 font-bold text-slate-900">
+              <p className="mt-1 font-bold text-[var(--fin-primary)]">
                 {productType}
               </p>
+
             </div>
 
-            <div className="rounded-xl bg-white border border-slate-200 p-3">
-              <p className="text-[10px] uppercase tracking-wider text-slate-400">
+            <div className="rounded-xl bg-white border border-[var(--fin-border)] p-3">
+
+              <p className="text-[10px] uppercase tracking-wider text-[var(--fin-mute)]">
                 Cours
               </p>
 
-              <p className="mt-1 font-bold text-slate-900">
+              <p className="mt-1 font-bold text-[var(--fin-primary)]">
                 {price > 0
                   ? `${price.toLocaleString(
                       'fr-FR'
                     )} FCFA`
                   : 'Indisponible'}
               </p>
+
             </div>
 
-            <div className="rounded-xl bg-white border border-slate-200 p-3">
-              <p className="text-[10px] uppercase tracking-wider text-slate-400">
+            <div className="rounded-xl bg-white border border-[var(--fin-border)] p-3">
+
+              <p className="text-[10px] uppercase tracking-wider text-[var(--fin-mute)]">
                 Rendement
               </p>
 
@@ -518,8 +531,8 @@ export function InvestmentCard({
                 className={cn(
                   'mt-1 font-bold',
                   roi >= 0
-                    ? 'text-fin-success'
-                    : 'text-fin-danger'
+                    ? 'text-[var(--fin-success)]'
+                    : 'text-[var(--fin-danger)]'
                 )}
               >
                 {roi.toLocaleString(
@@ -530,19 +543,20 @@ export function InvestmentCard({
                 )}
                 %
               </p>
+
             </div>
 
           </div>
 
           {offer.description && (
 
-            <div className="rounded-xl bg-white border border-slate-200 p-3">
+            <div className="rounded-xl bg-white border border-[var(--fin-border)] p-3">
 
-              <p className="text-[10px] uppercase tracking-wider text-slate-400">
+              <p className="text-[10px] uppercase tracking-wider text-[var(--fin-mute)]">
                 Description
               </p>
 
-              <p className="mt-2 text-sm leading-relaxed text-slate-600">
+              <p className="mt-2 text-sm leading-relaxed text-[var(--fin-text-secondary)]">
                 {offer.description}
               </p>
 
@@ -552,13 +566,13 @@ export function InvestmentCard({
 
           {minimumInvestment > 0 && (
 
-            <div className="rounded-xl bg-white border border-slate-200 p-3">
+            <div className="rounded-xl bg-white border border-[var(--fin-border)] p-3">
 
-              <p className="text-[10px] uppercase tracking-wider text-slate-400">
+              <p className="text-[10px] uppercase tracking-wider text-[var(--fin-mute)]">
                 Investissement minimum
               </p>
 
-              <p className="mt-1 font-bold text-slate-900">
+              <p className="mt-1 font-bold text-[var(--fin-primary)]">
                 {formatFcfa(
                   minimumInvestment
                 )}
@@ -577,7 +591,7 @@ export function InvestmentCard({
 
       <div>
 
-        <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+        <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-[var(--fin-mute)]">
           Nombre de titres à acheter
         </p>
 
@@ -595,7 +609,10 @@ export function InvestmentCard({
                   )
               )
             }
-            disabled={pending || sellPending}
+            disabled={
+              pending ||
+              sellPending
+            }
             className="!px-3"
           >
             −
@@ -605,7 +622,10 @@ export function InvestmentCard({
             type="number"
             min={1}
             value={shares}
-            disabled={pending || sellPending}
+            disabled={
+              pending ||
+              sellPending
+            }
             onChange={(event) => {
 
               const value =
@@ -637,7 +657,10 @@ export function InvestmentCard({
                   current + 1
               )
             }
-            disabled={pending || sellPending}
+            disabled={
+              pending ||
+              sellPending
+            }
             className="!px-3"
           >
             +
@@ -649,15 +672,15 @@ export function InvestmentCard({
 
       {/* INFORMATIONS ACHAT */}
 
-      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+      <div className="rounded-2xl border border-[var(--fin-border)] bg-[var(--fin-bg)] p-3">
 
         <div className="flex items-center justify-between gap-3">
 
-          <span className="text-xs text-slate-500">
+          <span className="text-xs text-[var(--fin-mute)]">
             Montant de l'ordre
           </span>
 
-          <span className="font-bold text-slate-900">
+          <span className="font-bold text-[var(--fin-primary)]">
             {formatFcfa(total)}
           </span>
 
@@ -665,7 +688,7 @@ export function InvestmentCard({
 
         <div className="flex items-center justify-between gap-3 mt-2">
 
-          <span className="text-xs text-slate-500">
+          <span className="text-xs text-[var(--fin-mute)]">
             Solde disponible
           </span>
 
@@ -673,8 +696,8 @@ export function InvestmentCard({
             className={cn(
               'text-xs font-bold',
               canAfford
-                ? 'text-fin-success'
-                : 'text-fin-danger'
+                ? 'text-[var(--fin-success)]'
+                : 'text-[var(--fin-danger)]'
             )}
           >
             {formatFcfa(userBalance)}
@@ -690,21 +713,23 @@ export function InvestmentCard({
 
       {ownedShares > 0 && (
 
-        <div className="rounded-2xl border border-orange-200 bg-orange-50 p-4 space-y-3">
+        <div className="rounded-2xl border border-[var(--fin-accent)]/25 bg-[var(--fin-accent-light)] p-4 space-y-3">
 
           <div className="flex items-center justify-between">
 
             <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-orange-700">
+
+              <p className="text-xs font-bold uppercase tracking-wider text-[var(--fin-accent-dark)]">
                 Vente
               </p>
 
-              <p className="mt-1 text-[11px] text-orange-600">
+              <p className="mt-1 text-[11px] text-[var(--fin-text-secondary)]">
                 Vos actions seront débitées après validation administrative.
               </p>
+
             </div>
 
-            <span className="text-xs font-bold text-orange-800">
+            <span className="text-xs font-bold text-[var(--fin-primary)]">
               {ownedShares} disponible
               {ownedShares > 1 ? 's' : ''}
             </span>
@@ -713,7 +738,7 @@ export function InvestmentCard({
 
           <div>
 
-            <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-orange-600">
+            <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-[var(--fin-accent-dark)]">
               Nombre de titres à vendre
             </p>
 
@@ -801,21 +826,21 @@ export function InvestmentCard({
 
           </div>
 
-          <div className="rounded-xl border border-orange-200 bg-white p-3">
+          <div className="rounded-xl border border-[var(--fin-accent)]/20 bg-white p-3">
 
             <div className="flex items-center justify-between">
 
-              <span className="text-xs text-slate-500">
+              <span className="text-xs text-[var(--fin-mute)]">
                 Valeur de la vente
               </span>
 
-              <span className="font-bold text-orange-700">
+              <span className="font-bold text-[var(--fin-accent-dark)]">
                 {formatFcfa(sellTotal)}
               </span>
 
             </div>
 
-            <p className="mt-1 text-[10px] text-slate-400">
+            <p className="mt-1 text-[10px] text-[var(--fin-mute)]">
               Calculée au cours actuel de{' '}
               {formatFcfa(price)} par action.
             </p>
@@ -824,7 +849,7 @@ export function InvestmentCard({
 
           {sellError && (
 
-            <p className="text-xs text-fin-danger flex items-center gap-1.5 bg-fin-danger/10 border border-fin-danger/20 rounded-xl px-3 py-2">
+            <p className="text-xs text-[var(--fin-danger)] flex items-center gap-1.5 bg-[var(--fin-danger-light)] border border-[var(--fin-danger)]/20 rounded-xl px-3 py-2">
 
               <AlertCircle size={14} />
 
@@ -836,7 +861,7 @@ export function InvestmentCard({
 
           {sellSuccess && (
 
-            <p className="text-xs text-fin-success flex items-center gap-1.5 bg-fin-success/10 border border-fin-success/20 rounded-xl px-3 py-2">
+            <p className="text-xs text-[var(--fin-success)] flex items-center gap-1.5 bg-[var(--fin-success-light)] border border-[var(--fin-success)]/20 rounded-xl px-3 py-2">
 
               <CheckCircle size={14} />
 
@@ -855,7 +880,7 @@ export function InvestmentCard({
               !canSell
             }
             onClick={submitSell}
-            className="!border-orange-300 !text-orange-700 hover:!bg-orange-100"
+            className="!border-[var(--fin-accent)] !text-[var(--fin-accent-dark)] hover:!bg-[var(--fin-accent-light)]"
           >
 
             {sellPending ? (
@@ -887,20 +912,20 @@ export function InvestmentCard({
 
       {!isKycValid && (
 
-        <div className="flex items-start gap-2 rounded-xl border border-orange-200 bg-orange-50 px-3 py-3">
+        <div className="flex items-start gap-2 rounded-xl border border-[var(--fin-warning)]/20 bg-[var(--fin-warning-light)] px-3 py-3">
 
           <ShieldCheck
             size={17}
-            className="mt-0.5 shrink-0 text-orange-600"
+            className="mt-0.5 shrink-0 text-[var(--fin-warning)]"
           />
 
           <div>
 
-            <p className="text-xs font-bold text-orange-700">
+            <p className="text-xs font-bold text-[var(--fin-warning)]">
               KYC requis
             </p>
 
-            <p className="mt-0.5 text-[11px] leading-relaxed text-orange-600">
+            <p className="mt-0.5 text-[11px] leading-relaxed text-[var(--fin-text-secondary)]">
               Votre compte doit être validé avant de pouvoir investir sur le marché.
             </p>
 
@@ -913,7 +938,7 @@ export function InvestmentCard({
 
       {error && (
 
-        <p className="text-xs text-fin-danger flex items-center gap-1.5 bg-fin-danger/10 border border-fin-danger/20 rounded-xl px-3 py-2">
+        <p className="text-xs text-[var(--fin-danger)] flex items-center gap-1.5 bg-[var(--fin-danger-light)] border border-[var(--fin-danger)]/20 rounded-xl px-3 py-2">
 
           <AlertCircle size={14} />
 
@@ -927,7 +952,7 @@ export function InvestmentCard({
 
       {success && (
 
-        <p className="text-xs text-fin-success flex items-center gap-1.5 bg-fin-success/10 border border-fin-success/20 rounded-xl px-3 py-2">
+        <p className="text-xs text-[var(--fin-success)] flex items-center gap-1.5 bg-[var(--fin-success-light)] border border-[var(--fin-success)]/20 rounded-xl px-3 py-2">
 
           <CheckCircle size={14} />
 

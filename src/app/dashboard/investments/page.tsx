@@ -3,7 +3,6 @@ import { revalidatePath } from 'next/cache'
 
 import { createClient } from '@/utils/supabase/server'
 import MarketFilters from '@/components/fintech/MarketFilters'
-import { tickerFromTitle } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,6 +15,7 @@ type InvestmentOffer = {
   price_per_share: number | string | null
   minimum_investment: number | string | null
   company_name: string | null
+  symbol: string | null
 }
 
 function normalizeKycStatus(
@@ -253,7 +253,8 @@ export default async function InvestmentsPage() {
           roi_percentage,
           price_per_share,
           minimum_investment,
-          company_name
+          company_name,
+          symbol
         `
       )
       .eq(
@@ -306,6 +307,13 @@ export default async function InvestmentsPage() {
 
             company_name:
               offer.company_name ??
+              null,
+
+            // IMPORTANT :
+            // On utilise désormais le vrai symbole
+            // enregistré dans Supabase.
+            symbol:
+              offer.symbol ??
               null,
           })
         )
@@ -622,9 +630,9 @@ export default async function InvestmentsPage() {
       }
     }
 
-    // -----------------------------------------------
-    // Vérification serveur de la quantité détenue
-    // -----------------------------------------------
+    // =================================================
+    // VÉRIFICATION QUANTITÉ DÉTENUE
+    // =================================================
 
     const {
       data: userInvestments,
@@ -713,9 +721,9 @@ export default async function InvestmentsPage() {
       }
     }
 
-    // -----------------------------------------------
-    // Création de la vente via RPC
-    // -----------------------------------------------
+    // =================================================
+    // CRÉATION DE LA VENTE VIA RPC
+    // =================================================
 
     const {
       data,
@@ -768,7 +776,7 @@ export default async function InvestmentsPage() {
   // =====================================================
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="fin-page fin-section">
 
       {/* =================================================
           EN-TÊTE
@@ -777,24 +785,28 @@ export default async function InvestmentsPage() {
       <div className="flex flex-col gap-4">
 
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">
+          <h1 className="fin-title text-2xl">
             Marché
           </h1>
 
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="fin-subtitle mt-1 text-sm">
             Découvrez les valeurs disponibles
             sur le marché régional BRVM.
           </p>
         </div>
 
-        <div className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        {/* =================================================
+            SOLDE
+        ================================================= */}
+
+        <div className="glass-card flex items-center justify-between gap-4 p-4">
 
           <div>
-            <p className="text-xs uppercase tracking-wider text-slate-500">
+            <p className="text-xs uppercase tracking-wider fin-muted">
               Solde disponible
             </p>
 
-            <p className="mt-1 text-xl font-bold text-slate-900">
+            <p className="mt-1 text-xl font-bold text-[var(--fin-primary)]">
               {userBalance.toLocaleString(
                 'fr-FR'
               )}{' '}
@@ -805,10 +817,10 @@ export default async function InvestmentsPage() {
           <div
             className={`rounded-full px-3 py-1 text-xs font-semibold ${
               kycValid
-                ? 'bg-green-100 text-green-700'
+                ? 'bg-[var(--fin-success-light)] text-[var(--fin-success)]'
                 : kycRejected
-                ? 'bg-red-100 text-red-700'
-                : 'bg-orange-100 text-orange-700'
+                ? 'bg-[var(--fin-danger-light)] text-[var(--fin-danger)]'
+                : 'bg-[var(--fin-warning-light)] text-[var(--fin-warning)]'
             }`}
           >
             {kycValid
@@ -831,16 +843,16 @@ export default async function InvestmentsPage() {
         <div
           className={`rounded-3xl border p-8 text-center shadow-sm ${
             kycRejected
-              ? 'border-red-200 bg-red-50'
-              : 'border-orange-200 bg-orange-50'
+              ? 'border-[var(--fin-danger)]/20 bg-[var(--fin-danger-light)]'
+              : 'border-[var(--fin-warning)]/20 bg-[var(--fin-warning-light)]'
           }`}
         >
 
           <div
             className={`mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full text-2xl ${
               kycRejected
-                ? 'bg-red-100'
-                : 'bg-orange-100'
+                ? 'bg-[var(--fin-danger)]/10'
+                : 'bg-[var(--fin-warning)]/10'
             }`}
           >
             {kycRejected
@@ -851,8 +863,8 @@ export default async function InvestmentsPage() {
           <h2
             className={`text-xl font-bold ${
               kycRejected
-                ? 'text-red-800'
-                : 'text-orange-800'
+                ? 'text-[var(--fin-danger)]'
+                : 'text-[var(--fin-warning)]'
             }`}
           >
             {kycRejected
@@ -863,8 +875,8 @@ export default async function InvestmentsPage() {
           <p
             className={`mx-auto mt-3 max-w-xl text-sm leading-relaxed ${
               kycRejected
-                ? 'text-red-700'
-                : 'text-orange-700'
+                ? 'text-[var(--fin-danger)]'
+                : 'text-[var(--fin-warning)]'
             }`}
           >
             {kycRejected
@@ -872,10 +884,10 @@ export default async function InvestmentsPage() {
               : 'Votre compte doit être vérifié et validé avant l’accès aux valeurs du marché. Une fois votre KYC approuvé, les valeurs disponibles apparaîtront automatiquement ici.'}
           </p>
 
-          <div className="mt-6 inline-flex items-center rounded-xl border border-white/70 bg-white/70 px-4 py-3 text-xs font-semibold text-slate-600">
+          <div className="mt-6 inline-flex items-center rounded-xl border border-[var(--fin-border)] bg-white/80 px-4 py-3 text-xs font-semibold text-[var(--fin-text-secondary)]">
             Statut actuel :
 
-            <span className="ml-2">
+            <span className="ml-2 text-[var(--fin-primary)]">
               {kycStatus ||
                 'En attente'}
             </span>
@@ -892,7 +904,7 @@ export default async function InvestmentsPage() {
 
           {offersError ? (
 
-            <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-red-700">
+            <div className="rounded-2xl border border-[var(--fin-danger)]/20 bg-[var(--fin-danger-light)] p-6 text-[var(--fin-danger)]">
 
               <p className="font-bold">
                 Impossible de charger les valeurs.
@@ -917,12 +929,14 @@ export default async function InvestmentsPage() {
                 ) => ({
                   ...offer,
 
+                  /*
+                   * IMPORTANT :
+                   * Le symbole vient directement
+                   * de investment_offers.symbol.
+                   */
                   symbol:
-                    tickerFromTitle(
-                      offer.title ??
-                        offer.company_name ??
-                        ''
-                    ),
+                    offer.symbol ??
+                    '—',
                 })
               )}
 

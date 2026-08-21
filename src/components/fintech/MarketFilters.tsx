@@ -49,7 +49,6 @@ type MarketFiltersProps = {
   offers: InvestmentOffer[]
   userBalance: number
   isKycValid: boolean
-
   ownedShares: Record<string, number>
 
   onBuy: (
@@ -243,16 +242,21 @@ export default function MarketFilters({
   return (
     <div className="space-y-5">
 
+      {/* =================================================
+          EN-TÊTE
+      ================================================= */}
+
       <div className="flex flex-col gap-1">
 
         <div className="flex items-center justify-between gap-3">
 
           <div>
-            <h2 className="text-lg font-bold text-slate-900">
+
+            <h2 className="text-lg font-bold text-[var(--fin-primary)]">
               Valeurs disponibles
             </h2>
 
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-[var(--fin-mute)]">
               {filteredOffers.length}{' '}
               {filteredOffers.length > 1
                 ? 'valeurs'
@@ -262,9 +266,10 @@ export default function MarketFilters({
                 ? 's'
                 : ''}
             </p>
+
           </div>
 
-          <div className="hidden sm:flex items-center gap-2 text-xs text-slate-400">
+          <div className="hidden sm:flex items-center gap-2 text-xs text-[var(--fin-mute)]">
 
             <SlidersHorizontal
               size={14}
@@ -278,11 +283,15 @@ export default function MarketFilters({
 
       </div>
 
+      {/* =================================================
+          RECHERCHE
+      ================================================= */}
+
       <div className="relative">
 
         <Search
           size={18}
-          className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+          className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--fin-mute)]"
         />
 
         <input
@@ -292,10 +301,14 @@ export default function MarketFilters({
             setSearch(event.target.value)
           }
           placeholder="Rechercher une valeur, une société ou un symbole..."
-          className="w-full rounded-2xl border border-slate-200 bg-white py-3.5 pl-11 pr-4 text-sm text-slate-900 outline-none shadow-sm transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+          className="w-full rounded-2xl border border-[var(--fin-border)] bg-white py-3.5 pl-11 pr-4 text-sm text-[var(--fin-text)] outline-none shadow-sm transition placeholder:text-[var(--fin-placeholder)] focus:border-[var(--fin-accent)] focus:ring-2 focus:ring-[var(--fin-accent)]/10"
         />
 
       </div>
+
+      {/* =================================================
+          TRI
+      ================================================= */}
 
       <div className="flex items-center justify-end">
 
@@ -303,7 +316,7 @@ export default function MarketFilters({
 
           <ArrowUpDown
             size={16}
-            className="text-slate-400 shrink-0"
+            className="text-[var(--fin-mute)] shrink-0"
           />
 
           <select
@@ -313,7 +326,7 @@ export default function MarketFilters({
                 event.target.value as SortOption
               )
             }
-            className="w-full lg:w-auto rounded-xl border border-slate-200 bg-white px-3 py-2.5 pr-8 text-sm font-medium text-slate-700 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+            className="w-full lg:w-auto rounded-xl border border-[var(--fin-border)] bg-white px-3 py-2.5 pr-8 text-sm font-medium text-[var(--fin-text-secondary)] outline-none transition focus:border-[var(--fin-accent)] focus:ring-2 focus:ring-[var(--fin-accent)]/10"
           >
 
             <option value="az">
@@ -346,40 +359,52 @@ export default function MarketFilters({
 
       </div>
 
+      {/* =================================================
+          AUCUNE VALEUR
+      ================================================= */}
+
       {filteredOffers.length === 0 ? (
 
-        <div className="rounded-3xl border border-slate-200 bg-white p-10 text-center shadow-sm">
+        <div className="rounded-3xl border border-[var(--fin-border)] bg-white p-10 text-center shadow-sm">
 
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--fin-primary-light)]">
 
             <Search
               size={20}
-              className="text-slate-400"
+              className="text-[var(--fin-primary)]"
             />
 
           </div>
 
-          <h3 className="font-bold text-slate-900">
+          <h3 className="font-bold text-[var(--fin-primary)]">
             Aucune valeur trouvée
           </h3>
 
-          <p className="mt-2 text-sm text-slate-500">
+          <p className="mt-2 text-sm text-[var(--fin-mute)]">
             Essayez un autre nom ou symbole.
           </p>
 
           {search && (
+
             <button
               type="button"
-              onClick={() => setSearch('')}
-              className="mt-4 text-sm font-semibold text-blue-600 hover:text-blue-700"
+              onClick={() =>
+                setSearch('')
+              }
+              className="mt-4 text-sm font-semibold text-[var(--fin-accent-dark)] transition hover:text-[var(--fin-accent)]"
             >
               Réinitialiser la recherche
             </button>
+
           )}
 
         </div>
 
       ) : (
+
+        /* =================================================
+           LISTE DES VALEURS
+        ================================================= */
 
         <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
 
@@ -389,13 +414,23 @@ export default function MarketFilters({
               <InvestmentCard
                 key={offer.id}
                 offer={offer}
-                userBalance={userBalance}
-                isKycValid={isKycValid}
-                ownedShares={
-                  ownedShares[offer.id] ?? 0
+                userBalance={
+                  userBalance
                 }
-                onBuy={onBuy}
-                onSell={onSell}
+                isKycValid={
+                  isKycValid
+                }
+                ownedShares={
+                  ownedShares[
+                    offer.id
+                  ] ?? 0
+                }
+                onBuy={
+                  onBuy
+                }
+                onSell={
+                  onSell
+                }
               />
 
             )
