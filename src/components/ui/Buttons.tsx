@@ -3,23 +3,36 @@
 import { cn } from '@/lib/utils'
 import type { ButtonHTMLAttributes } from 'react'
 
-type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'success'
+type Variant =
+  | 'primary'
+  | 'secondary'
+  | 'ghost'
+  | 'danger'
+  | 'success'
 
 const variants: Record<Variant, string> = {
   primary:
-    'bg-primary-gradient text-white shadow-glow hover:brightness-105 active:scale-[0.98]',
+    'bg-[var(--fin-primary)] text-white shadow-[0_8px_24px_rgba(20,40,59,0.18)] hover:bg-[var(--fin-primary-dark)] active:scale-[0.98]',
+
   secondary:
-    'bg-white text-slate-900 border border-slate-200 shadow-sm hover:bg-slate-50 active:scale-[0.98]',
-  ghost: 'bg-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-100 active:scale-[0.98]',
-  danger: 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-100',
-  success: 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100',
+    'bg-white text-[var(--fin-primary)] border border-[var(--fin-border)] shadow-sm hover:bg-[var(--fin-primary-light)] hover:border-[var(--fin-accent)]/30 active:scale-[0.98]',
+
+  ghost:
+    'bg-transparent text-[var(--fin-text-secondary)] hover:text-[var(--fin-primary)] hover:bg-[var(--fin-primary-light)] active:scale-[0.98]',
+
+  danger:
+    'bg-[var(--fin-danger-light)] text-[var(--fin-danger)] border border-[var(--fin-danger)]/20 hover:bg-[var(--fin-danger-light)]',
+
+  success:
+    'bg-[var(--fin-success-light)] text-[var(--fin-success)] border border-[var(--fin-success)]/20 hover:bg-[var(--fin-success-light)]',
 }
 
-type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: Variant
-  size?: 'sm' | 'md' | 'lg'
-  fullWidth?: boolean
-}
+type ButtonProps =
+  ButtonHTMLAttributes<HTMLButtonElement> & {
+    variant?: Variant
+    size?: 'sm' | 'md' | 'lg'
+    fullWidth?: boolean
+  }
 
 export function PrimaryButton({
   className,
@@ -33,11 +46,21 @@ export function PrimaryButton({
     <button
       className={cn(
         'inline-flex items-center justify-center gap-2 rounded-2xl font-semibold transition-all duration-200 disabled:opacity-50 disabled:pointer-events-none',
-        size === 'sm' && 'px-3.5 py-2 text-xs',
-        size === 'md' && 'px-5 py-3 text-sm',
-        size === 'lg' && 'px-6 py-3.5 text-sm',
-        fullWidth && 'w-full',
+
+        size === 'sm' &&
+          'px-3.5 py-2 text-xs',
+
+        size === 'md' &&
+          'px-5 py-3 text-sm',
+
+        size === 'lg' &&
+          'px-6 py-3.5 text-sm',
+
+        fullWidth &&
+          'w-full',
+
         variants[variant],
+
         className
       )}
       {...props}
@@ -47,6 +70,14 @@ export function PrimaryButton({
   )
 }
 
-export function SecondaryButton({ variant = 'secondary', ...props }: ButtonProps) {
-  return <PrimaryButton variant={variant} {...props} />
+export function SecondaryButton({
+  variant = 'secondary',
+  ...props
+}: ButtonProps) {
+  return (
+    <PrimaryButton
+      variant={variant}
+      {...props}
+    />
+  )
 }

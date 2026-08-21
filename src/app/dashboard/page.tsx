@@ -6,24 +6,29 @@ import { formatFcfa, formatPct } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
 
+type InvestmentOfferRelation = {
+  price_per_share: number | string | null
+  title: string | null
+  symbol: string | null
+}
+
 type InvestmentRow = {
   id: string
   shares_bought: number | string | null
   amount_invested: number | string | null
+
   investment_offers:
-    | {
-        price_per_share: number | string | null
-        title: string | null
-      }
-    | {
-        price_per_share: number | string | null
-        title: string | null
-      }[]
+    | InvestmentOfferRelation
+    | InvestmentOfferRelation[]
     | null
 }
 
 async function getDashboardData() {
   const supabase = createClient()
+
+  // =====================================================
+  // UTILISATEUR
+  // =====================================================
 
   const {
     data: { user },
@@ -34,102 +39,258 @@ async function getDashboardData() {
     redirect('/login')
   }
 
+  // =====================================================
+  // PROFIL + INVESTISSEMENTS
+  // =====================================================
+
   const [
     { data: profile, error: profileError },
     { data: investments, error: investmentsError },
   ] = await Promise.all([
     supabase
       .from('users')
-      .select('balance, first_name, last_name')
+      .select(
+        'balance, first_name, last_name'
+      )
       .eq('id', user.id)
       .single(),
 
     supabase
       .from('user_investments')
       .select(
-        'id, shares_bought, amount_invested, investment_offers ( price_per_share, title )'
+        `
+          id,
+          shares_bought,
+          amount_invested,
+          investment_offers (
+            price_per_share,
+            title,
+            symbol
+          )
+        `
       )
       .eq('user_id', user.id)
       .eq('status', 'actif')
-      .not('investment_offers', 'is', null)
-      .gt('shares_bought', 0),
+      .not(
+        'investment_offers',
+        'is',
+        null
+      )
+      .gt(
+        'shares_bought',
+        0
+      ),
   ])
 
-  if (profileError || !profile) {
+  // =====================================================
+  // ERREURS
+  // =====================================================
+
+  if (
+    profileError ||
+    !profile
+  ) {
     throw new Error(
-      profileError?.message ?? 'Profil utilisateur introuvable'
+      profileError?.message ??
+        'Profil utilisateur introuvable'
     )
   }
 
   if (investmentsError) {
-    throw new Error(investmentsError.message)
+    throw new Error(
+      investmentsError.message
+    )
   }
 
-  const rows = (investments || []).map((row: InvestmentRow) => {
-    const offer = Array.isArray(row.investment_offers)
-      ? row.investment_offers[0]
-      : row.investment_offers
+  // =====================================================
+  // POSITIONS
+  // =====================================================
 
-    const price = Number(offer?.price_per_share) || 0
-    const quantity = Number(row.shares_bought) || 0
-    const invested = Number(row.amount_invested) || 0
+  const rows = (
+    investments || []
+  ).map(
+    (row: InvestmentRow) => {
 
-    const value =
-      price > 0 && quantity > 0
-        ? price * quantity
-        : invested
+      const offer =
+        Array.isArray(
+          row.investment_offers
+        )
+          ? row.investment_offers[0]
+          : row.investment_offers
 
-    const changePct =
-      invested > 0
-        ? ((value - invested) / invested) * 100
-        : 0
+      // -------------------------------------------------
+      // DONNÉES
+      // -------------------------------------------------
 
-    return {
-      id: row.id,
-      title: offer?.title ?? 'Valeur',
-      quantity,
-      price,
-      value,
-      changePct,
+      const price =
+        Number(
+          offer?.price_per_share
+        ) || 0
+
+      const quantity =
+        Number(
+          row.shares_bought
+        ) || 0
+
+      const invested =
+        Number(
+          row.amount_invested
+        ) || 0
+
+      // -------------------------------------------------
+      // VALEUR ACTUELLE
+      // -------------------------------------------------
+
+      const value =
+        price > 0 &&
+        quantity > 0
+          ? price * quantity
+          : invested
+
+      // -------------------------------------------------
+      // PERFORMANCE
+      // -------------------------------------------------
+
+      const changePct =
+        invested > 0
+          ? (
+              (
+                value -
+                invested
+              ) /
+              invested
+            ) * 100
+          : 0
+
+      // -------------------------------------------------
+      // RETOUR
+      // -------------------------------------------------
+
+      return {
+        id: row.id,
+
+        title:
+          offer?.title ??
+          'Valeur',
+
+        /*
+         * IMPORTANT :
+         * On utilise maintenant le vrai
+         * symbole provenant de Supabase.
+         *
+         * Aucun tickerFromTitle()
+         * Aucun initialsFromTitle()
+         */
+        symbol:
+          offer?.symbol?.trim() ||
+          null,
+
+        quantity,
+
+        price,
+
+        value,
+
+        changePct,
+      }
     }
-  })
-
-  const cashBalance = Number(profile.balance) || 0
-
-  const totalPortfolioValue = rows.reduce(
-    (sum, row) => sum + Number(row.value || 0),
-    0
   )
 
-  const totalInvested = (investments || []).reduce(
-    (sum, row: InvestmentRow) =>
-      sum + (Number(row.amount_invested) || 0),
-    0
-  )
+  // =====================================================
+  // SOLDE DISPONIBLE
+  // =====================================================
+
+  const cashBalance =
+    Number(
+      profile.balance
+    ) || 0
+
+  // =====================================================
+  // VALEUR TOTALE DU PORTEFEUILLE
+  // =====================================================
+
+  const totalPortfolioValue =
+    rows.reduce(
+      (
+        sum,
+        row
+      ) =>
+        sum +
+        Number(
+          row.value || 0
+        ),
+      0
+    )
+
+  // =====================================================
+  // TOTAL INVESTI
+  // =====================================================
+
+  const totalInvested =
+    (
+      investments || []
+    ).reduce(
+      (
+        sum,
+        row: InvestmentRow
+      ) =>
+        sum +
+        (
+          Number(
+            row.amount_invested
+          ) || 0
+        ),
+      0
+    )
+
+  // =====================================================
+  // PERFORMANCE DU PORTEFEUILLE
+  // =====================================================
 
   const portfolioChangePct =
     totalInvested > 0
-      ? ((totalPortfolioValue - totalInvested) / totalInvested) * 100
+      ? (
+          (
+            totalPortfolioValue -
+            totalInvested
+          ) /
+          totalInvested
+        ) * 100
       : 0
+
+  // =====================================================
+  // RETOUR
+  // =====================================================
 
   return {
     firstName:
-      profile.first_name?.trim() || 'Client',
+      profile.first_name?.trim() ||
+      'Client',
 
     accountLabel:
       `${profile.first_name || 'Client'} ${
         profile.last_name || ''
-      }`.trim() || 'Portefeuille',
+      }`.trim() ||
+      'Portefeuille',
 
     cashBalance,
+
     totalPortfolioValue,
+
     portfolioChangePct,
+
     rows,
+
     totalInvested,
   }
 }
 
+// =======================================================
+// PAGE DASHBOARD
+// =======================================================
+
 export default async function DashboardPage() {
+
   const {
     firstName,
     accountLabel,
@@ -138,9 +299,11 @@ export default async function DashboardPage() {
     portfolioChangePct,
     rows,
     totalInvested,
-  } = await getDashboardData()
+  } =
+    await getDashboardData()
 
-  const positive = portfolioChangePct >= 0
+  const positive =
+    portfolioChangePct >= 0
 
   return (
     <div className="min-h-[100dvh] bg-[#F5F7FA]">
@@ -184,13 +347,17 @@ export default async function DashboardPage() {
             =================================================== */}
 
         <section className="mb-6">
+
           <BalanceCard
             accountLabel={accountLabel}
             balance={cashBalance}
             portfolioValue={totalPortfolioValue}
-            portfolioChangePct={portfolioChangePct}
+            portfolioChangePct={
+              portfolioChangePct
+            }
             status="ACTIF"
           />
+
         </section>
 
         {/* ===================================================
@@ -222,7 +389,9 @@ export default async function DashboardPage() {
               </p>
 
               <p className="mt-2 text-lg font-black tracking-tight text-[#061B31] sm:text-xl">
-                {formatFcfa(totalPortfolioValue)}
+                {formatFcfa(
+                  totalPortfolioValue
+                )}
               </p>
 
             </div>
@@ -236,7 +405,9 @@ export default async function DashboardPage() {
               </p>
 
               <p className="mt-2 text-lg font-black tracking-tight text-[#061B31] sm:text-xl">
-                {formatFcfa(totalInvested)}
+                {formatFcfa(
+                  totalInvested
+                )}
               </p>
 
             </div>
@@ -286,7 +457,9 @@ export default async function DashboardPage() {
                   }
                 `}
               >
-                {formatPct(portfolioChangePct)}
+                {formatPct(
+                  portfolioChangePct
+                )}
               </p>
 
             </div>
@@ -300,7 +473,9 @@ export default async function DashboardPage() {
               </p>
 
               <p className="mt-2 text-lg font-black tracking-tight text-[#061B31] sm:text-xl">
-                {formatFcfa(cashBalance)}
+                {formatFcfa(
+                  cashBalance
+                )}
               </p>
 
             </div>
@@ -371,6 +546,7 @@ export default async function DashboardPage() {
 
               <span className="text-[10px] font-bold text-[#A77C12]">
                 {rows.length}{' '}
+
                 {rows.length > 1
                   ? 'positions'
                   : 'position'}
