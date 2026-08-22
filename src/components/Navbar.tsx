@@ -17,7 +17,6 @@ import {
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
-import { logout as serverLogout } from '@/app/(auth)/login/actions'
 import { createClient } from '@/utils/supabase/client'
 import { PrimaryButton } from '@/components/ui/Buttons'
 import { cn, formatFcfa } from '@/lib/utils'
@@ -191,16 +190,29 @@ export default function Navbar({
   const logout = async () => {
     setOpen(false)
 
-    /*
-     * La déconnexion est effectuée
-     * par l'action serveur Supabase.
-     *
-     * IMPORTANT :
-     * Ne pas mettre serverLogout() dans un try/catch.
-     * redirect('/login') côté serveur utilise une
-     * interruption interne de Next.js.
-     */
-    await serverLogout()
+    try {
+      const { error } =
+        await supabase.auth.signOut()
+
+      if (error) {
+        console.error(
+          'Erreur de déconnexion:',
+          error
+        )
+        return
+      }
+
+      // Redirection immédiate vers la connexion
+      router.replace('/login')
+
+      // Rafraîchissement de l'état Next.js
+      router.refresh()
+    } catch (error) {
+      console.error(
+        'Erreur de déconnexion:',
+        error
+      )
+    }
   }
 
   // =====================================================
