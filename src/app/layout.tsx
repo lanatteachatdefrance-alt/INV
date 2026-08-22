@@ -5,12 +5,8 @@ import './globals.css'
 import { ensureAdminAccess } from '@/lib/admin'
 import { createClient } from '@/utils/supabase/server'
 
-import Navbar from '@/components/Navbar'
-import MobileBottomNav from '@/components/MobileBottomNav'
-import AppInstallHint from '@/components/AppInstallHint'
-import ServiceWorkerRegister from '@/components/ServiceWorkerRegister'
-import { Sidebar } from '@/components/Sidebar'
 import SplashScreen from '@/components/SplashScreen'
+import AppShell from '@/components/AppShell'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -19,16 +15,8 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: 'Investir Bourse',
-  description: 'Plateforme premium d’investissement boursier.',
+  description: 'Plateforme d’investissement boursier.',
   applicationName: 'Investir Bourse',
-
-  manifest: '/manifest.webmanifest',
-
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: 'default',
-    title: 'IB Bourse',
-  },
 
   formatDetection: {
     telephone: false,
@@ -87,8 +75,6 @@ export default async function RootLayout({
     )
   }
 
-  const showSidebar = !!user
-
   return (
     <html
       lang="fr"
@@ -107,89 +93,23 @@ export default async function RootLayout({
         `}
       >
 
-        {/* ÉCRAN DE CHARGEMENT */}
+        {/* =====================================================
+            ÉCRAN DE CHARGEMENT
+            ===================================================== */}
 
         <SplashScreen />
 
-        {/* CONTENEUR PRINCIPAL */}
-
-        <div
-          className="
-            flex
-            min-h-[100dvh]
-            w-full
-            min-w-0
-            overflow-x-hidden
-          "
-        >
-
-          {/* SIDEBAR DESKTOP */}
-
-          {showSidebar && (
-            <Sidebar
-              isAdmin={isAdmin}
-              userEmail={user?.email}
-            />
-          )}
-
-          {/* ZONE PRINCIPALE */}
-
-          <div
-            className="
-              flex
-              min-h-[100dvh]
-              min-w-0
-              flex-1
-              flex-col
-              overflow-x-hidden
-            "
-          >
-
-            {/* NAVBAR */}
-
-            <Navbar
-              userEmail={user?.email}
-            />
-
-            {/* CONTENU */}
-
-            <main
-              className="
-                w-full
-                min-w-0
-                flex-1
-                mx-0
-                pb-0
-                lg:mx-auto
-                lg:max-w-[1400px]
-                lg:pb-8
-              "
-            >
-              {children}
-            </main>
-
-          </div>
-        </div>
-
         {/* =====================================================
-            NAVIGATION MOBILE
-            UNIQUEMENT POUR LES UTILISATEURS CONNECTÉS
+            APPLICATION
             ===================================================== */}
 
-        {user && (
-          <MobileBottomNav
-            isLoggedIn={true}
-            isAdmin={isAdmin}
-          />
-        )}
-
-        {/* INSTALLATION PWA */}
-
-        <AppInstallHint />
-
-        {/* SERVICE WORKER */}
-
-        <ServiceWorkerRegister />
+        <AppShell
+          isLoggedIn={!!user}
+          isAdmin={isAdmin}
+          userEmail={user?.email}
+        >
+          {children}
+        </AppShell>
 
       </body>
     </html>
