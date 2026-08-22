@@ -728,9 +728,9 @@ function ProfileMenu({
 
         <button
           type="button"
-          onClick={() => {
-            void onLogout()
-          }}
+         onClick={() => {
+  alert('LE CLIC FONCTIONNE')
+}}
           disabled={loggingOut}
           className="flex w-full items-center justify-center gap-2 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold text-red-600 transition hover:bg-red-100 hover:text-red-700 active:bg-red-200 disabled:cursor-not-allowed disabled:opacity-60"
         >
