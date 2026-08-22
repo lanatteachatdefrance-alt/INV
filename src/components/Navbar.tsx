@@ -15,7 +15,14 @@ import {
   Wallet,
   X,
 } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import {
+  createPortal,
+} from 'react-dom'
+import {
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
 
 import { createClient } from '@/utils/supabase/client'
 import { PrimaryButton } from '@/components/ui/Buttons'
@@ -52,6 +59,8 @@ type ProfileMenuProps = {
   loading: boolean
   loggingOut: boolean
   onLogout: () => void
+  onClose?: () => void
+  mobile?: boolean
 }
 
 export default function Navbar({
@@ -74,7 +83,10 @@ export default function Navbar({
   const [loggingOut, setLoggingOut] =
     useState(false)
 
-  const menuRef =
+  const [mounted, setMounted] =
+    useState(false)
+
+  const desktopMenuRef =
     useRef<HTMLDivElement>(null)
 
   const title =
@@ -89,6 +101,18 @@ export default function Navbar({
     pathname.startsWith('/dashboard/') ||
     (pathname.startsWith('/admin/') &&
       pathname !== '/admin')
+
+  // =====================================================
+  // MONTAGE CLIENT
+  // =====================================================
+
+  useEffect(() => {
+    setMounted(true)
+
+    return () => {
+      setMounted(false)
+    }
+  }, [])
 
   // =====================================================
   // CHARGEMENT DU PROFIL
@@ -156,34 +180,80 @@ export default function Navbar({
   }, [userEmail, supabase])
 
   // =====================================================
-  // FERMETURE DU MENU EN CLIQUANT À L'EXTÉRIEUR
+  // FERMETURE DU MENU DESKTOP À L'EXTÉRIEUR
   // =====================================================
 
   useEffect(() => {
-    const handleClickOutside = (
-      event: MouseEvent
+    if (!open) {
+      return
+    }
+
+    const isDesktop =
+      window.matchMedia(
+        '(min-width: 1024px)'
+      ).matches
+
+    // Sur mobile, la fermeture est gérée
+    // par la couche du menu mobile.
+    if (!isDesktop) {
+      return
+    }
+
+    const handlePointerDown = (
+      event: PointerEvent
     ) => {
+      const target =
+        event.target as Node
+
       if (
-        menuRef.current &&
-        !menuRef.current.contains(
-          event.target as Node
+        desktopMenuRef.current &&
+        !desktopMenuRef.current.contains(
+          target
         )
       ) {
         setOpen(false)
       }
     }
 
-    if (open) {
-      document.addEventListener(
-        'mousedown',
-        handleClickOutside
-      )
-    }
+    document.addEventListener(
+      'pointerdown',
+      handlePointerDown
+    )
 
     return () => {
       document.removeEventListener(
-        'mousedown',
-        handleClickOutside
+        'pointerdown',
+        handlePointerDown
+      )
+    }
+  }, [open])
+
+  // =====================================================
+  // FERMETURE AVEC ESC
+  // =====================================================
+
+  useEffect(() => {
+    if (!open) {
+      return
+    }
+
+    const handleKeyDown = (
+      event: KeyboardEvent
+    ) => {
+      if (event.key === 'Escape') {
+        setOpen(false)
+      }
+    }
+
+    document.addEventListener(
+      'keydown',
+      handleKeyDown
+    )
+
+    return () => {
+      document.removeEventListener(
+        'keydown',
+        handleKeyDown
       )
     }
   }, [open])
@@ -193,10 +263,6 @@ export default function Navbar({
   // =====================================================
 
   const logout = async () => {
-    console.log(
-      'BOUTON DÉCONNEXION CLIQUÉ'
-    )
-
     if (loggingOut) {
       return
     }
@@ -210,11 +276,6 @@ export default function Navbar({
           scope: 'local',
         })
 
-      console.log(
-        'RÉSULTAT SIGNOUT:',
-        error
-      )
-
       if (error) {
         console.error(
           'Erreur Supabase déconnexion:',
@@ -225,14 +286,10 @@ export default function Navbar({
         return
       }
 
-      console.log(
-        'DÉCONNEXION RÉUSSIE'
-      )
-
       /*
        * Navigation complète du navigateur.
-       * Plus fiable ici qu'une navigation
-       * interne avec router.replace().
+       * Cela force le rechargement de l'application
+       * avec la session supprimée.
        */
       window.location.replace('/login')
     } catch (error) {
@@ -283,67 +340,117 @@ export default function Navbar({
     ? 'KYC valide'
     : 'KYC en attente'
 
-  return (
-    <header
-      className="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur-xl"
-      style={{
-        paddingTop:
-          'env(safe-area-inset-top)',
-      }}
-    >
+  // =====================================================
+  // MENU PROFIL MOBILE
+  // =====================================================
 
-      {/* =====================================================
-          MOBILE
-      ===================================================== */}
-
-      <div className="lg:hidden flex h-14 items-center justify-between gap-2 px-4">
-
-        {showBack ? (
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm"
-            aria-label="Retour"
-          >
-            <ChevronLeft size={20} />
-          </button>
-        ) : (
-          <Link
-            href={
-              userEmail
-                ? '/dashboard'
-                : '/'
+  const mobileProfileMenu =
+    open &&
+    !!userEmail &&
+    mounted
+      ? createPortal(
+          <ProfileMenu
+            fullName={fullName}
+            email={userEmail}
+            initials={initials}
+            balance={balance}
+            kycLabel={kycLabel}
+            isKycValid={isKycValid}
+            loading={loadingProfile}
+            loggingOut={loggingOut}
+            onLogout={logout}
+            onClose={() =>
+              setOpen(false)
             }
-            className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-[0_4px_16px_rgba(20,40,59,0.12)]"
-          >
-            <img
-              src="/ICONE.jpeg"
-              alt="Investir en Bourse"
-              className="h-full w-full object-contain p-1.5"
-            />
-          </Link>
-        )}
+            mobile
+          />,
+          document.body
+        )
+      : null
 
-        <div className="min-w-0 flex-1 text-center">
+  return (
+    <>
+      <header
+        className="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur-xl"
+        style={{
+          paddingTop:
+            'env(safe-area-inset-top)',
+        }}
+      >
 
-          <p className="truncate text-sm font-bold text-slate-900">
-            {title}
-          </p>
+        {/* =====================================================
+            MOBILE
+        ===================================================== */}
 
-          {userEmail && (
-            <p className="truncate text-[10px] text-fin-mute">
-              {fullName}
-            </p>
+        <div className="lg:hidden flex h-14 items-center justify-between gap-2 px-4">
+
+          {showBack ? (
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm"
+              aria-label="Retour"
+            >
+              <ChevronLeft size={20} />
+            </button>
+          ) : (
+            <Link
+              href={
+                userEmail
+                  ? '/dashboard'
+                  : '/'
+              }
+              className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-[0_4px_16px_rgba(20,40,59,0.12)]"
+            >
+              <img
+                src="/ICONE.jpeg"
+                alt="Investir en Bourse"
+                className="h-full w-full object-contain p-1.5"
+              />
+            </Link>
           )}
 
-        </div>
+          <div className="min-w-0 flex-1 text-center">
 
-        {userEmail ? (
-          <div
-            className="relative"
-            ref={menuRef}
-          >
+            <p className="truncate text-sm font-bold text-slate-900">
+              {title}
+            </p>
 
+            {userEmail && (
+              <p className="truncate text-[10px] text-fin-mute">
+                {fullName}
+              </p>
+            )}
+
+          </div>
+
+          {userEmail ? (
+            <div className="relative">
+
+              <button
+                type="button"
+                onClick={() =>
+                  setOpen(
+                    (value) => !value
+                  )
+                }
+                className={cn(
+                  'flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-900 text-xs font-bold text-white shadow-sm',
+                  open &&
+                    'ring-2 ring-blue-100'
+                )}
+                aria-label="Mon profil"
+                aria-expanded={open}
+              >
+                {open ? (
+                  <X size={18} />
+                ) : (
+                  initials
+                )}
+              </button>
+
+            </div>
+          ) : (
             <button
               type="button"
               onClick={() =>
@@ -351,206 +458,174 @@ export default function Navbar({
                   (value) => !value
                 )
               }
-              className={cn(
-                'flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-900 text-xs font-bold text-white shadow-sm',
-                open &&
-                  'ring-2 ring-blue-100'
-              )}
-              aria-label="Mon profil"
-              aria-expanded={open}
+              className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm"
+              aria-label="Menu"
             >
               {open ? (
                 <X size={18} />
               ) : (
-                initials
+                <Menu size={18} />
               )}
             </button>
-
-            {open && (
-              <ProfileMenu
-                fullName={fullName}
-                email={userEmail}
-                initials={initials}
-                balance={balance}
-                kycLabel={kycLabel}
-                isKycValid={isKycValid}
-                loading={loadingProfile}
-                loggingOut={loggingOut}
-                onLogout={logout}
-              />
-            )}
-
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() =>
-              setOpen(
-                (value) => !value
-              )
-            }
-            className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm"
-            aria-label="Menu"
-          >
-            {open ? (
-              <X size={18} />
-            ) : (
-              <Menu size={18} />
-            )}
-          </button>
-        )}
-
-      </div>
-
-      {/* =====================================================
-          DESKTOP
-      ===================================================== */}
-
-      <div className="hidden h-16 items-center justify-between px-6 lg:flex">
-
-        <div>
-
-          <p className="text-sm font-bold text-slate-900">
-            {title}
-          </p>
-
-          <p className="text-[11px] text-fin-mute">
-            Marchés régionaux - Temps réel
-          </p>
-
-        </div>
-
-        <div className="flex items-center gap-3">
-
-          {userEmail ? (
-            <>
-
-              <button
-                type="button"
-                className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:text-slate-900"
-                aria-label="Notifications"
-              >
-                <Bell size={18} />
-              </button>
-
-              <div
-                className="relative"
-                ref={menuRef}
-              >
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    setOpen(
-                      (value) => !value
-                    )
-                  }
-                  className={cn(
-                    'flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-2 shadow-sm transition',
-                    'hover:border-blue-200 hover:bg-blue-50/30'
-                  )}
-                  aria-label="Mon profil"
-                  aria-expanded={open}
-                >
-
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900 text-xs font-bold text-white">
-                    {initials}
-                  </div>
-
-                  <div className="max-w-[150px] text-left">
-
-                    <p className="truncate text-xs font-bold text-slate-900">
-                      {fullName}
-                    </p>
-
-                    <p className="truncate text-[10px] text-slate-400">
-                      Mon profil
-                    </p>
-
-                  </div>
-
-                  <ChevronDown
-                    size={15}
-                    className={cn(
-                      'text-slate-400 transition-transform',
-                      open &&
-                        'rotate-180'
-                    )}
-                  />
-
-                </button>
-
-                {open && (
-                  <ProfileMenu
-                    fullName={fullName}
-                    email={userEmail}
-                    initials={initials}
-                    balance={balance}
-                    kycLabel={kycLabel}
-                    isKycValid={isKycValid}
-                    loading={loadingProfile}
-                    loggingOut={loggingOut}
-                    onLogout={logout}
-                  />
-                )}
-
-              </div>
-
-            </>
-          ) : (
-            <>
-
-              <Link
-                href="/login"
-                className="text-sm font-semibold text-slate-600 hover:text-slate-900"
-              >
-                Se connecter
-              </Link>
-
-              <Link href="/register">
-                <PrimaryButton size="sm">
-                  Créer un compte
-                </PrimaryButton>
-              </Link>
-
-            </>
           )}
 
         </div>
 
-      </div>
+        {/* =====================================================
+            DESKTOP
+        ===================================================== */}
 
-      {/* =====================================================
-          MENU MOBILE NON CONNECTÉ
-      ===================================================== */}
+        <div className="hidden h-16 items-center justify-between px-6 lg:flex">
 
-      {open && !userEmail && (
-        <div className="space-y-2 border-t border-slate-200 bg-white p-4 lg:hidden">
+          <div>
 
-          <Link
-            href="/login"
-            onClick={() =>
-              setOpen(false)
-            }
-            className="block rounded-2xl bg-slate-100 p-4 text-center text-sm font-semibold text-slate-900"
-          >
-            Se connecter
-          </Link>
+            <p className="text-sm font-bold text-slate-900">
+              {title}
+            </p>
 
-          <Link
-            href="/register"
-            onClick={() =>
-              setOpen(false)
-            }
-            className="block rounded-2xl bg-primary-gradient p-4 text-center text-sm font-semibold text-white"
-          >
-            Créer un compte
-          </Link>
+            <p className="text-[11px] text-fin-mute">
+              Marchés régionaux - Temps réel
+            </p>
+
+          </div>
+
+          <div className="flex items-center gap-3">
+
+            {userEmail ? (
+              <>
+
+                <button
+                  type="button"
+                  className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:text-slate-900"
+                  aria-label="Notifications"
+                >
+                  <Bell size={18} />
+                </button>
+
+                <div
+                  className="relative"
+                  ref={desktopMenuRef}
+                >
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setOpen(
+                        (value) => !value
+                      )
+                    }
+                    className={cn(
+                      'flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-2 shadow-sm transition',
+                      'hover:border-blue-200 hover:bg-blue-50/30'
+                    )}
+                    aria-label="Mon profil"
+                    aria-expanded={open}
+                  >
+
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900 text-xs font-bold text-white">
+                      {initials}
+                    </div>
+
+                    <div className="max-w-[150px] text-left">
+
+                      <p className="truncate text-xs font-bold text-slate-900">
+                        {fullName}
+                      </p>
+
+                      <p className="truncate text-[10px] text-slate-400">
+                        Mon profil
+                      </p>
+
+                    </div>
+
+                    <ChevronDown
+                      size={15}
+                      className={cn(
+                        'text-slate-400 transition-transform',
+                        open &&
+                          'rotate-180'
+                      )}
+                    />
+
+                  </button>
+
+                  {open && (
+                    <ProfileMenu
+                      fullName={fullName}
+                      email={userEmail}
+                      initials={initials}
+                      balance={balance}
+                      kycLabel={kycLabel}
+                      isKycValid={isKycValid}
+                      loading={loadingProfile}
+                      loggingOut={loggingOut}
+                      onLogout={logout}
+                      onClose={() =>
+                        setOpen(false)
+                      }
+                    />
+                  )}
+
+                </div>
+
+              </>
+            ) : (
+              <>
+
+                <Link
+                  href="/login"
+                  className="text-sm font-semibold text-slate-600 hover:text-slate-900"
+                >
+                  Se connecter
+                </Link>
+
+                <Link href="/register">
+                  <PrimaryButton size="sm">
+                    Créer un compte
+                  </PrimaryButton>
+                </Link>
+
+              </>
+            )}
+
+          </div>
 
         </div>
-      )}
 
-    </header>
+        {/* =====================================================
+            MENU MOBILE NON CONNECTÉ
+        ===================================================== */}
+
+        {open && !userEmail && (
+          <div className="space-y-2 border-t border-slate-200 bg-white p-4 lg:hidden">
+
+            <Link
+              href="/login"
+              onClick={() =>
+                setOpen(false)
+              }
+              className="block rounded-2xl bg-slate-100 p-4 text-center text-sm font-semibold text-slate-900"
+            >
+              Se connecter
+            </Link>
+
+            <Link
+              href="/register"
+              onClick={() =>
+                setOpen(false)
+              }
+              className="block rounded-2xl bg-primary-gradient p-4 text-center text-sm font-semibold text-white"
+            >
+              Créer un compte
+            </Link>
+
+          </div>
+        )}
+
+      </header>
+
+      {mobileProfileMenu}
+    </>
   )
 }
 
@@ -568,10 +643,35 @@ function ProfileMenu({
   loading,
   loggingOut,
   onLogout,
+  onClose,
+  mobile = false,
 }: ProfileMenuProps) {
 
-  return (
-    <div className="absolute right-0 top-[calc(100%+10px)] z-[100] w-[310px] max-w-[calc(100vw-24px)] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/10">
+  // =====================================================
+  // REF PROPRE AU MENU
+  // =====================================================
+
+  const menuRef =
+    useRef<HTMLDivElement>(null)
+
+  // =====================================================
+  // CONTENU DU MENU
+  // =====================================================
+
+  const content = (
+    <div
+      className="
+        w-[310px]
+        max-w-[calc(100vw-24px)]
+        overflow-hidden
+        rounded-3xl
+        border
+        border-slate-200
+        bg-white
+        shadow-2xl
+        shadow-slate-900/10
+      "
+    >
 
       {/* HEADER PROFIL */}
 
@@ -720,19 +820,41 @@ function ProfileMenu({
 
       </div>
 
-      {/* =====================================================
-          DÉCONNEXION
-      ===================================================== */}
+      {/* DÉCONNEXION */}
 
       <div className="border-t border-slate-100 p-3">
 
         <button
           type="button"
-         onClick={() => {
-  alert('LE CLIC FONCTIONNE')
-}}
+          onClick={() => {
+            void onLogout()
+          }}
           disabled={loggingOut}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold text-red-600 transition hover:bg-red-100 hover:text-red-700 active:bg-red-200 disabled:cursor-not-allowed disabled:opacity-60"
+          className="
+            relative
+            z-[10000]
+            flex
+            w-full
+            touch-manipulation
+            items-center
+            justify-center
+            gap-2
+            rounded-2xl
+            border
+            border-red-100
+            bg-red-50
+            px-4
+            py-3
+            text-sm
+            font-bold
+            text-red-600
+            transition
+            hover:bg-red-100
+            hover:text-red-700
+            active:bg-red-200
+            disabled:cursor-not-allowed
+            disabled:opacity-60
+          "
         >
 
           <LogOut size={16} />
@@ -745,6 +867,82 @@ function ProfileMenu({
 
       </div>
 
+    </div>
+  )
+
+  // =====================================================
+  // VERSION MOBILE
+  // =====================================================
+
+  if (mobile) {
+    return (
+      <div
+        className="
+          fixed
+          inset-0
+          z-[9998]
+          pointer-events-auto
+        "
+        role="dialog"
+        aria-modal="true"
+        aria-label="Menu profil"
+      >
+
+        {/* FOND */}
+
+        <button
+          type="button"
+          aria-label="Fermer le menu"
+          onClick={() => {
+            onClose?.()
+          }}
+          className="
+            absolute
+            inset-0
+            h-full
+            w-full
+            cursor-default
+            bg-transparent
+          "
+        />
+
+        {/* MENU */}
+
+        <div
+          ref={menuRef}
+          className="
+            absolute
+            right-3
+            top-[calc(env(safe-area-inset-top)+64px)]
+            z-[9999]
+            touch-manipulation
+          "
+          onClick={(event) => {
+            event.stopPropagation()
+          }}
+        >
+          {content}
+        </div>
+
+      </div>
+    )
+  }
+
+  // =====================================================
+  // VERSION DESKTOP
+  // =====================================================
+
+  return (
+    <div
+      ref={menuRef}
+      className="
+        absolute
+        right-0
+        top-[calc(100%+10px)]
+        z-[100]
+      "
+    >
+      {content}
     </div>
   )
 }
