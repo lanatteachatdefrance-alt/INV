@@ -50,6 +50,7 @@ type ProfileMenuProps = {
   kycLabel: string
   isKycValid: boolean
   loading: boolean
+  loggingOut: boolean
   onLogout: () => void
 }
 
@@ -63,10 +64,14 @@ export default function Navbar({
   const supabase = createClient()
 
   const [open, setOpen] = useState(false)
+
   const [profile, setProfile] =
     useState<Profile | null>(null)
 
   const [loadingProfile, setLoadingProfile] =
+    useState(false)
+
+  const [loggingOut, setLoggingOut] =
     useState(false)
 
   const menuRef =
@@ -188,30 +193,55 @@ export default function Navbar({
   // =====================================================
 
   const logout = async () => {
+    console.log(
+      'BOUTON DÉCONNEXION CLIQUÉ'
+    )
+
+    if (loggingOut) {
+      return
+    }
+
+    setLoggingOut(true)
     setOpen(false)
 
     try {
       const { error } =
-        await supabase.auth.signOut()
+        await supabase.auth.signOut({
+          scope: 'local',
+        })
+
+      console.log(
+        'RÉSULTAT SIGNOUT:',
+        error
+      )
 
       if (error) {
         console.error(
-          'Erreur de déconnexion:',
-          error
+          'Erreur Supabase déconnexion:',
+          error.message
         )
+
+        setLoggingOut(false)
         return
       }
 
-      // Redirection immédiate vers la connexion
-      router.replace('/login')
+      console.log(
+        'DÉCONNEXION RÉUSSIE'
+      )
 
-      // Rafraîchissement de l'état Next.js
-      router.refresh()
+      /*
+       * Navigation complète du navigateur.
+       * Plus fiable ici qu'une navigation
+       * interne avec router.replace().
+       */
+      window.location.replace('/login')
     } catch (error) {
       console.error(
-        'Erreur de déconnexion:',
+        'Erreur déconnexion:',
         error
       )
+
+      setLoggingOut(false)
     }
   }
 
@@ -345,6 +375,7 @@ export default function Navbar({
                 kycLabel={kycLabel}
                 isKycValid={isKycValid}
                 loading={loadingProfile}
+                loggingOut={loggingOut}
                 onLogout={logout}
               />
             )}
@@ -458,6 +489,7 @@ export default function Navbar({
                     kycLabel={kycLabel}
                     isKycValid={isKycValid}
                     loading={loadingProfile}
+                    loggingOut={loggingOut}
                     onLogout={logout}
                   />
                 )}
@@ -534,6 +566,7 @@ function ProfileMenu({
   kycLabel,
   isKycValid,
   loading,
+  loggingOut,
   onLogout,
 }: ProfileMenuProps) {
 
@@ -695,13 +728,18 @@ function ProfileMenu({
 
         <button
           type="button"
-          onClick={onLogout}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold text-red-600 transition hover:bg-red-100 hover:text-red-700 active:bg-red-200"
+          onClick={() => {
+            void onLogout()
+          }}
+          disabled={loggingOut}
+          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold text-red-600 transition hover:bg-red-100 hover:text-red-700 active:bg-red-200 disabled:cursor-not-allowed disabled:opacity-60"
         >
 
           <LogOut size={16} />
 
-          Déconnexion
+          {loggingOut
+            ? 'Déconnexion...'
+            : 'Déconnexion'}
 
         </button>
 
