@@ -3,7 +3,15 @@
 import { register } from './actions'
 import Link from 'next/link'
 import { useState } from 'react'
-import { ChevronLeft, ChevronRight, User, Mail, MapPin, Lock, CalendarDays } from 'lucide-react'
+import {
+  ChevronLeft,
+  ChevronRight,
+  User,
+  Mail,
+  MapPin,
+  Lock,
+  CalendarDays,
+} from 'lucide-react'
 
 type Step = 1 | 2 | 3 | 4
 
@@ -27,10 +35,7 @@ type FormData = {
 }
 
 const countries = [
-  // =====================================================
   // UEMOA
-  // =====================================================
-
   { name: 'Bénin', code: '+229', flag: '🇧🇯' },
   { name: 'Burkina Faso', code: '+226', flag: '🇧🇫' },
   { name: "Côte d’Ivoire", code: '+225', flag: '🇨🇮' },
@@ -40,10 +45,7 @@ const countries = [
   { name: 'Sénégal', code: '+221', flag: '🇸🇳' },
   { name: 'Togo', code: '+228', flag: '🇹🇬' },
 
-  // =====================================================
-  // AFRIQUE CENTRALE
-  // =====================================================
-
+  // Afrique centrale
   { name: 'Cameroun', code: '+237', flag: '🇨🇲' },
   { name: 'République centrafricaine', code: '+236', flag: '🇨🇫' },
   { name: 'Tchad', code: '+235', flag: '🇹🇩' },
@@ -52,10 +54,7 @@ const countries = [
   { name: 'Gabon', code: '+241', flag: '🇬🇦' },
   { name: 'Guinée équatoriale', code: '+240', flag: '🇬🇶' },
 
-  // =====================================================
-  // AFRIQUE
-  // =====================================================
-
+  // Afrique
   { name: 'Algérie', code: '+213', flag: '🇩🇿' },
   { name: 'Angola', code: '+244', flag: '🇦🇴' },
   { name: 'Botswana', code: '+267', flag: '🇧🇼' },
@@ -96,10 +95,7 @@ const countries = [
   { name: 'Zambie', code: '+260', flag: '🇿🇲' },
   { name: 'Zimbabwe', code: '+263', flag: '🇿🇼' },
 
-  // =====================================================
-  // EUROPE
-  // =====================================================
-
+  // Europe
   { name: 'France', code: '+33', flag: '🇫🇷' },
   { name: 'Belgique', code: '+32', flag: '🇧🇪' },
   { name: 'Suisse', code: '+41', flag: '🇨🇭' },
@@ -121,18 +117,15 @@ const countries = [
   { name: 'Roumanie', code: '+40', flag: '🇷🇴' },
   { name: 'République tchèque', code: '+420', flag: '🇨🇿' },
 
-  // =====================================================
-  // AMÉRIQUE DU NORD
-  // =====================================================
-
+  // Amérique du Nord
   { name: 'États-Unis', code: '+1', flag: '🇺🇸' },
   { name: 'Canada', code: '+1', flag: '🇨🇦' },
 ]
 
 export default function Register() {
   const [step, setStep] = useState<Step>(1)
-
   const [error, setError] = useState('')
+  const [showCountries, setShowCountries] = useState(false)
 
   const [form, setForm] = useState<FormData>({
     firstName: '',
@@ -152,9 +145,6 @@ export default function Register() {
     password: '',
     confirmPassword: '',
   })
-
-  const [showCountries, setShowCountries] =
-    useState(false)
 
   const update = (
     field: keyof FormData,
@@ -186,9 +176,7 @@ export default function Register() {
       }
 
       if (!form.over18) {
-        setError(
-          'Vous devez confirmer avoir plus de 18 ans.'
-        )
+        setError('Vous devez confirmer avoir plus de 18 ans.')
         return false
       }
     }
@@ -270,20 +258,16 @@ export default function Register() {
     ) || countries[0]
 
   return (
-    <main className="fixed inset-0 overflow-hidden bg-[#061b31] text-white">
-
-      {/* =====================================================
-          FORMULAIRE COMPLET
-      ===================================================== */}
+    <main className="fixed inset-0 h-[100dvh] overflow-hidden bg-[#061b31] text-white">
 
       <form
         action={register}
         className="flex h-full min-h-0 flex-col"
       >
 
-        {/* ===================================================
-            CHAMPS CACHÉS POUR L'ACTION SERVER
-        =================================================== */}
+        {/* =====================================================
+            DONNÉES ENVOYÉES À L'ACTION SERVER
+        ===================================================== */}
 
         <input
           type="hidden"
@@ -363,887 +347,755 @@ export default function Register() {
           value={form.confirmPassword}
         />
 
+        {/* =====================================================
+            PARTIE BLEUE + LOGO
+        ===================================================== */}
 
-        {/* ===================================================
-            HEADER
-        =================================================== */}
+        <div className="relative shrink-0 bg-[#061b31]">
 
-        <header className="relative z-50 flex h-[86px] shrink-0 items-center justify-between border-b border-white/10 bg-[#061b31] px-5">
+          {/* décoration exactement dans l'esprit de l'image */}
 
-          {/* RETOUR */}
+          <div className="pointer-events-none absolute -right-40 -top-48 h-[520px] w-[520px] rounded-full bg-[#123b69]/50" />
 
-          <button
-            type="button"
-            onClick={() => {
-              if (step > 1) {
-                previousStep()
-              } else {
-                window.history.back()
-              }
-            }}
-            className="flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white transition active:scale-95"
-            aria-label="Retour"
-          >
-            <ChevronLeft size={24} />
-          </button>
+          <div className="relative flex h-[340px] items-center justify-center">
 
-
-          {/* LOGO */}
-
-          <Link
-            href="/"
-            className="absolute left-1/2 flex -translate-x-1/2 items-center justify-center"
-          >
-            <img
-              src="/ICONE.jpeg"
-              alt="Investir en Bourse"
-              className="h-[62px] w-[62px] rounded-2xl object-contain"
-            />
-          </Link>
-
-
-          {/* ÉTAPE */}
-
-          <div className="text-right">
-
-            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-[#d4a72c]">
-              ÉTAPE
-            </p>
-
-            <p className="text-sm font-black">
-              {step} / 4
-            </p>
+            <Link
+              href="/"
+              className="relative z-10 flex items-center justify-center"
+            >
+              <img
+                src="/ICONE.jpeg"
+                alt="Investir en Bourse"
+                className="h-[105px] w-[105px] rounded-[26px] object-contain shadow-2xl"
+              />
+            </Link>
 
           </div>
 
-        </header>
+        </div>
 
+        {/* =====================================================
+            CARTE BLANCHE
+        ===================================================== */}
 
-        {/* ===================================================
-            CONTENU
-        =================================================== */}
+        <section className="min-h-0 flex-1 overflow-hidden rounded-t-[24px] bg-white">
 
-        <section className="min-h-0 flex-1 overflow-hidden">
-
-          <div className="mx-auto flex h-full w-full max-w-lg flex-col px-5">
+          <div className="mx-auto flex h-full w-full max-w-[680px] flex-col px-[37px] pt-[36px]">
 
             {/* =================================================
-                TITRE + PROGRESSION
+                ÉTAPE 1
             ================================================= */}
 
-            <div className="shrink-0 pt-6">
+            {step === 1 && (
 
-              <div className="flex items-end justify-between">
+              <div className="flex min-h-0 flex-1 flex-col text-[#111827]">
 
-                <div>
+                {/* TYPE DE CLIENT */}
 
-                  <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[#d4a72c]">
-                    ÉTAPE {step} / 4
-                  </p>
+                <div className="relative shrink-0">
 
-                  <h1 className="mt-2 text-[25px] font-black leading-none">
-                    {step === 1 &&
-                      'Votre identité'}
+                  <select
+                    className="h-[82px] w-full appearance-none rounded-[5px] border border-[#9b9b9b] bg-white px-5 text-[17px] font-semibold text-[#111827] outline-none"
+                    defaultValue="Client"
+                  >
+                    <option value="Client">
+                      Client
+                    </option>
+                  </select>
 
-                    {step === 2 &&
-                      'Vos coordonnées'}
-
-                    {step === 3 &&
-                      'Informations générales'}
-
-                    {step === 4 &&
-                      'Sécurisez votre compte'}
-                  </h1>
+                  <span className="pointer-events-none absolute right-6 top-1/2 -translate-y-1/2 border-l-[10px] border-r-[10px] border-t-[11px] border-l-transparent border-r-transparent border-t-[#777]" />
 
                 </div>
 
-                <p className="text-sm font-black text-slate-400">
-                  {step * 25}%
-                </p>
+
+                {/* PARTICULIER / ENTREPRISE */}
+
+                <div className="mt-[28px] flex items-center justify-between px-[27px]">
+
+                  <button
+                    type="button"
+                    className="flex items-center gap-4 text-[17px] font-bold"
+                  >
+
+                    <span className="flex h-[34px] w-[34px] items-center justify-center rounded-full border-[4px] border-[#092d61]">
+                      <span className="h-[16px] w-[16px] rounded-full bg-[#092d61]" />
+                    </span>
+
+                    PARTICULIER
+
+                  </button>
+
+                  <button
+                    type="button"
+                    className="flex items-center gap-4 text-[17px] font-bold"
+                  >
+
+                    <span className="h-[34px] w-[34px] rounded-full border-[4px] border-[#858585]" />
+
+                    ENTREPRISE
+
+                  </button>
+
+                </div>
+
+
+                {/* NOM */}
+
+                <div className="relative mt-[27px] shrink-0">
+
+                  <label className="absolute -top-[10px] left-[80px] bg-white px-[7px] text-[16px] text-[#999]">
+                    Nom *
+                  </label>
+
+                  <User
+                    size={23}
+                    className="absolute left-[30px] top-1/2 -translate-y-1/2 text-[#999]"
+                  />
+
+                  <input
+                    value={form.lastName}
+                    onChange={(event) =>
+                      update(
+                        'lastName',
+                        event.target.value
+                      )
+                    }
+                    className="h-[90px] w-full rounded-[5px] border-[3px] border-[#092d61] bg-white pl-[82px] pr-5 text-[18px] text-[#111827] outline-none"
+                    placeholder=""
+                  />
+
+                  <span className="absolute right-[38px] top-1/2 -translate-y-1/2 text-[20px] text-[#d65d55]">
+                    *
+                  </span>
+
+                </div>
+
+
+                {/* PRÉNOMS */}
+
+                <div className="relative mt-[38px] shrink-0">
+
+                  <User
+                    size={23}
+                    className="absolute left-[30px] top-1/2 -translate-y-1/2 text-[#999]"
+                  />
+
+                  <input
+                    value={form.firstName}
+                    onChange={(event) =>
+                      update(
+                        'firstName',
+                        event.target.value
+                      )
+                    }
+                    className="h-[90px] w-full rounded-[5px] border border-[#999] bg-white pl-[82px] pr-5 text-[18px] text-[#111827] outline-none focus:border-[#092d61]"
+                    placeholder="Prénoms *"
+                  />
+
+                </div>
+
+
+                {/* CIVILITÉ */}
+
+                <div className="mt-[36px] flex items-center justify-between px-[27px]">
+
+                  {[
+                    ['M.', 'M.'],
+                    ['Mme', 'Mme'],
+                    ['Mlle', 'Mlle'],
+                  ].map(([value, label]) => (
+
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() =>
+                        update(
+                          'civility',
+                          value
+                        )
+                      }
+                      className="flex items-center gap-4 text-[17px] font-bold"
+                    >
+
+                      <span
+                        className={`flex h-[34px] w-[34px] items-center justify-center rounded-full border-[4px] ${
+                          form.civility === value
+                            ? 'border-[#092d61]'
+                            : 'border-[#858585]'
+                        }`}
+                      >
+                        {form.civility === value && (
+                          <span className="h-[16px] w-[16px] rounded-full bg-[#092d61]" />
+                        )}
+                      </span>
+
+                      {label}
+
+                    </button>
+
+                  ))}
+
+                </div>
+
+
+                {/* MAJEUR */}
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    update(
+                      'over18',
+                      !form.over18
+                    )
+                  }
+                  className="mt-[30px] flex h-[92px] shrink-0 items-center gap-[28px] rounded-[5px] border border-[#999] px-[20px] text-left"
+                >
+
+                  <span
+                    className={`flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[3px] border-[4px] ${
+                      form.over18
+                        ? 'border-[#d4a72c] bg-[#d4a72c]'
+                        : 'border-[#777]'
+                    }`}
+                  >
+                    {form.over18 && (
+                      <span className="text-[20px] font-black text-white">
+                        ✓
+                      </span>
+                    )}
+                  </span>
+
+                  <span className="text-[18px] font-bold">
+                    J'ai plus de 18 ans
+                  </span>
+
+                </button>
+
+
+                {error && (
+                  <p className="mt-3 text-center text-[13px] font-semibold text-red-600">
+                    {error}
+                  </p>
+                )}
+
+
+                {/* BOUTON */}
+
+                <button
+                  type="button"
+                  onClick={nextStep}
+                  className="mt-[28px] h-[84px] shrink-0 rounded-[5px] bg-[#dcae16] text-[18px] font-black text-white shadow-[0_7px_12px_rgba(0,0,0,0.18)]"
+                >
+                  Suivant
+                </button>
 
               </div>
 
-
-              {/* PROGRESSION */}
-
-              <div className="mt-5 h-2 overflow-hidden rounded-full bg-[#193650]">
-
-                <div
-                  className="h-full rounded-full bg-[#d4a72c] transition-all duration-500"
-                  style={{
-                    width: `${step * 25}%`,
-                  }}
-                />
-
-              </div>
-
-            </div>
+            )}
 
 
             {/* =================================================
-                CARTE FORMULAIRE
+                ÉTAPE 2
             ================================================= */}
 
-            <div className="min-h-0 flex-1 pt-6">
+            {step === 2 && (
 
-              <div className="h-full overflow-hidden rounded-[28px] bg-white p-5 text-slate-900 shadow-2xl">
+              <div className="flex min-h-0 flex-1 flex-col text-[#111827]">
 
-                {/* =================================================
-                    STEP 1
-                ================================================= */}
+                <div className="mb-[30px]">
 
-                {step === 1 && (
+                  <p className="text-[12px] font-black uppercase tracking-[0.25em] text-[#d4a72c]">
+                    ÉTAPE 2 / 4
+                  </p>
 
-                  <div className="flex h-full flex-col">
+                  <h2 className="mt-2 text-[23px] font-black">
+                    Vos coordonnées
+                  </h2>
 
-                    <div className="shrink-0">
-
-                      <div className="flex items-center gap-4">
-
-                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#d4a72c] text-lg font-black text-[#061b31]">
-                          01
-                        </div>
-
-                        <div>
-
-                          <h2 className="text-2xl font-black">
-                            Votre identité
-                          </h2>
-
-                          <p className="mt-1 text-sm text-slate-400">
-                            Commençons par faire connaissance.
-                          </p>
-
-                        </div>
-
-                      </div>
-
-                    </div>
+                </div>
 
 
-                    <div className="mt-7 min-h-0 flex-1">
+                {/* TÉLÉPHONE */}
 
-                      <label className="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">
-                        Prénom *
-                      </label>
+                <label className="mb-2 text-[15px] font-bold text-[#555]">
+                  Téléphone *
+                </label>
 
-                      <div className="relative">
+                <div className="relative">
 
-                        <User
-                          size={19}
-                          className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-                        />
-
-                        <input
-                          value={form.firstName}
-                          onChange={(event) =>
-                            update(
-                              'firstName',
-                              event.target.value
-                            )
-                          }
-                          className="h-[56px] w-full rounded-2xl border border-slate-200 bg-slate-50 pl-12 pr-4 text-sm font-semibold outline-none transition focus:border-[#d4a72c] focus:ring-2 focus:ring-[#d4a72c]/20"
-                          placeholder="Entrez votre prénom"
-                        />
-
-                      </div>
-
-
-                      <label className="mb-2 mt-5 block text-xs font-black uppercase tracking-wider text-slate-500">
-                        Nom *
-                      </label>
-
-                      <div className="relative">
-
-                        <User
-                          size={19}
-                          className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-                        />
-
-                        <input
-                          value={form.lastName}
-                          onChange={(event) =>
-                            update(
-                              'lastName',
-                              event.target.value
-                            )
-                          }
-                          className="h-[56px] w-full rounded-2xl border border-slate-200 bg-slate-50 pl-12 pr-4 text-sm font-semibold outline-none transition focus:border-[#d4a72c] focus:ring-2 focus:ring-[#d4a72c]/20"
-                          placeholder="Entrez votre nom"
-                        />
-
-                      </div>
-
-
-                      <p className="mb-3 mt-5 text-xs font-black uppercase tracking-wider text-slate-500">
-                        Civilité *
-                      </p>
-
-                      <div className="grid grid-cols-3 gap-2">
-
-                        {[
-                          ['M.', 'M.'],
-                          ['Mme', 'Mme'],
-                          ['Mlle', 'Mlle'],
-                        ].map(([value, label]) => (
-
-                          <button
-                            key={value}
-                            type="button"
-                            onClick={() =>
-                              update(
-                                'civility',
-                                value
-                              )
-                            }
-                            className={`flex h-12 items-center justify-center gap-2 rounded-xl border text-sm font-bold transition ${
-                              form.civility === value
-                                ? 'border-[#d4a72c] bg-[#fff8df] text-[#9a7616]'
-                                : 'border-slate-200 bg-slate-50 text-slate-600'
-                            }`}
-                          >
-
-                            <span
-                              className={`h-4 w-4 rounded-full border-2 ${
-                                form.civility === value
-                                  ? 'border-[#d4a72c] bg-[#d4a72c] shadow-[inset_0_0_0_3px_white]'
-                                  : 'border-slate-400'
-                              }`}
-                            />
-
-                            {label}
-
-                          </button>
-
-                        ))}
-
-                      </div>
-
-
-                      <button
-                        type="button"
-                        onClick={() =>
-                          update(
-                            'over18',
-                            !form.over18
-                          )
-                        }
-                        className={`mt-5 flex h-14 w-full items-center gap-3 rounded-2xl border px-4 text-left transition ${
-                          form.over18
-                            ? 'border-[#d4a72c] bg-[#fff8df]'
-                            : 'border-slate-200 bg-slate-50'
-                        }`}
-                      >
-
-                        <span
-                          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md border-2 ${
-                            form.over18
-                              ? 'border-[#d4a72c] bg-[#d4a72c] text-[#061b31]'
-                              : 'border-slate-400'
-                          }`}
-                        >
-                          {form.over18 && '✓'}
-                        </span>
-
-                        <span className="text-sm font-bold">
-                          J'ai plus de 18 ans
-                        </span>
-
-                      </button>
-
-                    </div>
-
-
-                    {error && (
-                      <p className="mt-3 shrink-0 text-center text-xs font-semibold text-red-600">
-                        {error}
-                      </p>
-                    )}
-
+                  <div className="flex h-[72px] overflow-hidden rounded-[5px] border border-[#999]">
 
                     <button
                       type="button"
-                      onClick={nextStep}
-                      className="mt-4 flex h-[58px] shrink-0 w-full items-center justify-center gap-2 rounded-2xl bg-[#d4a72c] text-sm font-black text-[#061b31] shadow-lg shadow-[#d4a72c]/20 transition active:scale-[0.98]"
+                      onClick={() =>
+                        setShowCountries(
+                          !showCountries
+                        )
+                      }
+                      className="flex w-[130px] shrink-0 items-center gap-3 border-r border-[#aaa] px-4"
                     >
-                      CONTINUER
-                      <ChevronRight size={18} />
+
+                      <span className="text-[22px]">
+                        {selectedCountry.flag}
+                      </span>
+
+                      <span className="text-[16px] font-bold">
+                        {selectedCountry.code}
+                      </span>
+
+                      <ChevronRight
+                        size={17}
+                        className={`ml-auto transition ${
+                          showCountries
+                            ? 'rotate-90'
+                            : ''
+                        }`}
+                      />
+
                     </button>
 
-                  </div>
-
-                )}
-
-
-                {/* =================================================
-                    STEP 2
-                ================================================= */}
-
-                {step === 2 && (
-
-                  <div className="flex h-full flex-col">
-
-                    <div className="flex items-center gap-4 shrink-0">
-
-                      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#d4a72c] text-lg font-black text-[#061b31]">
-                        02
-                      </div>
-
-                      <div>
-
-                        <h2 className="text-2xl font-black">
-                          Vos coordonnées
-                        </h2>
-
-                        <p className="mt-1 text-sm text-slate-400">
-                          Comment pouvons-nous vous joindre ?
-                        </p>
-
-                      </div>
-
-                    </div>
-
-
-                    <div className="mt-7 min-h-0 flex-1">
-
-                      <label className="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">
-                        Téléphone *
-                      </label>
-
-
-                      {/* PAYS */}
-
-                      <div className="relative">
-
-                        <div className="flex h-[58px] overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
-
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setShowCountries(
-                                !showCountries
-                              )
-                            }
-                            className="flex w-[125px] shrink-0 items-center gap-2 border-r border-slate-200 px-3 text-left"
-                          >
-
-                            <span className="text-xl">
-                              {selectedCountry.flag}
-                            </span>
-
-                            <span className="text-sm font-bold">
-                              {selectedCountry.code}
-                            </span>
-
-                            <ChevronRight
-                              size={15}
-                              className={`ml-auto text-slate-400 transition ${
-                                showCountries
-                                  ? 'rotate-90'
-                                  : ''
-                              }`}
-                            />
-
-                          </button>
-
-
-                          <input
-                            value={form.phone}
-                            onChange={(event) =>
-                              update(
-                                'phone',
-                                event.target.value.replace(
-                                  /\D/g,
-                                  ''
-                                )
-                              )
-                            }
-                            inputMode="numeric"
-                            className="min-w-0 flex-1 bg-transparent px-4 text-sm font-semibold outline-none"
-                            placeholder="Votre numéro"
-                          />
-
-                        </div>
-
-
-                        {showCountries && (
-
-                          <div className="absolute left-0 right-0 top-[64px] z-50 max-h-56 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-2xl">
-
-                            {countries.map(
-                              (country) => (
-
-                                <button
-                                  key={`${country.name}-${country.code}`}
-                                  type="button"
-                                  onClick={() => {
-
-                                    update(
-                                      'countryCode',
-                                      country.code
-                                    )
-
-                                    update(
-                                      'countryName',
-                                      country.name
-                                    )
-
-                                    setShowCountries(
-                                      false
-                                    )
-
-                                  }}
-                                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm hover:bg-slate-50"
-                                >
-
-                                  <span className="text-lg">
-                                    {country.flag}
-                                  </span>
-
-                                  <span className="flex-1 font-semibold">
-                                    {country.name}
-                                  </span>
-
-                                  <span className="text-slate-400">
-                                    {country.code}
-                                  </span>
-
-                                </button>
-
-                              )
-                            )}
-
-                          </div>
-
-                        )}
-
-                      </div>
-
-
-                      <label className="mb-2 mt-5 block text-xs font-black uppercase tracking-wider text-slate-500">
-                        Date de naissance *
-                      </label>
-
-                      <div className="relative">
-
-                        <CalendarDays
-                          size={19}
-                          className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-                        />
-
-                        <input
-                          type="date"
-                          value={form.dateOfBirth}
-                          onChange={(event) =>
-                            update(
-                              'dateOfBirth',
-                              event.target.value
-                            )
-                          }
-                          className="h-[58px] w-full rounded-2xl border border-slate-200 bg-slate-50 pl-12 pr-4 text-sm font-semibold outline-none focus:border-[#d4a72c] focus:ring-2 focus:ring-[#d4a72c]/20"
-                        />
-
-                      </div>
-
-                    </div>
-
-
-                    {error && (
-                      <p className="mt-3 shrink-0 text-center text-xs font-semibold text-red-600">
-                        {error}
-                      </p>
-                    )}
-
-
-                    <div className="mt-4 grid shrink-0 grid-cols-2 gap-3">
-
-                      <button
-                        type="button"
-                        onClick={previousStep}
-                        className="flex h-[56px] items-center justify-center gap-2 rounded-2xl border-2 border-[#d4a72c] bg-white text-sm font-black text-[#9a7616]"
-                      >
-                        <ChevronLeft size={18} />
-                        PRÉCÉDENT
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={nextStep}
-                        className="flex h-[56px] items-center justify-center gap-2 rounded-2xl bg-[#d4a72c] text-sm font-black text-[#061b31] shadow-lg shadow-[#d4a72c]/20"
-                      >
-                        SUIVANT
-                        <ChevronRight size={18} />
-                      </button>
-
-                    </div>
-
-                  </div>
-
-                )}
-
-
-                {/* =================================================
-                    STEP 3
-                ================================================= */}
-
-                {step === 3 && (
-
-                  <div className="flex h-full flex-col">
-
-                    <div className="flex items-center gap-4 shrink-0">
-
-                      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#d4a72c] text-lg font-black text-[#061b31]">
-                        03
-                      </div>
-
-                      <div>
-
-                        <h2 className="text-2xl font-black">
-                          Informations générales
-                        </h2>
-
-                        <p className="mt-1 text-sm text-slate-400">
-                          Quelques informations complémentaires.
-                        </p>
-
-                      </div>
-
-                    </div>
-
-
-                    <div className="mt-7 min-h-0 flex-1">
-
-                      <label className="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">
-                        Nationalité *
-                      </label>
-
-                      <div className="relative">
-
-                        <User
-                          size={19}
-                          className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-                        />
-
-                        <input
-                          value={form.nationality}
-                          onChange={(event) =>
-                            update(
-                              'nationality',
-                              event.target.value
-                            )
-                          }
-                          className="h-[56px] w-full rounded-2xl border border-slate-200 bg-slate-50 pl-12 pr-4 text-sm font-semibold outline-none focus:border-[#d4a72c] focus:ring-2 focus:ring-[#d4a72c]/20"
-                          placeholder="Votre nationalité"
-                        />
-
-                      </div>
-
-
-                      <label className="mb-2 mt-5 block text-xs font-black uppercase tracking-wider text-slate-500">
-                        Adresse e-mail *
-                      </label>
-
-                      <div className="relative">
-
-                        <Mail
-                          size={19}
-                          className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-                        />
-
-                        <input
-                          type="email"
-                          value={form.email}
-                          onChange={(event) =>
-                            update(
-                              'email',
-                              event.target.value
-                            )
-                          }
-                          autoComplete="email"
-                          className="h-[56px] w-full rounded-2xl border border-slate-200 bg-slate-50 pl-12 pr-4 text-sm font-semibold outline-none focus:border-[#d4a72c] focus:ring-2 focus:ring-[#d4a72c]/20"
-                          placeholder="nom@exemple.com"
-                        />
-
-                      </div>
-
-
-                      <label className="mb-2 mt-5 block text-xs font-black uppercase tracking-wider text-slate-500">
-                        Adresse *
-                      </label>
-
-                      <div className="relative">
-
-                        <MapPin
-                          size={19}
-                          className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-                        />
-
-                        <input
-                          value={form.address}
-                          onChange={(event) =>
-                            update(
-                              'address',
-                              event.target.value
-                            )
-                          }
-                          className="h-[56px] w-full rounded-2xl border border-slate-200 bg-slate-50 pl-12 pr-4 text-sm font-semibold outline-none focus:border-[#d4a72c] focus:ring-2 focus:ring-[#d4a72c]/20"
-                          placeholder="Votre adresse"
-                        />
-
-                      </div>
-
-                    </div>
-
-
-                    {error && (
-                      <p className="mt-3 shrink-0 text-center text-xs font-semibold text-red-600">
-                        {error}
-                      </p>
-                    )}
-
-
-                    <div className="mt-4 grid shrink-0 grid-cols-2 gap-3">
-
-                      <button
-                        type="button"
-                        onClick={previousStep}
-                        className="flex h-[56px] items-center justify-center gap-2 rounded-2xl border-2 border-[#d4a72c] bg-white text-sm font-black text-[#9a7616]"
-                      >
-                        <ChevronLeft size={18} />
-                        PRÉCÉDENT
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={nextStep}
-                        className="flex h-[56px] items-center justify-center gap-2 rounded-2xl bg-[#d4a72c] text-sm font-black text-[#061b31] shadow-lg shadow-[#d4a72c]/20"
-                      >
-                        SUIVANT
-                        <ChevronRight size={18} />
-                      </button>
-
-                    </div>
-
-                  </div>
-
-                )}
-
-
-                {/* =================================================
-                    STEP 4
-                ================================================= */}
-
-                {step === 4 && (
-
-                  <div className="flex h-full flex-col">
-
-                    <div className="flex items-center gap-4 shrink-0">
-
-                      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#d4a72c] text-lg font-black text-[#061b31]">
-                        04
-                      </div>
-
-                      <div>
-
-                        <h2 className="text-2xl font-black">
-                          Sécurisez votre compte
-                        </h2>
-
-                        <p className="mt-1 text-sm text-slate-400">
-                          Choisissez un mot de passe sécurisé.
-                        </p>
-
-                      </div>
-
-                    </div>
-
-
-                    <div className="mt-7 min-h-0 flex-1">
-
-                      <label className="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">
-                        Mot de passe *
-                      </label>
-
-                      <div className="relative">
-
-                        <Lock
-                          size={19}
-                          className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-                        />
-
-                        <input
-                          type="password"
-                          value={form.password}
-                          onChange={(event) =>
-                            update(
-                              'password',
-                              event.target.value
-                            )
-                          }
-                          autoComplete="new-password"
-                          className="h-[56px] w-full rounded-2xl border border-slate-200 bg-slate-50 pl-12 pr-4 text-sm font-semibold outline-none focus:border-[#d4a72c] focus:ring-2 focus:ring-[#d4a72c]/20"
-                          placeholder="Votre mot de passe"
-                        />
-
-                      </div>
-
-
-                      <label className="mb-2 mt-5 block text-xs font-black uppercase tracking-wider text-slate-500">
-                        Répéter le mot de passe *
-                      </label>
-
-                      <div className="relative">
-
-                        <Lock
-                          size={19}
-                          className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-                        />
-
-                        <input
-                          type="password"
-                          value={form.confirmPassword}
-                          onChange={(event) =>
-                            update(
-                              'confirmPassword',
-                              event.target.value
-                            )
-                          }
-                          autoComplete="new-password"
-                          className="h-[56px] w-full rounded-2xl border border-slate-200 bg-slate-50 pl-12 pr-4 text-sm font-semibold outline-none focus:border-[#d4a72c] focus:ring-2 focus:ring-[#d4a72c]/20"
-                          placeholder="Confirmez votre mot de passe"
-                        />
-
-                      </div>
-
-
-                      {/* RÈGLES */}
-
-                      <div className="mt-5 space-y-2">
-
-                        {[
-                          [
-                            form.password.length >= 8,
-                            'Au moins 8 caractères',
-                          ],
-                          [
-                            /[a-z]/.test(
-                              form.password
-                            ),
-                            '1 lettre minuscule',
-                          ],
-                          [
-                            /[A-Z]/.test(
-                              form.password
-                            ),
-                            '1 lettre majuscule',
-                          ],
-                          [
-                            /\d/.test(
-                              form.password
-                            ),
-                            '1 chiffre',
-                          ],
-                          [
-                            /[^A-Za-z0-9]/.test(
-                              form.password
-                            ),
-                            '1 caractère spécial',
-                          ],
-                        ].map(
-                          ([valid, text]) => (
-
-                            <div
-                              key={String(text)}
-                              className="flex items-center gap-2"
-                            >
-
-                              <span
-                                className={`h-3 w-3 rounded-full ${
-                                  valid
-                                    ? 'bg-emerald-500'
-                                    : 'bg-slate-300'
-                                }`}
-                              />
-
-                              <span
-                                className={`text-xs ${
-                                  valid
-                                    ? 'font-semibold text-emerald-600'
-                                    : 'text-slate-400'
-                                }`}
-                              >
-                                {text}
-                              </span>
-
-                            </div>
-
+                    <input
+                      value={form.phone}
+                      onChange={(event) =>
+                        update(
+                          'phone',
+                          event.target.value.replace(
+                            /\D/g,
+                            ''
                           )
-                        )}
-
-                      </div>
-
-                    </div>
-
-
-                    {error && (
-                      <p className="mt-3 shrink-0 text-center text-xs font-semibold text-red-600">
-                        {error}
-                      </p>
-                    )}
-
-
-                    <div className="mt-4 grid shrink-0 grid-cols-2 gap-3">
-
-                      <button
-                        type="button"
-                        onClick={previousStep}
-                        className="flex h-[56px] items-center justify-center gap-2 rounded-2xl border-2 border-[#d4a72c] bg-white text-sm font-black text-[#9a7616]"
-                      >
-                        <ChevronLeft size={18} />
-                        PRÉCÉDENT
-                      </button>
-
-                      <button
-                        type="submit"
-                        onClick={(event) => {
-                          if (!validateStep()) {
-                            event.preventDefault()
-                          }
-                        }}
-                        className="flex h-[56px] items-center justify-center rounded-2xl bg-[#d4a72c] text-sm font-black text-[#061b31] shadow-lg shadow-[#d4a72c]/20"
-                      >
-                        ENREGISTRER
-                      </button>
-
-                    </div>
+                        )
+                      }
+                      inputMode="numeric"
+                      className="min-w-0 flex-1 px-4 text-[17px] outline-none"
+                      placeholder="Numéro de téléphone"
+                    />
 
                   </div>
 
+
+                  {showCountries && (
+
+                    <div className="absolute left-0 right-0 top-[80px] z-50 max-h-[300px] overflow-y-auto rounded-[6px] border border-[#aaa] bg-white p-2 shadow-2xl">
+
+                      {countries.map((country) => (
+
+                        <button
+                          key={`${country.name}-${country.code}`}
+                          type="button"
+                          onClick={() => {
+
+                            update(
+                              'countryCode',
+                              country.code
+                            )
+
+                            update(
+                              'countryName',
+                              country.name
+                            )
+
+                            setShowCountries(false)
+
+                          }}
+                          className="flex w-full items-center gap-3 px-3 py-3 text-left text-[14px]"
+                        >
+
+                          <span>
+                            {country.flag}
+                          </span>
+
+                          <span className="flex-1">
+                            {country.name}
+                          </span>
+
+                          <span className="text-[#777]">
+                            {country.code}
+                          </span>
+
+                        </button>
+
+                      ))}
+
+                    </div>
+
+                  )}
+
+                </div>
+
+
+                {/* DATE */}
+
+                <label className="mb-2 mt-[30px] text-[15px] font-bold text-[#555]">
+                  Date de naissance *
+                </label>
+
+                <div className="relative">
+
+                  <CalendarDays
+                    size={22}
+                    className="absolute left-[24px] top-1/2 -translate-y-1/2 text-[#092d61]"
+                  />
+
+                  <input
+                    type="date"
+                    value={form.dateOfBirth}
+                    onChange={(event) =>
+                      update(
+                        'dateOfBirth',
+                        event.target.value
+                      )
+                    }
+                    className="h-[72px] w-full rounded-[5px] border border-[#999] bg-white pl-[65px] pr-4 text-[16px] outline-none focus:border-[#092d61]"
+                  />
+
+                </div>
+
+
+                {error && (
+                  <p className="mt-4 text-center text-[13px] font-semibold text-red-600">
+                    {error}
+                  </p>
                 )}
+
+
+                <div className="mt-auto grid grid-cols-2 gap-3 pt-[25px]">
+
+                  <button
+                    type="button"
+                    onClick={previousStep}
+                    className="h-[72px] rounded-[5px] border-2 border-[#d4a72c] bg-white text-[15px] font-black text-[#9a7616]"
+                  >
+                    PRÉCÉDENT
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={nextStep}
+                    className="h-[72px] rounded-[5px] bg-[#dcae16] text-[15px] font-black text-white shadow-[0_7px_12px_rgba(0,0,0,0.18)]"
+                  >
+                    SUIVANT
+                  </button>
+
+                </div>
 
               </div>
 
-            </div>
+            )}
 
 
             {/* =================================================
-                LIEN CONNEXION
+                ÉTAPE 3
             ================================================= */}
 
-            <div className="shrink-0 py-4 text-center">
+            {step === 3 && (
 
-              <p className="text-xs text-slate-400">
-                Vous avez déjà un compte ?
-              </p>
+              <div className="flex min-h-0 flex-1 flex-col text-[#111827]">
 
-              <Link
-                href="/login"
-                className="mt-1 inline-block text-sm font-black text-[#d4a72c]"
-              >
-                Se connecter
-              </Link>
+                <div className="mb-[30px]">
 
-            </div>
+                  <p className="text-[12px] font-black uppercase tracking-[0.25em] text-[#d4a72c]">
+                    ÉTAPE 3 / 4
+                  </p>
+
+                  <h2 className="mt-2 text-[23px] font-black">
+                    Informations générales
+                  </h2>
+
+                </div>
+
+
+                {/* NATIONALITÉ */}
+
+                <label className="mb-2 text-[15px] font-bold text-[#555]">
+                  Nationalité *
+                </label>
+
+                <div className="relative">
+
+                  <User
+                    size={22}
+                    className="absolute left-[24px] top-1/2 -translate-y-1/2 text-[#092d61]"
+                  />
+
+                  <input
+                    value={form.nationality}
+                    onChange={(event) =>
+                      update(
+                        'nationality',
+                        event.target.value
+                      )
+                    }
+                    className="h-[72px] w-full rounded-[5px] border border-[#999] pl-[65px] pr-4 text-[17px] outline-none focus:border-[#092d61]"
+                    placeholder="Votre nationalité"
+                  />
+
+                </div>
+
+
+                {/* EMAIL */}
+
+                <label className="mb-2 mt-[28px] text-[15px] font-bold text-[#555]">
+                  Adresse e-mail *
+                </label>
+
+                <div className="relative">
+
+                  <Mail
+                    size={22}
+                    className="absolute left-[24px] top-1/2 -translate-y-1/2 text-[#092d61]"
+                  />
+
+                  <input
+                    type="email"
+                    value={form.email}
+                    onChange={(event) =>
+                      update(
+                        'email',
+                        event.target.value
+                      )
+                    }
+                    autoComplete="email"
+                    className="h-[72px] w-full rounded-[5px] border border-[#999] pl-[65px] pr-4 text-[17px] outline-none focus:border-[#092d61]"
+                    placeholder="nom@exemple.com"
+                  />
+
+                </div>
+
+
+                {/* ADRESSE */}
+
+                <label className="mb-2 mt-[28px] text-[15px] font-bold text-[#555]">
+                  Adresse *
+                </label>
+
+                <div className="relative">
+
+                  <MapPin
+                    size={22}
+                    className="absolute left-[24px] top-1/2 -translate-y-1/2 text-[#092d61]"
+                  />
+
+                  <input
+                    value={form.address}
+                    onChange={(event) =>
+                      update(
+                        'address',
+                        event.target.value
+                      )
+                    }
+                    className="h-[72px] w-full rounded-[5px] border border-[#999] pl-[65px] pr-4 text-[17px] outline-none focus:border-[#092d61]"
+                    placeholder="Votre adresse"
+                  />
+
+                </div>
+
+
+                {error && (
+                  <p className="mt-4 text-center text-[13px] font-semibold text-red-600">
+                    {error}
+                  </p>
+                )}
+
+
+                <div className="mt-auto grid grid-cols-2 gap-3 pt-[25px]">
+
+                  <button
+                    type="button"
+                    onClick={previousStep}
+                    className="h-[72px] rounded-[5px] border-2 border-[#d4a72c] bg-white text-[15px] font-black text-[#9a7616]"
+                  >
+                    PRÉCÉDENT
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={nextStep}
+                    className="h-[72px] rounded-[5px] bg-[#dcae16] text-[15px] font-black text-white shadow-[0_7px_12px_rgba(0,0,0,0.18)]"
+                  >
+                    SUIVANT
+                  </button>
+
+                </div>
+
+              </div>
+
+            )}
+
+
+            {/* =================================================
+                ÉTAPE 4
+            ================================================= */}
+
+            {step === 4 && (
+
+              <div className="flex min-h-0 flex-1 flex-col text-[#111827]">
+
+                <div className="mb-[30px]">
+
+                  <p className="text-[12px] font-black uppercase tracking-[0.25em] text-[#d4a72c]">
+                    ÉTAPE 4 / 4
+                  </p>
+
+                  <h2 className="mt-2 text-[23px] font-black">
+                    Sécurisez votre compte
+                  </h2>
+
+                </div>
+
+
+                {/* MOT DE PASSE */}
+
+                <label className="mb-2 text-[15px] font-bold text-[#555]">
+                  Mot de passe *
+                </label>
+
+                <div className="relative">
+
+                  <Lock
+                    size={22}
+                    className="absolute left-[24px] top-1/2 -translate-y-1/2 text-[#092d61]"
+                  />
+
+                  <input
+                    type="password"
+                    value={form.password}
+                    onChange={(event) =>
+                      update(
+                        'password',
+                        event.target.value
+                      )
+                    }
+                    autoComplete="new-password"
+                    className="h-[72px] w-full rounded-[5px] border border-[#999] pl-[65px] pr-4 text-[17px] outline-none focus:border-[#092d61]"
+                    placeholder="Mot de passe"
+                  />
+
+                </div>
+
+
+                {/* CONFIRMATION */}
+
+                <label className="mb-2 mt-[28px] text-[15px] font-bold text-[#555]">
+                  Répéter le mot de passe *
+                </label>
+
+                <div className="relative">
+
+                  <Lock
+                    size={22}
+                    className="absolute left-[24px] top-1/2 -translate-y-1/2 text-[#092d61]"
+                  />
+
+                  <input
+                    type="password"
+                    value={form.confirmPassword}
+                    onChange={(event) =>
+                      update(
+                        'confirmPassword',
+                        event.target.value
+                      )
+                    }
+                    autoComplete="new-password"
+                    className="h-[72px] w-full rounded-[5px] border border-[#999] pl-[65px] pr-4 text-[17px] outline-none focus:border-[#092d61]"
+                    placeholder="Répéter le mot de passe"
+                  />
+
+                </div>
+
+
+                {/* RÈGLES */}
+
+                <div className="mt-[25px] space-y-[8px]">
+
+                  {[
+                    [
+                      form.password.length >= 8,
+                      'Au moins 8 caractères',
+                    ],
+                    [
+                      /[a-z]/.test(form.password),
+                      '1 lettre minuscule',
+                    ],
+                    [
+                      /[A-Z]/.test(form.password),
+                      '1 lettre majuscule',
+                    ],
+                    [
+                      /\d/.test(form.password),
+                      '1 chiffre',
+                    ],
+                    [
+                      /[^A-Za-z0-9]/.test(form.password),
+                      '1 caractère spécial',
+                    ],
+                  ].map(([valid, text]) => (
+
+                    <div
+                      key={String(text)}
+                      className="flex items-center gap-3"
+                    >
+
+                      <span
+                        className={`h-[10px] w-[10px] rounded-full ${
+                          valid
+                            ? 'bg-emerald-500'
+                            : 'bg-[#d0d0d0]'
+                        }`}
+                      />
+
+                      <span
+                        className={`text-[13px] ${
+                          valid
+                            ? 'text-emerald-600'
+                            : 'text-[#c8c8c8]'
+                        }`}
+                      >
+                        {text}
+                      </span>
+
+                    </div>
+
+                  ))}
+
+                </div>
+
+
+                {error && (
+                  <p className="mt-3 text-center text-[13px] font-semibold text-red-600">
+                    {error}
+                  </p>
+                )}
+
+
+                <div className="mt-auto grid grid-cols-2 gap-3 pt-[25px]">
+
+                  <button
+                    type="button"
+                    onClick={previousStep}
+                    className="h-[72px] rounded-[5px] border-2 border-[#d4a72c] bg-white text-[15px] font-black text-[#9a7616]"
+                  >
+                    PRÉCÉDENT
+                  </button>
+
+                  <button
+                    type="submit"
+                    onClick={(event) => {
+
+                      if (!validateStep()) {
+                        event.preventDefault()
+                      }
+
+                    }}
+                    className="h-[72px] rounded-[5px] bg-[#dcae16] text-[15px] font-black text-white shadow-[0_7px_12px_rgba(0,0,0,0.18)]"
+                  >
+                    ENREGISTRER
+                  </button>
+
+                </div>
+
+              </div>
+
+            )}
 
           </div>
 
