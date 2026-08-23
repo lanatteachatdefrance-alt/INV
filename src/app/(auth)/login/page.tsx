@@ -11,17 +11,19 @@ export default function Login({
   const error = searchParams?.error
 
   return (
-    <main className="min-h-[100dvh] bg-[#f3f7fb]">
+    <main className="h-[100dvh] w-full overflow-hidden bg-[#f3f7fb]">
 
       {/* =====================================================
           DESKTOP
-      ===================================================== */}
+          ===================================================== */}
 
-      <div className="hidden min-h-[100dvh] lg:grid lg:grid-cols-2">
+      <div className="hidden h-[100dvh] overflow-hidden lg:grid lg:grid-cols-2">
 
-        {/* PANNEAU GAUCHE */}
+        {/* =================================================
+            PANNEAU GAUCHE
+            ================================================= */}
 
-        <section className="relative flex min-h-[100dvh] flex-col overflow-hidden bg-[#061b31] px-12 py-10 text-white">
+        <section className="relative flex h-[100dvh] flex-col overflow-hidden bg-[#061b31] px-12 py-10 text-white">
 
           <div className="pointer-events-none absolute -right-32 -top-32 h-96 w-96 rounded-full bg-blue-500/10 blur-3xl" />
 
@@ -32,14 +34,17 @@ export default function Login({
           <div className="relative z-10 flex items-center gap-4">
 
             <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-lg">
+
               <img
                 src="/ICONE.jpeg"
                 alt="Investir en Bourse"
                 className="h-full w-full object-contain"
               />
+
             </div>
 
             <div>
+
               <p className="text-lg font-black tracking-tight">
                 INVESTIR
               </p>
@@ -47,9 +52,11 @@ export default function Login({
               <p className="text-lg font-black leading-none text-[#d4a72c]">
                 EN BOURSE
               </p>
+
             </div>
 
           </div>
+
 
           {/* CONTENU */}
 
@@ -58,56 +65,79 @@ export default function Login({
             <div className="max-w-xl">
 
               <div className="mb-5 inline-flex items-center rounded-full border border-white/10 bg-white/5 px-4 py-2">
+
                 <span className="mr-2 h-2 w-2 rounded-full bg-[#d4a72c]" />
 
                 <span className="text-xs font-semibold tracking-wide text-white/70">
                   PLATEFORME D’INVESTISSEMENT
                 </span>
+
               </div>
 
+
               <h1 className="text-5xl font-black leading-[1.05] tracking-tight xl:text-6xl">
+
                 Votre avenir,
+
                 <br />
+
                 <span className="text-[#d4a72c]">
                   notre priorité.
                 </span>
+
               </h1>
+
 
               <p className="mt-7 max-w-lg text-base leading-7 text-slate-300">
                 Accédez à votre espace personnel et suivez
                 vos investissements sur le marché régional.
               </p>
 
+
               <div className="mt-10 space-y-4">
 
                 <div className="flex items-center gap-4">
+
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10">
-                    <span className="text-[#d4a72c]">✓</span>
+                    <span className="text-[#d4a72c]">
+                      ✓
+                    </span>
                   </div>
 
                   <p className="text-sm text-white/80">
                     Suivez votre portefeuille en temps réel
                   </p>
+
                 </div>
 
+
                 <div className="flex items-center gap-4">
+
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10">
-                    <span className="text-[#d4a72c]">✓</span>
+                    <span className="text-[#d4a72c]">
+                      ✓
+                    </span>
                   </div>
 
                   <p className="text-sm text-white/80">
                     Accédez aux opportunités du marché régional
                   </p>
+
                 </div>
 
+
                 <div className="flex items-center gap-4">
+
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10">
-                    <span className="text-[#d4a72c]">✓</span>
+                    <span className="text-[#d4a72c]">
+                      ✓
+                    </span>
                   </div>
 
                   <p className="text-sm text-white/80">
                     Gérez vos opérations depuis un seul espace
                   </p>
+
                 </div>
 
               </div>
@@ -116,24 +146,32 @@ export default function Login({
 
           </div>
 
+
           {/* FOOTER */}
 
           <div className="relative z-10 border-t border-white/10 pt-5">
+
             <p className="text-xs text-white/40">
               © {new Date().getFullYear()} Investir en Bourse —
               Votre avenir, notre priorité.
             </p>
+
           </div>
 
         </section>
 
-        {/* PANNEAU DROIT */}
 
-        <section className="flex min-h-[100dvh] items-center justify-center bg-[#f3f7fb] px-10 py-12">
+        {/* =================================================
+            PANNEAU DROIT
+            ================================================= */}
+
+        <section className="flex h-[100dvh] items-center justify-center overflow-hidden bg-[#f3f7fb] px-10 py-8">
 
           <div className="w-full max-w-md">
 
-            <div className="mb-8">
+            {/* TITRE */}
+
+            <div className="mb-7">
 
               <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#d4a72c]">
                 ESPACE CLIENT
@@ -150,6 +188,7 @@ export default function Login({
 
             </div>
 
+
             <GlassCard
               className="w-full !border-slate-200 !bg-white !shadow-xl !shadow-slate-900/5"
               hover={false}
@@ -162,7 +201,13 @@ export default function Login({
                 </div>
               )}
 
-              <form action={login} className="space-y-5">
+
+              <form
+                action={login}
+                className="space-y-5"
+              >
+
+                {/* EMAIL */}
 
                 <div>
 
@@ -185,6 +230,9 @@ export default function Login({
 
                 </div>
 
+
+                {/* MOT DE PASSE */}
+
                 <div>
 
                   <div className="mb-2 flex items-center justify-between">
@@ -205,6 +253,7 @@ export default function Login({
 
                   </div>
 
+
                   <input
                     id="password"
                     name="password"
@@ -217,6 +266,9 @@ export default function Login({
 
                 </div>
 
+
+                {/* BOUTON */}
+
                 <PrimaryButton
                   type="submit"
                   fullWidth
@@ -228,15 +280,21 @@ export default function Login({
 
               </form>
 
+
+              {/* SÉCURITÉ */}
+
               <div className="mt-7 rounded-2xl border border-blue-100 bg-[#f0f5fb] px-4 py-4">
 
                 <div className="flex items-start gap-3">
 
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm">
+
                     <span className="text-lg">
                       🛡️
                     </span>
+
                   </div>
+
 
                   <div>
 
@@ -254,6 +312,9 @@ export default function Login({
                 </div>
 
               </div>
+
+
+              {/* CRÉATION DE COMPTE */}
 
               <div className="mt-7 border-t border-slate-100 pt-6 text-center">
 
@@ -280,52 +341,74 @@ export default function Login({
 
 
       {/* =====================================================
-          MOBILE — ÉCRAN UNIQUE
-      ===================================================== */}
+          MOBILE
+          PAGE FIXE — PAS DE SCROLL
+          ===================================================== */}
 
-      <div className="flex h-[100dvh] flex-col overflow-hidden bg-[#061b31] text-white lg:hidden">
+      <div className="flex h-[100dvh] w-full flex-col overflow-hidden bg-[#061b31] text-white lg:hidden">
 
-        <section className="flex min-h-0 flex-1 flex-col px-5 py-5">
+        <section className="relative flex h-full min-h-0 flex-col overflow-hidden px-5 pt-5 pb-4">
+
 
           {/* =================================================
-              LOGO + AIDE
-          ================================================= */}
+              LOGO IMPOSANT ET CENTRÉ
+              ================================================= */}
 
-          <div className="flex shrink-0 items-center justify-between">
+          <div className="flex shrink-0 justify-center">
 
             <Link
               href="/"
-              className="flex items-center gap-3"
+              className="flex flex-col items-center"
             >
 
-              <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl bg-white shadow-lg">
+              {/* GRAND ICÔNE */}
+
+              <div className="flex h-[92px] w-[92px] items-center justify-center overflow-hidden rounded-[26px] bg-white shadow-2xl shadow-black/30">
+
                 <img
                   src="/ICONE.jpeg"
                   alt="Investir en Bourse"
-                  className="h-full w-full object-contain"
+                  className="h-full w-full object-contain p-1.5"
                 />
+
               </div>
 
-              <div className="leading-none">
-                <p className="text-[14px] font-black tracking-tight">
+
+              {/* NOM DE LA MARQUE */}
+
+              <div className="mt-3 text-center leading-none">
+
+                <p className="text-[22px] font-black tracking-tight">
                   INVESTIR
                 </p>
 
-                <p className="mt-0.5 text-[14px] font-black text-[#d4a72c]">
+                <p className="mt-1.5 text-[22px] font-black text-[#d4a72c]">
                   EN BOURSE
                 </p>
+
               </div>
 
             </Link>
 
-            {/* MENU AIDE */}
+          </div>
+
+
+          {/* =================================================
+              BOUTON AIDE
+              ================================================= */}
+
+          <div className="absolute right-5 top-5">
 
             <details className="relative">
 
               <summary className="flex h-10 cursor-pointer list-none items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 text-xs font-bold text-white/80 transition hover:bg-white/10">
+
                 <span>?</span>
+
                 <span>Aide</span>
+
               </summary>
+
 
               <div className="absolute right-0 top-12 z-[100] w-52 overflow-hidden rounded-2xl border border-white/10 bg-[#102b47] p-1 shadow-2xl">
 
@@ -358,10 +441,10 @@ export default function Login({
 
 
           {/* =================================================
-              TITRE
-          ================================================= */}
+              ESPACE CLIENT
+              ================================================= */}
 
-          <div className="mt-6 shrink-0 text-center">
+          <div className="mt-5 shrink-0 text-center">
 
             <p className="text-[9px] font-black uppercase tracking-[0.3em] text-[#d4a72c]">
               ESPACE CLIENT
@@ -380,11 +463,11 @@ export default function Login({
 
 
           {/* =================================================
-              ERREUR
-          ================================================= */}
+              MESSAGE D'ERREUR
+              ================================================= */}
 
           {error && (
-            <div className="mt-4 shrink-0 rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-2.5 text-xs leading-4 text-red-200">
+            <div className="mx-auto mt-3 w-full max-w-md shrink-0 rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-2.5 text-xs leading-4 text-red-200">
               {error}
             </div>
           )}
@@ -392,7 +475,7 @@ export default function Login({
 
           {/* =================================================
               FORMULAIRE
-          ================================================= */}
+              ================================================= */}
 
           <form
             action={login}
@@ -413,11 +496,17 @@ export default function Login({
                   stroke="currentColor"
                   strokeWidth="2"
                 >
-                  <circle cx="12" cy="7" r="4" />
+                  <circle
+                    cx="12"
+                    cy="7"
+                    r="4"
+                  />
+
                   <path d="M4 21c.8-4 3.4-6 8-6s7.2 2 8 6" />
                 </svg>
 
               </div>
+
 
               <input
                 id="mobile-email"
@@ -458,6 +547,7 @@ export default function Login({
                 </svg>
 
               </div>
+
 
               <input
                 id="mobile-password"
@@ -501,8 +591,8 @@ export default function Login({
 
 
           {/* =================================================
-              SÉCURITÉ
-          ================================================= */}
+              CONNEXION SÉCURISÉE
+              ================================================= */}
 
           <div className="mx-auto mt-4 w-full max-w-md shrink-0 rounded-[18px] border border-white/10 bg-[#102b47] px-4 py-3">
 
@@ -524,6 +614,7 @@ export default function Login({
 
               </div>
 
+
               <div className="min-w-0">
 
                 <p className="text-[12px] font-black">
@@ -544,9 +635,9 @@ export default function Login({
 
           {/* =================================================
               CRÉATION DE COMPTE
-          ================================================= */}
+              ================================================= */}
 
-          <div className="mt-auto shrink-0 pt-4 text-center">
+          <div className="mt-auto shrink-0 pt-3 text-center">
 
             <p className="text-[11px] text-slate-400">
               Vous n’avez pas encore de compte ?
