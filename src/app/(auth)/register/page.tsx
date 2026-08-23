@@ -4,7 +4,6 @@ import { register } from './actions'
 import Link from 'next/link'
 import { useState } from 'react'
 import {
-  ChevronLeft,
   ChevronRight,
   User,
   Mail,
@@ -35,7 +34,6 @@ type FormData = {
 }
 
 const countries = [
-  // UEMOA
   { name: 'Bénin', code: '+229', flag: '🇧🇯' },
   { name: 'Burkina Faso', code: '+226', flag: '🇧🇫' },
   { name: "Côte d’Ivoire", code: '+225', flag: '🇨🇮' },
@@ -45,7 +43,6 @@ const countries = [
   { name: 'Sénégal', code: '+221', flag: '🇸🇳' },
   { name: 'Togo', code: '+228', flag: '🇹🇬' },
 
-  // Afrique centrale
   { name: 'Cameroun', code: '+237', flag: '🇨🇲' },
   { name: 'République centrafricaine', code: '+236', flag: '🇨🇫' },
   { name: 'Tchad', code: '+235', flag: '🇹🇩' },
@@ -54,7 +51,6 @@ const countries = [
   { name: 'Gabon', code: '+241', flag: '🇬🇦' },
   { name: 'Guinée équatoriale', code: '+240', flag: '🇬🇶' },
 
-  // Afrique
   { name: 'Algérie', code: '+213', flag: '🇩🇿' },
   { name: 'Angola', code: '+244', flag: '🇦🇴' },
   { name: 'Botswana', code: '+267', flag: '🇧🇼' },
@@ -95,7 +91,6 @@ const countries = [
   { name: 'Zambie', code: '+260', flag: '🇿🇲' },
   { name: 'Zimbabwe', code: '+263', flag: '🇿🇼' },
 
-  // Europe
   { name: 'France', code: '+33', flag: '🇫🇷' },
   { name: 'Belgique', code: '+32', flag: '🇧🇪' },
   { name: 'Suisse', code: '+41', flag: '🇨🇭' },
@@ -117,7 +112,6 @@ const countries = [
   { name: 'Roumanie', code: '+40', flag: '🇷🇴' },
   { name: 'République tchèque', code: '+420', flag: '🇨🇿' },
 
-  // Amérique du Nord
   { name: 'États-Unis', code: '+1', flag: '🇺🇸' },
   { name: 'Canada', code: '+1', flag: '🇨🇦' },
 ]
@@ -160,13 +154,13 @@ export default function Register() {
 
   const validateStep = () => {
     if (step === 1) {
-      if (!form.firstName.trim()) {
-        setError('Veuillez renseigner votre prénom.')
+      if (!form.lastName.trim()) {
+        setError('Veuillez renseigner votre nom.')
         return false
       }
 
-      if (!form.lastName.trim()) {
-        setError('Veuillez renseigner votre nom.')
+      if (!form.firstName.trim()) {
+        setError('Veuillez renseigner votre prénom.')
         return false
       }
 
@@ -258,11 +252,11 @@ export default function Register() {
     ) || countries[0]
 
   return (
-    <main className="fixed inset-0 h-[100dvh] overflow-hidden bg-[#061b31] text-white">
+    <main className="fixed inset-0 overflow-hidden bg-[#062665]">
 
       <form
         action={register}
-        className="flex h-full min-h-0 flex-col"
+        className="flex h-[100dvh] flex-col"
       >
 
         {/* =====================================================
@@ -348,39 +342,124 @@ export default function Register() {
         />
 
         {/* =====================================================
-            PARTIE BLEUE + LOGO
+            HEADER BLEU
         ===================================================== */}
 
-        <div className="relative shrink-0 bg-[#061b31]">
+        <header
+          className="
+            relative
+            h-[28dvh]
+            min-h-[225px]
+            max-h-[330px]
+            shrink-0
+            overflow-hidden
+            bg-[#062665]
+          "
+        >
 
-          {/* décoration exactement dans l'esprit de l'image */}
+          {/* Grand cercle décoratif */}
 
-          <div className="pointer-events-none absolute -right-40 -top-48 h-[520px] w-[520px] rounded-full bg-[#123b69]/50" />
+          <div
+            className="
+              pointer-events-none
+              absolute
+              -left-[210px]
+              -top-[250px]
+              h-[570px]
+              w-[570px]
+              rounded-full
+              bg-[#123b78]
+              opacity-70
+            "
+          />
 
-          <div className="relative flex h-[340px] items-center justify-center">
+          <div
+            className="
+              pointer-events-none
+              absolute
+              -right-[250px]
+              -top-[300px]
+              h-[650px]
+              w-[650px]
+              rounded-full
+              border-[1px]
+              border-white/5
+            "
+          />
+
+          {/* Logo */}
+
+          <div className="relative z-10 flex h-full items-center justify-center">
 
             <Link
               href="/"
-              className="relative z-10 flex items-center justify-center"
+              className="flex flex-col items-center justify-center"
             >
+
               <img
                 src="/ICONE.jpeg"
                 alt="Investir en Bourse"
-                className="h-[105px] w-[105px] rounded-[26px] object-contain shadow-2xl"
+                className="
+                  h-[82px]
+                  w-[82px]
+                  rounded-[22px]
+                  object-contain
+                  shadow-2xl
+                  sm:h-[95px]
+                  sm:w-[95px]
+                "
               />
+
+              <span
+                className="
+                  mt-3
+                  text-center
+                  text-[15px]
+                  font-black
+                  tracking-[0.12em]
+                  text-white
+                  sm:text-[17px]
+                "
+              >
+                INVESTIR EN BOURSE
+              </span>
+
             </Link>
 
           </div>
 
-        </div>
+        </header>
+
 
         {/* =====================================================
             CARTE BLANCHE
         ===================================================== */}
 
-        <section className="min-h-0 flex-1 overflow-hidden rounded-t-[24px] bg-white">
+        <section
+          className="
+            relative
+            min-h-0
+            flex-1
+            overflow-hidden
+            rounded-t-[26px]
+            bg-white
+          "
+        >
 
-          <div className="mx-auto flex h-full w-full max-w-[680px] flex-col px-[37px] pt-[36px]">
+          <div
+            className="
+              mx-auto
+              flex
+              h-full
+              w-full
+              max-w-[680px]
+              flex-col
+              px-[24px]
+              pt-[28px]
+              sm:px-[37px]
+              sm:pt-[36px]
+            "
+          >
 
             {/* =================================================
                 ÉTAPE 1
@@ -388,49 +467,149 @@ export default function Register() {
 
             {step === 1 && (
 
-              <div className="flex min-h-0 flex-1 flex-col text-[#111827]">
+              <div
+                className="
+                  flex
+                  min-h-0
+                  flex-1
+                  flex-col
+                  overflow-y-auto
+                  pb-[24px]
+                  text-[#111827]
+                "
+              >
 
                 {/* TYPE DE CLIENT */}
 
                 <div className="relative shrink-0">
 
                   <select
-                    className="h-[82px] w-full appearance-none rounded-[5px] border border-[#9b9b9b] bg-white px-5 text-[17px] font-semibold text-[#111827] outline-none"
+                    className="
+                      h-[64px]
+                      w-full
+                      appearance-none
+                      rounded-[6px]
+                      border
+                      border-[#a4a4a4]
+                      bg-white
+                      px-5
+                      text-[17px]
+                      font-semibold
+                      text-[#111827]
+                      outline-none
+                      focus:border-[#092d61]
+                    "
                     defaultValue="Client"
                   >
+
                     <option value="Client">
                       Client
                     </option>
+
                   </select>
 
-                  <span className="pointer-events-none absolute right-6 top-1/2 -translate-y-1/2 border-l-[10px] border-r-[10px] border-t-[11px] border-l-transparent border-r-transparent border-t-[#777]" />
+                  <span
+                    className="
+                      pointer-events-none
+                      absolute
+                      right-5
+                      top-1/2
+                      -translate-y-1/2
+                      border-l-[9px]
+                      border-r-[9px]
+                      border-t-[10px]
+                      border-l-transparent
+                      border-r-transparent
+                      border-t-[#777]
+                    "
+                  />
 
                 </div>
 
 
                 {/* PARTICULIER / ENTREPRISE */}
 
-                <div className="mt-[28px] flex items-center justify-between px-[27px]">
+                <div
+                  className="
+                    mt-[27px]
+                    flex
+                    items-center
+                    justify-between
+                    px-[5px]
+                    sm:px-[27px]
+                  "
+                >
 
                   <button
                     type="button"
-                    className="flex items-center gap-4 text-[17px] font-bold"
+                    className="
+                      flex
+                      items-center
+                      gap-3
+                      text-[16px]
+                      font-bold
+                      sm:gap-4
+                      sm:text-[17px]
+                    "
                   >
 
-                    <span className="flex h-[34px] w-[34px] items-center justify-center rounded-full border-[4px] border-[#092d61]">
-                      <span className="h-[16px] w-[16px] rounded-full bg-[#092d61]" />
+                    <span
+                      className="
+                        flex
+                        h-[31px]
+                        w-[31px]
+                        items-center
+                        justify-center
+                        rounded-full
+                        border-[4px]
+                        border-[#092d61]
+                        sm:h-[34px]
+                        sm:w-[34px]
+                      "
+                    >
+
+                      <span
+                        className="
+                          h-[14px]
+                          w-[14px]
+                          rounded-full
+                          bg-[#092d61]
+                          sm:h-[16px]
+                          sm:w-[16px]
+                        "
+                      />
+
                     </span>
 
                     PARTICULIER
 
                   </button>
 
+
                   <button
                     type="button"
-                    className="flex items-center gap-4 text-[17px] font-bold"
+                    className="
+                      flex
+                      items-center
+                      gap-3
+                      text-[16px]
+                      font-bold
+                      sm:gap-4
+                      sm:text-[17px]
+                    "
                   >
 
-                    <span className="h-[34px] w-[34px] rounded-full border-[4px] border-[#858585]" />
+                    <span
+                      className="
+                        h-[31px]
+                        w-[31px]
+                        rounded-full
+                        border-[4px]
+                        border-[#858585]
+                        sm:h-[34px]
+                        sm:w-[34px]
+                      "
+                    />
 
                     ENTREPRISE
 
@@ -441,15 +620,33 @@ export default function Register() {
 
                 {/* NOM */}
 
-                <div className="relative mt-[27px] shrink-0">
+                <div className="relative mt-[25px] shrink-0">
 
-                  <label className="absolute -top-[10px] left-[80px] bg-white px-[7px] text-[16px] text-[#999]">
+                  <label
+                    className="
+                      absolute
+                      -top-[10px]
+                      left-[72px]
+                      bg-white
+                      px-[7px]
+                      text-[15px]
+                      text-[#999]
+                      sm:left-[80px]
+                    "
+                  >
                     Nom *
                   </label>
 
                   <User
                     size={23}
-                    className="absolute left-[30px] top-1/2 -translate-y-1/2 text-[#999]"
+                    className="
+                      absolute
+                      left-[22px]
+                      top-1/2
+                      -translate-y-1/2
+                      text-[#999]
+                      sm:left-[30px]
+                    "
                   />
 
                   <input
@@ -460,11 +657,33 @@ export default function Register() {
                         event.target.value
                       )
                     }
-                    className="h-[90px] w-full rounded-[5px] border-[3px] border-[#092d61] bg-white pl-[82px] pr-5 text-[18px] text-[#111827] outline-none"
-                    placeholder=""
+                    className="
+                      h-[76px]
+                      w-full
+                      rounded-[6px]
+                      border-[3px]
+                      border-[#092d61]
+                      bg-white
+                      pl-[70px]
+                      pr-12
+                      text-[17px]
+                      text-[#111827]
+                      outline-none
+                      sm:h-[90px]
+                      sm:pl-[82px]
+                    "
                   />
 
-                  <span className="absolute right-[38px] top-1/2 -translate-y-1/2 text-[20px] text-[#d65d55]">
+                  <span
+                    className="
+                      absolute
+                      right-[25px]
+                      top-1/2
+                      -translate-y-1/2
+                      text-[20px]
+                      text-[#d65d55]
+                    "
+                  >
                     *
                   </span>
 
@@ -473,11 +692,18 @@ export default function Register() {
 
                 {/* PRÉNOMS */}
 
-                <div className="relative mt-[38px] shrink-0">
+                <div className="relative mt-[28px] shrink-0">
 
                   <User
                     size={23}
-                    className="absolute left-[30px] top-1/2 -translate-y-1/2 text-[#999]"
+                    className="
+                      absolute
+                      left-[22px]
+                      top-1/2
+                      -translate-y-1/2
+                      text-[#999]
+                      sm:left-[30px]
+                    "
                   />
 
                   <input
@@ -488,7 +714,22 @@ export default function Register() {
                         event.target.value
                       )
                     }
-                    className="h-[90px] w-full rounded-[5px] border border-[#999] bg-white pl-[82px] pr-5 text-[18px] text-[#111827] outline-none focus:border-[#092d61]"
+                    className="
+                      h-[76px]
+                      w-full
+                      rounded-[6px]
+                      border
+                      border-[#999]
+                      bg-white
+                      pl-[70px]
+                      pr-5
+                      text-[17px]
+                      text-[#111827]
+                      outline-none
+                      focus:border-[#092d61]
+                      sm:h-[90px]
+                      sm:pl-[82px]
+                    "
                     placeholder="Prénoms *"
                   />
 
@@ -497,7 +738,16 @@ export default function Register() {
 
                 {/* CIVILITÉ */}
 
-                <div className="mt-[36px] flex items-center justify-between px-[27px]">
+                <div
+                  className="
+                    mt-[27px]
+                    flex
+                    items-center
+                    justify-between
+                    px-[5px]
+                    sm:px-[27px]
+                  "
+                >
 
                   {[
                     ['M.', 'M.'],
@@ -514,19 +764,49 @@ export default function Register() {
                           value
                         )
                       }
-                      className="flex items-center gap-4 text-[17px] font-bold"
+                      className="
+                        flex
+                        items-center
+                        gap-3
+                        text-[16px]
+                        font-bold
+                        sm:gap-4
+                        sm:text-[17px]
+                      "
                     >
 
                       <span
-                        className={`flex h-[34px] w-[34px] items-center justify-center rounded-full border-[4px] ${
-                          form.civility === value
-                            ? 'border-[#092d61]'
-                            : 'border-[#858585]'
-                        }`}
+                        className={`
+                          flex
+                          h-[31px]
+                          w-[31px]
+                          items-center
+                          justify-center
+                          rounded-full
+                          border-[4px]
+                          sm:h-[34px]
+                          sm:w-[34px]
+                          ${
+                            form.civility === value
+                              ? 'border-[#092d61]'
+                              : 'border-[#858585]'
+                          }
+                        `}
                       >
+
                         {form.civility === value && (
-                          <span className="h-[16px] w-[16px] rounded-full bg-[#092d61]" />
+                          <span
+                            className="
+                              h-[14px]
+                              w-[14px]
+                              rounded-full
+                              bg-[#092d61]
+                              sm:h-[16px]
+                              sm:w-[16px]
+                            "
+                          />
                         )}
+
                       </span>
 
                       {label}
@@ -548,32 +828,70 @@ export default function Register() {
                       !form.over18
                     )
                   }
-                  className="mt-[30px] flex h-[92px] shrink-0 items-center gap-[28px] rounded-[5px] border border-[#999] px-[20px] text-left"
+                  className="
+                    mt-[27px]
+                    flex
+                    h-[76px]
+                    shrink-0
+                    items-center
+                    gap-[20px]
+                    rounded-[6px]
+                    border
+                    border-[#999]
+                    px-[20px]
+                    text-left
+                    sm:h-[92px]
+                    sm:gap-[28px]
+                  "
                 >
 
                   <span
-                    className={`flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[3px] border-[4px] ${
-                      form.over18
-                        ? 'border-[#d4a72c] bg-[#d4a72c]'
-                        : 'border-[#777]'
-                    }`}
+                    className={`
+                      flex
+                      h-[31px]
+                      w-[31px]
+                      shrink-0
+                      items-center
+                      justify-center
+                      rounded-[3px]
+                      border-[3px]
+                      sm:h-[34px]
+                      sm:w-[34px]
+                      ${
+                        form.over18
+                          ? 'border-[#d4a72c] bg-[#d4a72c]'
+                          : 'border-[#777]'
+                      }
+                    `}
                   >
+
                     {form.over18 && (
-                      <span className="text-[20px] font-black text-white">
+                      <span className="text-[19px] font-black text-white">
                         ✓
                       </span>
                     )}
+
                   </span>
 
-                  <span className="text-[18px] font-bold">
+                  <span className="text-[17px] font-bold sm:text-[18px]">
                     J'ai plus de 18 ans
                   </span>
 
                 </button>
 
 
+                {/* ERREUR */}
+
                 {error && (
-                  <p className="mt-3 text-center text-[13px] font-semibold text-red-600">
+                  <p
+                    className="
+                      mt-3
+                      text-center
+                      text-[13px]
+                      font-semibold
+                      text-red-600
+                    "
+                  >
                     {error}
                   </p>
                 )}
@@ -584,10 +902,41 @@ export default function Register() {
                 <button
                   type="button"
                   onClick={nextStep}
-                  className="mt-[28px] h-[84px] shrink-0 rounded-[5px] bg-[#dcae16] text-[18px] font-black text-white shadow-[0_7px_12px_rgba(0,0,0,0.18)]"
+                  className="
+                    mt-[24px]
+                    h-[68px]
+                    shrink-0
+                    rounded-[6px]
+                    bg-[#dcae16]
+                    text-[18px]
+                    font-black
+                    text-white
+                    shadow-[0_6px_12px_rgba(0,0,0,0.20)]
+                    transition
+                    active:scale-[0.99]
+                    sm:h-[78px]
+                  "
                 >
                   Suivant
                 </button>
+
+
+                {/* CONNEXION */}
+
+                <Link
+                  href="/login"
+                  className="
+                    mt-[28px]
+                    pb-[5px]
+                    text-center
+                    text-[16px]
+                    font-medium
+                    text-[#111]
+                    sm:text-[17px]
+                  "
+                >
+                  J'ai déjà un compte
+                </Link>
 
               </div>
 
@@ -600,11 +949,21 @@ export default function Register() {
 
             {step === 2 && (
 
-              <div className="flex min-h-0 flex-1 flex-col text-[#111827]">
+              <div
+                className="
+                  flex
+                  min-h-0
+                  flex-1
+                  flex-col
+                  overflow-y-auto
+                  pb-[20px]
+                  text-[#111827]
+                "
+              >
 
-                <div className="mb-[30px]">
+                <div className="mb-[25px]">
 
-                  <p className="text-[12px] font-black uppercase tracking-[0.25em] text-[#d4a72c]">
+                  <p className="text-[11px] font-black uppercase tracking-[0.25em] text-[#d4a72c]">
                     ÉTAPE 2 / 4
                   </p>
 
@@ -617,13 +976,13 @@ export default function Register() {
 
                 {/* TÉLÉPHONE */}
 
-                <label className="mb-2 text-[15px] font-bold text-[#555]">
+                <label className="mb-2 text-[14px] font-bold text-[#555]">
                   Téléphone *
                 </label>
 
                 <div className="relative">
 
-                  <div className="flex h-[72px] overflow-hidden rounded-[5px] border border-[#999]">
+                  <div className="flex h-[68px] overflow-hidden rounded-[6px] border border-[#999]">
 
                     <button
                       type="button"
@@ -632,24 +991,37 @@ export default function Register() {
                           !showCountries
                         )
                       }
-                      className="flex w-[130px] shrink-0 items-center gap-3 border-r border-[#aaa] px-4"
+                      className="
+                        flex
+                        w-[125px]
+                        shrink-0
+                        items-center
+                        gap-2
+                        border-r
+                        border-[#aaa]
+                        px-3
+                      "
                     >
 
-                      <span className="text-[22px]">
+                      <span className="text-[21px]">
                         {selectedCountry.flag}
                       </span>
 
-                      <span className="text-[16px] font-bold">
+                      <span className="text-[15px] font-bold">
                         {selectedCountry.code}
                       </span>
 
                       <ChevronRight
                         size={17}
-                        className={`ml-auto transition ${
-                          showCountries
-                            ? 'rotate-90'
-                            : ''
-                        }`}
+                        className={`
+                          ml-auto
+                          transition
+                          ${
+                            showCountries
+                              ? 'rotate-90'
+                              : ''
+                          }
+                        `}
                       />
 
                     </button>
@@ -666,7 +1038,13 @@ export default function Register() {
                         )
                       }
                       inputMode="numeric"
-                      className="min-w-0 flex-1 px-4 text-[17px] outline-none"
+                      className="
+                        min-w-0
+                        flex-1
+                        px-4
+                        text-[17px]
+                        outline-none
+                      "
                       placeholder="Numéro de téléphone"
                     />
 
@@ -675,7 +1053,23 @@ export default function Register() {
 
                   {showCountries && (
 
-                    <div className="absolute left-0 right-0 top-[80px] z-50 max-h-[300px] overflow-y-auto rounded-[6px] border border-[#aaa] bg-white p-2 shadow-2xl">
+                    <div
+                      className="
+                        absolute
+                        left-0
+                        right-0
+                        top-[75px]
+                        z-50
+                        max-h-[300px]
+                        overflow-y-auto
+                        rounded-[6px]
+                        border
+                        border-[#aaa]
+                        bg-white
+                        p-2
+                        shadow-2xl
+                      "
+                    >
 
                       {countries.map((country) => (
 
@@ -695,9 +1089,19 @@ export default function Register() {
                             )
 
                             setShowCountries(false)
-
                           }}
-                          className="flex w-full items-center gap-3 px-3 py-3 text-left text-[14px]"
+                          className="
+                            flex
+                            w-full
+                            items-center
+                            gap-3
+                            rounded
+                            px-3
+                            py-3
+                            text-left
+                            text-[14px]
+                            hover:bg-gray-100
+                          "
                         >
 
                           <span>
@@ -725,7 +1129,7 @@ export default function Register() {
 
                 {/* DATE */}
 
-                <label className="mb-2 mt-[30px] text-[15px] font-bold text-[#555]">
+                <label className="mb-2 mt-[28px] text-[14px] font-bold text-[#555]">
                   Date de naissance *
                 </label>
 
@@ -733,7 +1137,13 @@ export default function Register() {
 
                   <CalendarDays
                     size={22}
-                    className="absolute left-[24px] top-1/2 -translate-y-1/2 text-[#092d61]"
+                    className="
+                      absolute
+                      left-[22px]
+                      top-1/2
+                      -translate-y-1/2
+                      text-[#092d61]
+                    "
                   />
 
                   <input
@@ -745,7 +1155,19 @@ export default function Register() {
                         event.target.value
                       )
                     }
-                    className="h-[72px] w-full rounded-[5px] border border-[#999] bg-white pl-[65px] pr-4 text-[16px] outline-none focus:border-[#092d61]"
+                    className="
+                      h-[68px]
+                      w-full
+                      rounded-[6px]
+                      border
+                      border-[#999]
+                      bg-white
+                      pl-[60px]
+                      pr-4
+                      text-[16px]
+                      outline-none
+                      focus:border-[#092d61]
+                    "
                   />
 
                 </div>
@@ -763,7 +1185,16 @@ export default function Register() {
                   <button
                     type="button"
                     onClick={previousStep}
-                    className="h-[72px] rounded-[5px] border-2 border-[#d4a72c] bg-white text-[15px] font-black text-[#9a7616]"
+                    className="
+                      h-[68px]
+                      rounded-[6px]
+                      border-2
+                      border-[#d4a72c]
+                      bg-white
+                      text-[14px]
+                      font-black
+                      text-[#9a7616]
+                    "
                   >
                     PRÉCÉDENT
                   </button>
@@ -771,7 +1202,15 @@ export default function Register() {
                   <button
                     type="button"
                     onClick={nextStep}
-                    className="h-[72px] rounded-[5px] bg-[#dcae16] text-[15px] font-black text-white shadow-[0_7px_12px_rgba(0,0,0,0.18)]"
+                    className="
+                      h-[68px]
+                      rounded-[6px]
+                      bg-[#dcae16]
+                      text-[14px]
+                      font-black
+                      text-white
+                      shadow-[0_6px_12px_rgba(0,0,0,0.18)]
+                    "
                   >
                     SUIVANT
                   </button>
@@ -789,11 +1228,21 @@ export default function Register() {
 
             {step === 3 && (
 
-              <div className="flex min-h-0 flex-1 flex-col text-[#111827]">
+              <div
+                className="
+                  flex
+                  min-h-0
+                  flex-1
+                  flex-col
+                  overflow-y-auto
+                  pb-[20px]
+                  text-[#111827]
+                "
+              >
 
-                <div className="mb-[30px]">
+                <div className="mb-[25px]">
 
-                  <p className="text-[12px] font-black uppercase tracking-[0.25em] text-[#d4a72c]">
+                  <p className="text-[11px] font-black uppercase tracking-[0.25em] text-[#d4a72c]">
                     ÉTAPE 3 / 4
                   </p>
 
@@ -806,7 +1255,7 @@ export default function Register() {
 
                 {/* NATIONALITÉ */}
 
-                <label className="mb-2 text-[15px] font-bold text-[#555]">
+                <label className="mb-2 text-[14px] font-bold text-[#555]">
                   Nationalité *
                 </label>
 
@@ -814,7 +1263,13 @@ export default function Register() {
 
                   <User
                     size={22}
-                    className="absolute left-[24px] top-1/2 -translate-y-1/2 text-[#092d61]"
+                    className="
+                      absolute
+                      left-[22px]
+                      top-1/2
+                      -translate-y-1/2
+                      text-[#092d61]
+                    "
                   />
 
                   <input
@@ -825,7 +1280,18 @@ export default function Register() {
                         event.target.value
                       )
                     }
-                    className="h-[72px] w-full rounded-[5px] border border-[#999] pl-[65px] pr-4 text-[17px] outline-none focus:border-[#092d61]"
+                    className="
+                      h-[68px]
+                      w-full
+                      rounded-[6px]
+                      border
+                      border-[#999]
+                      pl-[60px]
+                      pr-4
+                      text-[17px]
+                      outline-none
+                      focus:border-[#092d61]
+                    "
                     placeholder="Votre nationalité"
                   />
 
@@ -834,7 +1300,7 @@ export default function Register() {
 
                 {/* EMAIL */}
 
-                <label className="mb-2 mt-[28px] text-[15px] font-bold text-[#555]">
+                <label className="mb-2 mt-[25px] text-[14px] font-bold text-[#555]">
                   Adresse e-mail *
                 </label>
 
@@ -842,7 +1308,13 @@ export default function Register() {
 
                   <Mail
                     size={22}
-                    className="absolute left-[24px] top-1/2 -translate-y-1/2 text-[#092d61]"
+                    className="
+                      absolute
+                      left-[22px]
+                      top-1/2
+                      -translate-y-1/2
+                      text-[#092d61]
+                    "
                   />
 
                   <input
@@ -855,7 +1327,18 @@ export default function Register() {
                       )
                     }
                     autoComplete="email"
-                    className="h-[72px] w-full rounded-[5px] border border-[#999] pl-[65px] pr-4 text-[17px] outline-none focus:border-[#092d61]"
+                    className="
+                      h-[68px]
+                      w-full
+                      rounded-[6px]
+                      border
+                      border-[#999]
+                      pl-[60px]
+                      pr-4
+                      text-[17px]
+                      outline-none
+                      focus:border-[#092d61]
+                    "
                     placeholder="nom@exemple.com"
                   />
 
@@ -864,7 +1347,7 @@ export default function Register() {
 
                 {/* ADRESSE */}
 
-                <label className="mb-2 mt-[28px] text-[15px] font-bold text-[#555]">
+                <label className="mb-2 mt-[25px] text-[14px] font-bold text-[#555]">
                   Adresse *
                 </label>
 
@@ -872,7 +1355,13 @@ export default function Register() {
 
                   <MapPin
                     size={22}
-                    className="absolute left-[24px] top-1/2 -translate-y-1/2 text-[#092d61]"
+                    className="
+                      absolute
+                      left-[22px]
+                      top-1/2
+                      -translate-y-1/2
+                      text-[#092d61]
+                    "
                   />
 
                   <input
@@ -883,7 +1372,18 @@ export default function Register() {
                         event.target.value
                       )
                     }
-                    className="h-[72px] w-full rounded-[5px] border border-[#999] pl-[65px] pr-4 text-[17px] outline-none focus:border-[#092d61]"
+                    className="
+                      h-[68px]
+                      w-full
+                      rounded-[6px]
+                      border
+                      border-[#999]
+                      pl-[60px]
+                      pr-4
+                      text-[17px]
+                      outline-none
+                      focus:border-[#092d61]
+                    "
                     placeholder="Votre adresse"
                   />
 
@@ -902,7 +1402,16 @@ export default function Register() {
                   <button
                     type="button"
                     onClick={previousStep}
-                    className="h-[72px] rounded-[5px] border-2 border-[#d4a72c] bg-white text-[15px] font-black text-[#9a7616]"
+                    className="
+                      h-[68px]
+                      rounded-[6px]
+                      border-2
+                      border-[#d4a72c]
+                      bg-white
+                      text-[14px]
+                      font-black
+                      text-[#9a7616]
+                    "
                   >
                     PRÉCÉDENT
                   </button>
@@ -910,7 +1419,15 @@ export default function Register() {
                   <button
                     type="button"
                     onClick={nextStep}
-                    className="h-[72px] rounded-[5px] bg-[#dcae16] text-[15px] font-black text-white shadow-[0_7px_12px_rgba(0,0,0,0.18)]"
+                    className="
+                      h-[68px]
+                      rounded-[6px]
+                      bg-[#dcae16]
+                      text-[14px]
+                      font-black
+                      text-white
+                      shadow-[0_6px_12px_rgba(0,0,0,0.18)]
+                    "
                   >
                     SUIVANT
                   </button>
@@ -928,11 +1445,21 @@ export default function Register() {
 
             {step === 4 && (
 
-              <div className="flex min-h-0 flex-1 flex-col text-[#111827]">
+              <div
+                className="
+                  flex
+                  min-h-0
+                  flex-1
+                  flex-col
+                  overflow-y-auto
+                  pb-[20px]
+                  text-[#111827]
+                "
+              >
 
-                <div className="mb-[30px]">
+                <div className="mb-[25px]">
 
-                  <p className="text-[12px] font-black uppercase tracking-[0.25em] text-[#d4a72c]">
+                  <p className="text-[11px] font-black uppercase tracking-[0.25em] text-[#d4a72c]">
                     ÉTAPE 4 / 4
                   </p>
 
@@ -945,7 +1472,7 @@ export default function Register() {
 
                 {/* MOT DE PASSE */}
 
-                <label className="mb-2 text-[15px] font-bold text-[#555]">
+                <label className="mb-2 text-[14px] font-bold text-[#555]">
                   Mot de passe *
                 </label>
 
@@ -953,7 +1480,13 @@ export default function Register() {
 
                   <Lock
                     size={22}
-                    className="absolute left-[24px] top-1/2 -translate-y-1/2 text-[#092d61]"
+                    className="
+                      absolute
+                      left-[22px]
+                      top-1/2
+                      -translate-y-1/2
+                      text-[#092d61]
+                    "
                   />
 
                   <input
@@ -966,7 +1499,18 @@ export default function Register() {
                       )
                     }
                     autoComplete="new-password"
-                    className="h-[72px] w-full rounded-[5px] border border-[#999] pl-[65px] pr-4 text-[17px] outline-none focus:border-[#092d61]"
+                    className="
+                      h-[68px]
+                      w-full
+                      rounded-[6px]
+                      border
+                      border-[#999]
+                      pl-[60px]
+                      pr-4
+                      text-[17px]
+                      outline-none
+                      focus:border-[#092d61]
+                    "
                     placeholder="Mot de passe"
                   />
 
@@ -975,7 +1519,7 @@ export default function Register() {
 
                 {/* CONFIRMATION */}
 
-                <label className="mb-2 mt-[28px] text-[15px] font-bold text-[#555]">
+                <label className="mb-2 mt-[25px] text-[14px] font-bold text-[#555]">
                   Répéter le mot de passe *
                 </label>
 
@@ -983,7 +1527,13 @@ export default function Register() {
 
                   <Lock
                     size={22}
-                    className="absolute left-[24px] top-1/2 -translate-y-1/2 text-[#092d61]"
+                    className="
+                      absolute
+                      left-[22px]
+                      top-1/2
+                      -translate-y-1/2
+                      text-[#092d61]
+                    "
                   />
 
                   <input
@@ -996,7 +1546,18 @@ export default function Register() {
                       )
                     }
                     autoComplete="new-password"
-                    className="h-[72px] w-full rounded-[5px] border border-[#999] pl-[65px] pr-4 text-[17px] outline-none focus:border-[#092d61]"
+                    className="
+                      h-[68px]
+                      w-full
+                      rounded-[6px]
+                      border
+                      border-[#999]
+                      pl-[60px]
+                      pr-4
+                      text-[17px]
+                      outline-none
+                      focus:border-[#092d61]
+                    "
                     placeholder="Répéter le mot de passe"
                   />
 
@@ -1005,7 +1566,7 @@ export default function Register() {
 
                 {/* RÈGLES */}
 
-                <div className="mt-[25px] space-y-[8px]">
+                <div className="mt-[22px] space-y-[7px]">
 
                   {[
                     [
@@ -1036,19 +1597,27 @@ export default function Register() {
                     >
 
                       <span
-                        className={`h-[10px] w-[10px] rounded-full ${
-                          valid
-                            ? 'bg-emerald-500'
-                            : 'bg-[#d0d0d0]'
-                        }`}
+                        className={`
+                          h-[9px]
+                          w-[9px]
+                          rounded-full
+                          ${
+                            valid
+                              ? 'bg-emerald-500'
+                              : 'bg-[#d0d0d0]'
+                          }
+                        `}
                       />
 
                       <span
-                        className={`text-[13px] ${
-                          valid
-                            ? 'text-emerald-600'
-                            : 'text-[#c8c8c8]'
-                        }`}
+                        className={`
+                          text-[13px]
+                          ${
+                            valid
+                              ? 'text-emerald-600'
+                              : 'text-[#bcbcbc]'
+                          }
+                        `}
                       >
                         {text}
                       </span>
@@ -1072,7 +1641,16 @@ export default function Register() {
                   <button
                     type="button"
                     onClick={previousStep}
-                    className="h-[72px] rounded-[5px] border-2 border-[#d4a72c] bg-white text-[15px] font-black text-[#9a7616]"
+                    className="
+                      h-[68px]
+                      rounded-[6px]
+                      border-2
+                      border-[#d4a72c]
+                      bg-white
+                      text-[14px]
+                      font-black
+                      text-[#9a7616]
+                    "
                   >
                     PRÉCÉDENT
                   </button>
@@ -1086,7 +1664,15 @@ export default function Register() {
                       }
 
                     }}
-                    className="h-[72px] rounded-[5px] bg-[#dcae16] text-[15px] font-black text-white shadow-[0_7px_12px_rgba(0,0,0,0.18)]"
+                    className="
+                      h-[68px]
+                      rounded-[6px]
+                      bg-[#dcae16]
+                      text-[14px]
+                      font-black
+                      text-white
+                      shadow-[0_6px_12px_rgba(0,0,0,0.18)]
+                    "
                   >
                     ENREGISTRER
                   </button>
