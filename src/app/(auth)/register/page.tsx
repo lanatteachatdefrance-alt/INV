@@ -3,1894 +3,1254 @@
 import { register } from './actions'
 import Link from 'next/link'
 import { useState } from 'react'
-import { GlassCard } from '@/components/ui/GlassCard'
-import { PrimaryButton } from '@/components/ui/Buttons'
+import { ChevronLeft, ChevronRight, User, Mail, MapPin, Lock, CalendarDays } from 'lucide-react'
 
-type Country = {
-  code: string
-  name: string
-  dialCode: string
-  flag: string
-  region: string
+type Step = 1 | 2 | 3 | 4
+
+type FormData = {
+  firstName: string
+  lastName: string
+  civility: string
+  over18: boolean
+
+  countryCode: string
+  countryName: string
+  phone: string
+  dateOfBirth: string
+
+  nationality: string
+  email: string
+  address: string
+
+  password: string
+  confirmPassword: string
 }
 
-const COUNTRIES: Country[] = [
+const countries = [
   // =====================================================
   // UEMOA
   // =====================================================
 
-  {
-    code: 'CI',
-    name: "Côte d'Ivoire",
-    dialCode: '+225',
-    flag: '🇨🇮',
-    region: 'UEMOA',
-  },
-  {
-    code: 'BJ',
-    name: 'Bénin',
-    dialCode: '+229',
-    flag: '🇧🇯',
-    region: 'UEMOA',
-  },
-  {
-    code: 'BF',
-    name: 'Burkina Faso',
-    dialCode: '+226',
-    flag: '🇧🇫',
-    region: 'UEMOA',
-  },
-  {
-    code: 'GW',
-    name: 'Guinée-Bissau',
-    dialCode: '+245',
-    flag: '🇬🇼',
-    region: 'UEMOA',
-  },
-  {
-    code: 'ML',
-    name: 'Mali',
-    dialCode: '+223',
-    flag: '🇲🇱',
-    region: 'UEMOA',
-  },
-  {
-    code: 'NE',
-    name: 'Niger',
-    dialCode: '+227',
-    flag: '🇳🇪',
-    region: 'UEMOA',
-  },
-  {
-    code: 'SN',
-    name: 'Sénégal',
-    dialCode: '+221',
-    flag: '🇸🇳',
-    region: 'UEMOA',
-  },
-  {
-    code: 'TG',
-    name: 'Togo',
-    dialCode: '+228',
-    flag: '🇹🇬',
-    region: 'UEMOA',
-  },
+  { name: 'Bénin', code: '+229', flag: '🇧🇯' },
+  { name: 'Burkina Faso', code: '+226', flag: '🇧🇫' },
+  { name: "Côte d’Ivoire", code: '+225', flag: '🇨🇮' },
+  { name: 'Guinée-Bissau', code: '+245', flag: '🇬🇼' },
+  { name: 'Mali', code: '+223', flag: '🇲🇱' },
+  { name: 'Niger', code: '+227', flag: '🇳🇪' },
+  { name: 'Sénégal', code: '+221', flag: '🇸🇳' },
+  { name: 'Togo', code: '+228', flag: '🇹🇬' },
 
   // =====================================================
   // AFRIQUE CENTRALE
   // =====================================================
 
-  {
-    code: 'CM',
-    name: 'Cameroun',
-    dialCode: '+237',
-    flag: '🇨🇲',
-    region: 'Afrique centrale',
-  },
-  {
-    code: 'CF',
-    name: 'République centrafricaine',
-    dialCode: '+236',
-    flag: '🇨🇫',
-    region: 'Afrique centrale',
-  },
-  {
-    code: 'TD',
-    name: 'Tchad',
-    dialCode: '+235',
-    flag: '🇹🇩',
-    region: 'Afrique centrale',
-  },
-  {
-    code: 'CG',
-    name: 'Congo',
-    dialCode: '+242',
-    flag: '🇨🇬',
-    region: 'Afrique centrale',
-  },
-  {
-    code: 'GQ',
-    name: 'Guinée équatoriale',
-    dialCode: '+240',
-    flag: '🇬🇶',
-    region: 'Afrique centrale',
-  },
-  {
-    code: 'GA',
-    name: 'Gabon',
-    dialCode: '+241',
-    flag: '🇬🇦',
-    region: 'Afrique centrale',
-  },
+  { name: 'Cameroun', code: '+237', flag: '🇨🇲' },
+  { name: 'République centrafricaine', code: '+236', flag: '🇨🇫' },
+  { name: 'Tchad', code: '+235', flag: '🇹🇩' },
+  { name: 'Congo', code: '+242', flag: '🇨🇬' },
+  { name: 'RDC', code: '+243', flag: '🇨🇩' },
+  { name: 'Gabon', code: '+241', flag: '🇬🇦' },
+  { name: 'Guinée équatoriale', code: '+240', flag: '🇬🇶' },
 
   // =====================================================
-  // EUROPE - DIASPORA
+  // AFRIQUE
   // =====================================================
 
-  {
-    code: 'FR',
-    name: 'France',
-    dialCode: '+33',
-    flag: '🇫🇷',
-    region: 'Europe',
-  },
-  {
-    code: 'BE',
-    name: 'Belgique',
-    dialCode: '+32',
-    flag: '🇧🇪',
-    region: 'Europe',
-  },
-  {
-    code: 'CH',
-    name: 'Suisse',
-    dialCode: '+41',
-    flag: '🇨🇭',
-    region: 'Europe',
-  },
-  {
-    code: 'IT',
-    name: 'Italie',
-    dialCode: '+39',
-    flag: '🇮🇹',
-    region: 'Europe',
-  },
-  {
-    code: 'ES',
-    name: 'Espagne',
-    dialCode: '+34',
-    flag: '🇪🇸',
-    region: 'Europe',
-  },
-  {
-    code: 'PT',
-    name: 'Portugal',
-    dialCode: '+351',
-    flag: '🇵🇹',
-    region: 'Europe',
-  },
-  {
-    code: 'DE',
-    name: 'Allemagne',
-    dialCode: '+49',
-    flag: '🇩🇪',
-    region: 'Europe',
-  },
-  {
-    code: 'GB',
-    name: 'Royaume-Uni',
-    dialCode: '+44',
-    flag: '🇬🇧',
-    region: 'Europe',
-  },
-  {
-    code: 'NL',
-    name: 'Pays-Bas',
-    dialCode: '+31',
-    flag: '🇳🇱',
-    region: 'Europe',
-  },
-  {
-    code: 'LU',
-    name: 'Luxembourg',
-    dialCode: '+352',
-    flag: '🇱🇺',
-    region: 'Europe',
-  },
-  {
-    code: 'IE',
-    name: 'Irlande',
-    dialCode: '+353',
-    flag: '🇮🇪',
-    region: 'Europe',
-  },
-  {
-    code: 'SE',
-    name: 'Suède',
-    dialCode: '+46',
-    flag: '🇸🇪',
-    region: 'Europe',
-  },
-  {
-    code: 'NO',
-    name: 'Norvège',
-    dialCode: '+47',
-    flag: '🇳🇴',
-    region: 'Europe',
-  },
-  {
-    code: 'DK',
-    name: 'Danemark',
-    dialCode: '+45',
-    flag: '🇩🇰',
-    region: 'Europe',
-  },
-  {
-    code: 'FI',
-    name: 'Finlande',
-    dialCode: '+358',
-    flag: '🇫🇮',
-    region: 'Europe',
-  },
-  {
-    code: 'AT',
-    name: 'Autriche',
-    dialCode: '+43',
-    flag: '🇦🇹',
-    region: 'Europe',
-  },
-  {
-    code: 'GR',
-    name: 'Grèce',
-    dialCode: '+30',
-    flag: '🇬🇷',
-    region: 'Europe',
-  },
+  { name: 'Algérie', code: '+213', flag: '🇩🇿' },
+  { name: 'Angola', code: '+244', flag: '🇦🇴' },
+  { name: 'Botswana', code: '+267', flag: '🇧🇼' },
+  { name: 'Burundi', code: '+257', flag: '🇧🇮' },
+  { name: 'Cap-Vert', code: '+238', flag: '🇨🇻' },
+  { name: 'Comores', code: '+269', flag: '🇰🇲' },
+  { name: 'Djibouti', code: '+253', flag: '🇩🇯' },
+  { name: 'Égypte', code: '+20', flag: '🇪🇬' },
+  { name: 'Érythrée', code: '+291', flag: '🇪🇷' },
+  { name: 'Eswatini', code: '+268', flag: '🇸🇿' },
+  { name: 'Éthiopie', code: '+251', flag: '🇪🇹' },
+  { name: 'Gambie', code: '+220', flag: '🇬🇲' },
+  { name: 'Ghana', code: '+233', flag: '🇬🇭' },
+  { name: 'Guinée', code: '+224', flag: '🇬🇳' },
+  { name: 'Kenya', code: '+254', flag: '🇰🇪' },
+  { name: 'Lesotho', code: '+266', flag: '🇱🇸' },
+  { name: 'Libéria', code: '+231', flag: '🇱🇷' },
+  { name: 'Libye', code: '+218', flag: '🇱🇾' },
+  { name: 'Madagascar', code: '+261', flag: '🇲🇬' },
+  { name: 'Malawi', code: '+265', flag: '🇲🇼' },
+  { name: 'Maroc', code: '+212', flag: '🇲🇦' },
+  { name: 'Maurice', code: '+230', flag: '🇲🇺' },
+  { name: 'Mauritanie', code: '+222', flag: '🇲🇷' },
+  { name: 'Mozambique', code: '+258', flag: '🇲🇿' },
+  { name: 'Namibie', code: '+264', flag: '🇳🇦' },
+  { name: 'Nigeria', code: '+234', flag: '🇳🇬' },
+  { name: 'Rwanda', code: '+250', flag: '🇷🇼' },
+  { name: 'Sao Tomé-et-Principe', code: '+239', flag: '🇸🇹' },
+  { name: 'Seychelles', code: '+248', flag: '🇸🇨' },
+  { name: 'Sierra Leone', code: '+232', flag: '🇸🇱' },
+  { name: 'Somalie', code: '+252', flag: '🇸🇴' },
+  { name: 'Afrique du Sud', code: '+27', flag: '🇿🇦' },
+  { name: 'Soudan', code: '+249', flag: '🇸🇩' },
+  { name: 'Soudan du Sud', code: '+211', flag: '🇸🇸' },
+  { name: 'Tanzanie', code: '+255', flag: '🇹🇿' },
+  { name: 'Tunisie', code: '+216', flag: '🇹🇳' },
+  { name: 'Ouganda', code: '+256', flag: '🇺🇬' },
+  { name: 'Zambie', code: '+260', flag: '🇿🇲' },
+  { name: 'Zimbabwe', code: '+263', flag: '🇿🇼' },
+
+  // =====================================================
+  // EUROPE
+  // =====================================================
+
+  { name: 'France', code: '+33', flag: '🇫🇷' },
+  { name: 'Belgique', code: '+32', flag: '🇧🇪' },
+  { name: 'Suisse', code: '+41', flag: '🇨🇭' },
+  { name: 'Luxembourg', code: '+352', flag: '🇱🇺' },
+  { name: 'Allemagne', code: '+49', flag: '🇩🇪' },
+  { name: 'Espagne', code: '+34', flag: '🇪🇸' },
+  { name: 'Italie', code: '+39', flag: '🇮🇹' },
+  { name: 'Portugal', code: '+351', flag: '🇵🇹' },
+  { name: 'Pays-Bas', code: '+31', flag: '🇳🇱' },
+  { name: 'Royaume-Uni', code: '+44', flag: '🇬🇧' },
+  { name: 'Irlande', code: '+353', flag: '🇮🇪' },
+  { name: 'Autriche', code: '+43', flag: '🇦🇹' },
+  { name: 'Suède', code: '+46', flag: '🇸🇪' },
+  { name: 'Norvège', code: '+47', flag: '🇳🇴' },
+  { name: 'Danemark', code: '+45', flag: '🇩🇰' },
+  { name: 'Finlande', code: '+358', flag: '🇫🇮' },
+  { name: 'Grèce', code: '+30', flag: '🇬🇷' },
+  { name: 'Pologne', code: '+48', flag: '🇵🇱' },
+  { name: 'Roumanie', code: '+40', flag: '🇷🇴' },
+  { name: 'République tchèque', code: '+420', flag: '🇨🇿' },
 
   // =====================================================
   // AMÉRIQUE DU NORD
   // =====================================================
 
-  {
-    code: 'US',
-    name: 'États-Unis',
-    dialCode: '+1',
-    flag: '🇺🇸',
-    region: 'Amérique du Nord',
-  },
-  {
-    code: 'CA',
-    name: 'Canada',
-    dialCode: '+1',
-    flag: '🇨🇦',
-    region: 'Amérique du Nord',
-  },
+  { name: 'États-Unis', code: '+1', flag: '🇺🇸' },
+  { name: 'Canada', code: '+1', flag: '🇨🇦' },
 ]
 
-type FormDataState = {
-  firstName: string
-  lastName: string
-  countryCode: string
-  phone: string
-  dateOfBirth: string
-  nationality: string
-  email: string
-  address: string
-  password: string
-}
+export default function Register() {
+  const [step, setStep] = useState<Step>(1)
 
-export default function Register({
-  searchParams,
-}: {
-  searchParams: {
-    error?: string
-  }
-}) {
-  const error = searchParams?.error
+  const [error, setError] = useState('')
 
-  const [step, setStep] = useState(1)
+  const [form, setForm] = useState<FormData>({
+    firstName: '',
+    lastName: '',
+    civility: '',
+    over18: false,
 
-  const [formData, setFormData] =
-    useState<FormDataState>({
-      firstName: '',
-      lastName: '',
-      countryCode: 'CI',
-      phone: '',
-      dateOfBirth: '',
-      nationality: '',
-      email: '',
-      address: '',
-      password: '',
-    })
+    countryCode: '+225',
+    countryName: "Côte d’Ivoire",
+    phone: '',
+    dateOfBirth: '',
 
-  const [showPassword, setShowPassword] =
+    nationality: '',
+    email: '',
+    address: '',
+
+    password: '',
+    confirmPassword: '',
+  })
+
+  const [showCountries, setShowCountries] =
     useState(false)
 
-  const updateField = (
-    field: keyof FormDataState,
-    value: string
+  const update = (
+    field: keyof FormData,
+    value: string | boolean
   ) => {
-    setFormData((previous) => ({
+    setForm((previous) => ({
       ...previous,
       [field]: value,
     }))
+
+    setError('')
   }
 
-  const selectedCountry =
-    COUNTRIES.find(
-      (country) =>
-        country.code === formData.countryCode
-    ) || COUNTRIES[0]
-
-  const nextStep = () => {
+  const validateStep = () => {
     if (step === 1) {
-      if (
-        !formData.firstName.trim() ||
-        !formData.lastName.trim()
-      ) {
-        return
+      if (!form.firstName.trim()) {
+        setError('Veuillez renseigner votre prénom.')
+        return false
+      }
+
+      if (!form.lastName.trim()) {
+        setError('Veuillez renseigner votre nom.')
+        return false
+      }
+
+      if (!form.civility) {
+        setError('Veuillez sélectionner votre civilité.')
+        return false
+      }
+
+      if (!form.over18) {
+        setError(
+          'Vous devez confirmer avoir plus de 18 ans.'
+        )
+        return false
       }
     }
 
     if (step === 2) {
-      if (
-        !formData.phone.trim() ||
-        !formData.dateOfBirth
-      ) {
-        return
+      if (!form.phone.trim()) {
+        setError('Veuillez renseigner votre numéro de téléphone.')
+        return false
+      }
+
+      if (!form.dateOfBirth) {
+        setError('Veuillez renseigner votre date de naissance.')
+        return false
       }
     }
 
     if (step === 3) {
-      if (
-        !formData.nationality.trim() ||
-        !formData.email.trim() ||
-        !formData.address.trim()
-      ) {
-        return
+      if (!form.nationality.trim()) {
+        setError('Veuillez renseigner votre nationalité.')
+        return false
+      }
+
+      if (!form.email.trim()) {
+        setError('Veuillez renseigner votre adresse e-mail.')
+        return false
+      }
+
+      if (!form.address.trim()) {
+        setError('Veuillez renseigner votre adresse.')
+        return false
       }
     }
 
+    if (step === 4) {
+      if (!form.password) {
+        setError('Veuillez créer un mot de passe.')
+        return false
+      }
+
+      if (form.password.length < 8) {
+        setError(
+          'Le mot de passe doit contenir au moins 8 caractères.'
+        )
+        return false
+      }
+
+      if (form.password !== form.confirmPassword) {
+        setError(
+          'Les deux mots de passe ne correspondent pas.'
+        )
+        return false
+      }
+    }
+
+    return true
+  }
+
+  const nextStep = () => {
+    if (!validateStep()) return
+
     if (step < 4) {
-      setStep((value) => value + 1)
+      setStep((step + 1) as Step)
+      setError('')
     }
   }
 
   const previousStep = () => {
     if (step > 1) {
-      setStep((value) => value - 1)
+      setStep((step - 1) as Step)
+      setError('')
     }
   }
 
-  const progress =
-    step === 1
-      ? 25
-      : step === 2
-        ? 50
-        : step === 3
-          ? 75
-          : 100
+  const selectedCountry =
+    countries.find(
+      (country) =>
+        country.code === form.countryCode &&
+        country.name === form.countryName
+    ) || countries[0]
 
   return (
-    <main className="h-[100dvh] overflow-hidden bg-[#061b31] text-white">
+    <main className="fixed inset-0 overflow-hidden bg-[#061b31] text-white">
 
       {/* =====================================================
-          DESKTOP
+          FORMULAIRE COMPLET
       ===================================================== */}
 
-      <div className="hidden h-[100dvh] lg:grid lg:grid-cols-2">
+      <form
+        action={register}
+        className="flex h-full min-h-0 flex-col"
+      >
 
         {/* ===================================================
-            PANNEAU GAUCHE
+            CHAMPS CACHÉS POUR L'ACTION SERVER
         =================================================== */}
 
-        <section className="relative flex h-[100dvh] flex-col overflow-hidden bg-[#061b31] px-12 py-10">
+        <input
+          type="hidden"
+          name="firstName"
+          value={form.firstName}
+        />
 
-          <div className="pointer-events-none absolute -right-32 -top-32 h-96 w-96 rounded-full bg-blue-500/10 blur-3xl" />
+        <input
+          type="hidden"
+          name="lastName"
+          value={form.lastName}
+        />
 
-          <div className="pointer-events-none absolute -bottom-40 -left-40 h-[500px] w-[500px] rounded-full bg-[#d4a72c]/10 blur-3xl" />
+        <input
+          type="hidden"
+          name="civility"
+          value={form.civility}
+        />
+
+        <input
+          type="hidden"
+          name="over18"
+          value={form.over18 ? 'true' : 'false'}
+        />
+
+        <input
+          type="hidden"
+          name="phone"
+          value={`${form.countryCode}${form.phone}`}
+        />
+
+        <input
+          type="hidden"
+          name="countryCode"
+          value={form.countryCode}
+        />
+
+        <input
+          type="hidden"
+          name="countryName"
+          value={form.countryName}
+        />
+
+        <input
+          type="hidden"
+          name="dateOfBirth"
+          value={form.dateOfBirth}
+        />
+
+        <input
+          type="hidden"
+          name="nationality"
+          value={form.nationality}
+        />
+
+        <input
+          type="hidden"
+          name="email"
+          value={form.email}
+        />
+
+        <input
+          type="hidden"
+          name="address"
+          value={form.address}
+        />
+
+        <input
+          type="hidden"
+          name="password"
+          value={form.password}
+        />
+
+        <input
+          type="hidden"
+          name="confirmPassword"
+          value={form.confirmPassword}
+        />
+
+
+        {/* ===================================================
+            HEADER
+        =================================================== */}
+
+        <header className="relative z-50 flex h-[86px] shrink-0 items-center justify-between border-b border-white/10 bg-[#061b31] px-5">
+
+          {/* RETOUR */}
+
+          <button
+            type="button"
+            onClick={() => {
+              if (step > 1) {
+                previousStep()
+              } else {
+                window.history.back()
+              }
+            }}
+            className="flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white transition active:scale-95"
+            aria-label="Retour"
+          >
+            <ChevronLeft size={24} />
+          </button>
+
 
           {/* LOGO */}
 
           <Link
             href="/"
-            className="relative z-10 flex items-center gap-4"
+            className="absolute left-1/2 flex -translate-x-1/2 items-center justify-center"
           >
-
-            <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-xl">
-
-              <img
-                src="/ICONE.jpeg"
-                alt="Investir en Bourse"
-                className="h-full w-full object-contain"
-              />
-
-            </div>
-
-            <div>
-
-              <p className="text-xl font-black tracking-tight">
-                INVESTIR
-              </p>
-
-              <p className="text-xl font-black leading-none text-[#d4a72c]">
-                EN BOURSE
-              </p>
-
-            </div>
-
+            <img
+              src="/ICONE.jpeg"
+              alt="Investir en Bourse"
+              className="h-[62px] w-[62px] rounded-2xl object-contain"
+            />
           </Link>
 
 
-          {/* CONTENU */}
+          {/* ÉTAPE */}
 
-          <div className="relative z-10 flex flex-1 items-center">
+          <div className="text-right">
 
-            <div className="max-w-xl">
+            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-[#d4a72c]">
+              ÉTAPE
+            </p>
 
-              <div className="mb-5 inline-flex items-center rounded-full border border-white/10 bg-white/5 px-4 py-2">
-
-                <span className="mr-2 h-2 w-2 rounded-full bg-[#d4a72c]" />
-
-                <span className="text-xs font-semibold tracking-wide text-white/70">
-                  PLATEFORME D’INVESTISSEMENT
-                </span>
-
-              </div>
-
-              <h1 className="text-5xl font-black leading-[1.05] tracking-tight xl:text-6xl">
-
-                Commencez
-                <br />
-
-                <span className="text-[#d4a72c]">
-                  à investir.
-                </span>
-
-              </h1>
-
-              <p className="mt-7 max-w-lg text-base leading-7 text-slate-300">
-
-                Créez votre compte et accédez à votre
-                espace personnel pour suivre et gérer
-                vos investissements sur le marché régional.
-
-              </p>
-
-              <div className="mt-10 space-y-4">
-
-                {[
-                  'Un espace personnel sécurisé',
-                  'Suivez votre portefeuille',
-                  'Accédez aux opportunités du marché',
-                ].map((text) => (
-                  <div
-                    key={text}
-                    className="flex items-center gap-4"
-                  >
-
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10">
-                      <span className="text-[#d4a72c]">
-                        ✓
-                      </span>
-                    </div>
-
-                    <p className="text-sm text-white/80">
-                      {text}
-                    </p>
-
-                  </div>
-                ))}
-
-              </div>
-
-            </div>
-
-          </div>
-
-          <div className="relative z-10 border-t border-white/10 pt-5">
-
-            <p className="text-xs text-white/40">
-              © {new Date().getFullYear()} Investir en Bourse —
-              Votre avenir, notre priorité.
+            <p className="text-sm font-black">
+              {step} / 4
             </p>
 
           </div>
 
-        </section>
+        </header>
 
 
         {/* ===================================================
-            FORMULAIRE DESKTOP
+            CONTENU
         =================================================== */}
 
-        <section className="h-[100dvh] overflow-hidden bg-[#f3f7fb] px-10 py-8">
+        <section className="min-h-0 flex-1 overflow-hidden">
 
-          <div className="mx-auto flex h-full w-full max-w-xl flex-col justify-center">
+          <div className="mx-auto flex h-full w-full max-w-lg flex-col px-5">
 
-            <div className="mb-5">
+            {/* =================================================
+                TITRE + PROGRESSION
+            ================================================= */}
 
-              <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#d4a72c]">
-                ESPACE CLIENT
-              </p>
+            <div className="shrink-0 pt-6">
 
-              <h2 className="mt-2 text-3xl font-black tracking-tight text-[#0a1b2e]">
-                Créer un compte
-              </h2>
+              <div className="flex items-end justify-between">
 
-              <p className="mt-1 text-sm text-slate-500">
-                Étape {step} sur 4
-              </p>
+                <div>
 
-            </div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[#d4a72c]">
+                    ÉTAPE {step} / 4
+                  </p>
+
+                  <h1 className="mt-2 text-[25px] font-black leading-none">
+                    {step === 1 &&
+                      'Votre identité'}
+
+                    {step === 2 &&
+                      'Vos coordonnées'}
+
+                    {step === 3 &&
+                      'Informations générales'}
+
+                    {step === 4 &&
+                      'Sécurisez votre compte'}
+                  </h1>
+
+                </div>
+
+                <p className="text-sm font-black text-slate-400">
+                  {step * 25}%
+                </p>
+
+              </div>
 
 
-            {/* PROGRESSION */}
+              {/* PROGRESSION */}
 
-            <div className="mb-5">
-
-              <div className="h-2 overflow-hidden rounded-full bg-slate-200">
+              <div className="mt-5 h-2 overflow-hidden rounded-full bg-[#193650]">
 
                 <div
-                  className="h-full rounded-full bg-[#d4a72c] transition-all duration-300"
+                  className="h-full rounded-full bg-[#d4a72c] transition-all duration-500"
                   style={{
-                    width: `${progress}%`,
+                    width: `${step * 25}%`,
                   }}
                 />
 
               </div>
 
-              <div className="mt-2 flex justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400">
-
-                <span
-                  className={
-                    step >= 1
-                      ? 'text-[#d4a72c]'
-                      : ''
-                  }
-                >
-                  Identité
-                </span>
-
-                <span
-                  className={
-                    step >= 2
-                      ? 'text-[#d4a72c]'
-                      : ''
-                  }
-                >
-                  Téléphone
-                </span>
-
-                <span
-                  className={
-                    step >= 3
-                      ? 'text-[#d4a72c]'
-                      : ''
-                  }
-                >
-                  Coordonnées
-                </span>
-
-                <span
-                  className={
-                    step >= 4
-                      ? 'text-[#d4a72c]'
-                      : ''
-                  }
-                >
-                  Sécurité
-                </span>
-
-              </div>
-
             </div>
 
 
-            <GlassCard
-              className="w-full !border-slate-200 !bg-white !shadow-xl !shadow-slate-900/5"
-              hover={false}
-              padding="lg"
-            >
+            {/* =================================================
+                CARTE FORMULAIRE
+            ================================================= */}
 
-              {error && (
-                <div className="mb-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-                  {error}
-                </div>
-              )}
+            <div className="min-h-0 flex-1 pt-6">
 
-              <form action={register}>
-
-                {/* VALEURS CONSERVÉES */}
-
-                <input
-                  type="hidden"
-                  name="firstName"
-                  value={formData.firstName}
-                />
-
-                <input
-                  type="hidden"
-                  name="lastName"
-                  value={formData.lastName}
-                />
-
-                <input
-                  type="hidden"
-                  name="countryCode"
-                  value={formData.countryCode}
-                />
-
-                <input
-                  type="hidden"
-                  name="phone"
-                  value={formData.phone}
-                />
-
-                <input
-                  type="hidden"
-                  name="dateOfBirth"
-                  value={formData.dateOfBirth}
-                />
-
-                <input
-                  type="hidden"
-                  name="nationality"
-                  value={formData.nationality}
-                />
-
-                <input
-                  type="hidden"
-                  name="email"
-                  value={formData.email}
-                />
-
-                <input
-                  type="hidden"
-                  name="address"
-                  value={formData.address}
-                />
-
-                <input
-                  type="hidden"
-                  name="password"
-                  value={formData.password}
-                />
-
+              <div className="h-full overflow-hidden rounded-[28px] bg-white p-5 text-slate-900 shadow-2xl">
 
                 {/* =================================================
-                    ÉTAPE 1
+                    STEP 1
                 ================================================= */}
 
                 {step === 1 && (
-                  <div className="space-y-5">
 
-                    <StepTitle
-                      number="01"
-                      title="Votre identité"
-                      description="Commencez par renseigner vos informations personnelles."
-                    />
+                  <div className="flex h-full flex-col">
 
-                    <Input
-                      label="Prénom"
-                      value={formData.firstName}
-                      onChange={(value) =>
-                        updateField(
-                          'firstName',
-                          value
-                        )
-                      }
-                      placeholder="Jean"
-                    />
+                    <div className="shrink-0">
 
-                    <Input
-                      label="Nom"
-                      value={formData.lastName}
-                      onChange={(value) =>
-                        updateField(
-                          'lastName',
-                          value
-                        )
-                      }
-                      placeholder="Kouassi"
-                    />
+                      <div className="flex items-center gap-4">
 
-                  </div>
-                )}
+                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#d4a72c] text-lg font-black text-[#061b31]">
+                          01
+                        </div>
 
+                        <div>
 
-                {/* =================================================
-                    ÉTAPE 2
-                ================================================= */}
+                          <h2 className="text-2xl font-black">
+                            Votre identité
+                          </h2>
 
-                {step === 2 && (
-                  <div className="space-y-5">
+                          <p className="mt-1 text-sm text-slate-400">
+                            Commençons par faire connaissance.
+                          </p>
 
-                    <StepTitle
-                      number="02"
-                      title="Vos coordonnées"
-                      description="Indiquez votre numéro et votre date de naissance."
-                    />
-
-                    <div>
-
-                      <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
-                        Téléphone
-                      </label>
-
-                      <div className="flex gap-2">
-
-                        <select
-                          value={
-                            formData.countryCode
-                          }
-                          onChange={(event) =>
-                            updateField(
-                              'countryCode',
-                              event.target.value
-                            )
-                          }
-                          className="h-[58px] w-[135px] shrink-0 rounded-2xl border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-800 outline-none focus:border-[#d4a72c] focus:ring-2 focus:ring-[#d4a72c]/10"
-                        >
-
-                          <optgroup label="UEMOA">
-
-                            {COUNTRIES
-                              .filter(
-                                (country) =>
-                                  country.region ===
-                                  'UEMOA'
-                              )
-                              .map((country) => (
-                                <option
-                                  key={country.code}
-                                  value={country.code}
-                                >
-                                  {country.flag}{' '}
-                                  {country.dialCode}
-                                </option>
-                              ))}
-
-                          </optgroup>
-
-                          <optgroup label="Afrique centrale">
-
-                            {COUNTRIES
-                              .filter(
-                                (country) =>
-                                  country.region ===
-                                  'Afrique centrale'
-                              )
-                              .map((country) => (
-                                <option
-                                  key={country.code}
-                                  value={country.code}
-                                >
-                                  {country.flag}{' '}
-                                  {country.dialCode}
-                                </option>
-                              ))}
-
-                          </optgroup>
-
-                          <optgroup label="Europe">
-
-                            {COUNTRIES
-                              .filter(
-                                (country) =>
-                                  country.region ===
-                                  'Europe'
-                              )
-                              .map((country) => (
-                                <option
-                                  key={country.code}
-                                  value={country.code}
-                                >
-                                  {country.flag}{' '}
-                                  {country.dialCode}
-                                </option>
-                              ))}
-
-                          </optgroup>
-
-                          <optgroup label="Amérique du Nord">
-
-                            {COUNTRIES
-                              .filter(
-                                (country) =>
-                                  country.region ===
-                                  'Amérique du Nord'
-                              )
-                              .map((country) => (
-                                <option
-                                  key={country.code}
-                                  value={country.code}
-                                >
-                                  {country.flag}{' '}
-                                  {country.dialCode}
-                                </option>
-                              ))}
-
-                          </optgroup>
-
-                        </select>
-
-
-                        <input
-                          type="tel"
-                          inputMode="tel"
-                          value={
-                            formData.phone
-                          }
-                          onChange={(event) =>
-                            updateField(
-                              'phone',
-                              event.target.value
-                            )
-                          }
-                          className="h-[58px] min-w-0 flex-1 rounded-2xl border border-slate-200 bg-slate-50 px-5 text-base text-slate-900 outline-none placeholder:text-slate-400 focus:border-[#d4a72c] focus:ring-2 focus:ring-[#d4a72c]/10"
-                          placeholder="07 00 00 00 00"
-                        />
+                        </div>
 
                       </div>
-
-                      <p className="mt-2 text-[10px] text-slate-400">
-                        {selectedCountry.flag}{' '}
-                        {selectedCountry.name}{' '}
-                        — {selectedCountry.dialCode}
-                      </p>
 
                     </div>
 
 
-                    <Input
-                      label="Date de naissance"
-                      type="date"
-                      value={
-                        formData.dateOfBirth
-                      }
-                      onChange={(value) =>
-                        updateField(
-                          'dateOfBirth',
-                          value
-                        )
-                      }
-                    />
+                    <div className="mt-7 min-h-0 flex-1">
 
-                  </div>
-                )}
-
-
-                {/* =================================================
-                    ÉTAPE 3
-                ================================================= */}
-
-                {step === 3 && (
-                  <div className="space-y-5">
-
-                    <StepTitle
-                      number="03"
-                      title="Vos coordonnées"
-                      description="Complétez vos informations de résidence et de contact."
-                    />
-
-                    <Input
-                      label="Nationalité"
-                      value={
-                        formData.nationality
-                      }
-                      onChange={(value) =>
-                        updateField(
-                          'nationality',
-                          value
-                        )
-                      }
-                      placeholder="Ivoirienne"
-                    />
-
-                    <Input
-                      label="Adresse e-mail"
-                      type="email"
-                      value={formData.email}
-                      onChange={(value) =>
-                        updateField(
-                          'email',
-                          value
-                        )
-                      }
-                      placeholder="nom@exemple.com"
-                    />
-
-                    <Input
-                      label="Adresse"
-                      value={formData.address}
-                      onChange={(value) =>
-                        updateField(
-                          'address',
-                          value
-                        )
-                      }
-                      placeholder="Cocody, Abidjan"
-                    />
-
-                  </div>
-                )}
-
-
-                {/* =================================================
-                    ÉTAPE 4
-                ================================================= */}
-
-                {step === 4 && (
-                  <div className="space-y-5">
-
-                    <StepTitle
-                      number="04"
-                      title="Sécurisez votre compte"
-                      description="Choisissez un mot de passe sécurisé pour protéger votre espace."
-                    />
-
-                    <div>
-
-                      <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
-                        Mot de passe
+                      <label className="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">
+                        Prénom *
                       </label>
 
                       <div className="relative">
 
+                        <User
+                          size={19}
+                          className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                        />
+
                         <input
-                          type={
-                            showPassword
-                              ? 'text'
-                              : 'password'
-                          }
-                          value={
-                            formData.password
-                          }
+                          value={form.firstName}
                           onChange={(event) =>
-                            updateField(
+                            update(
+                              'firstName',
+                              event.target.value
+                            )
+                          }
+                          className="h-[56px] w-full rounded-2xl border border-slate-200 bg-slate-50 pl-12 pr-4 text-sm font-semibold outline-none transition focus:border-[#d4a72c] focus:ring-2 focus:ring-[#d4a72c]/20"
+                          placeholder="Entrez votre prénom"
+                        />
+
+                      </div>
+
+
+                      <label className="mb-2 mt-5 block text-xs font-black uppercase tracking-wider text-slate-500">
+                        Nom *
+                      </label>
+
+                      <div className="relative">
+
+                        <User
+                          size={19}
+                          className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                        />
+
+                        <input
+                          value={form.lastName}
+                          onChange={(event) =>
+                            update(
+                              'lastName',
+                              event.target.value
+                            )
+                          }
+                          className="h-[56px] w-full rounded-2xl border border-slate-200 bg-slate-50 pl-12 pr-4 text-sm font-semibold outline-none transition focus:border-[#d4a72c] focus:ring-2 focus:ring-[#d4a72c]/20"
+                          placeholder="Entrez votre nom"
+                        />
+
+                      </div>
+
+
+                      <p className="mb-3 mt-5 text-xs font-black uppercase tracking-wider text-slate-500">
+                        Civilité *
+                      </p>
+
+                      <div className="grid grid-cols-3 gap-2">
+
+                        {[
+                          ['M.', 'M.'],
+                          ['Mme', 'Mme'],
+                          ['Mlle', 'Mlle'],
+                        ].map(([value, label]) => (
+
+                          <button
+                            key={value}
+                            type="button"
+                            onClick={() =>
+                              update(
+                                'civility',
+                                value
+                              )
+                            }
+                            className={`flex h-12 items-center justify-center gap-2 rounded-xl border text-sm font-bold transition ${
+                              form.civility === value
+                                ? 'border-[#d4a72c] bg-[#fff8df] text-[#9a7616]'
+                                : 'border-slate-200 bg-slate-50 text-slate-600'
+                            }`}
+                          >
+
+                            <span
+                              className={`h-4 w-4 rounded-full border-2 ${
+                                form.civility === value
+                                  ? 'border-[#d4a72c] bg-[#d4a72c] shadow-[inset_0_0_0_3px_white]'
+                                  : 'border-slate-400'
+                              }`}
+                            />
+
+                            {label}
+
+                          </button>
+
+                        ))}
+
+                      </div>
+
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          update(
+                            'over18',
+                            !form.over18
+                          )
+                        }
+                        className={`mt-5 flex h-14 w-full items-center gap-3 rounded-2xl border px-4 text-left transition ${
+                          form.over18
+                            ? 'border-[#d4a72c] bg-[#fff8df]'
+                            : 'border-slate-200 bg-slate-50'
+                        }`}
+                      >
+
+                        <span
+                          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md border-2 ${
+                            form.over18
+                              ? 'border-[#d4a72c] bg-[#d4a72c] text-[#061b31]'
+                              : 'border-slate-400'
+                          }`}
+                        >
+                          {form.over18 && '✓'}
+                        </span>
+
+                        <span className="text-sm font-bold">
+                          J'ai plus de 18 ans
+                        </span>
+
+                      </button>
+
+                    </div>
+
+
+                    {error && (
+                      <p className="mt-3 shrink-0 text-center text-xs font-semibold text-red-600">
+                        {error}
+                      </p>
+                    )}
+
+
+                    <button
+                      type="button"
+                      onClick={nextStep}
+                      className="mt-4 flex h-[58px] shrink-0 w-full items-center justify-center gap-2 rounded-2xl bg-[#d4a72c] text-sm font-black text-[#061b31] shadow-lg shadow-[#d4a72c]/20 transition active:scale-[0.98]"
+                    >
+                      CONTINUER
+                      <ChevronRight size={18} />
+                    </button>
+
+                  </div>
+
+                )}
+
+
+                {/* =================================================
+                    STEP 2
+                ================================================= */}
+
+                {step === 2 && (
+
+                  <div className="flex h-full flex-col">
+
+                    <div className="flex items-center gap-4 shrink-0">
+
+                      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#d4a72c] text-lg font-black text-[#061b31]">
+                        02
+                      </div>
+
+                      <div>
+
+                        <h2 className="text-2xl font-black">
+                          Vos coordonnées
+                        </h2>
+
+                        <p className="mt-1 text-sm text-slate-400">
+                          Comment pouvons-nous vous joindre ?
+                        </p>
+
+                      </div>
+
+                    </div>
+
+
+                    <div className="mt-7 min-h-0 flex-1">
+
+                      <label className="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">
+                        Téléphone *
+                      </label>
+
+
+                      {/* PAYS */}
+
+                      <div className="relative">
+
+                        <div className="flex h-[58px] overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setShowCountries(
+                                !showCountries
+                              )
+                            }
+                            className="flex w-[125px] shrink-0 items-center gap-2 border-r border-slate-200 px-3 text-left"
+                          >
+
+                            <span className="text-xl">
+                              {selectedCountry.flag}
+                            </span>
+
+                            <span className="text-sm font-bold">
+                              {selectedCountry.code}
+                            </span>
+
+                            <ChevronRight
+                              size={15}
+                              className={`ml-auto text-slate-400 transition ${
+                                showCountries
+                                  ? 'rotate-90'
+                                  : ''
+                              }`}
+                            />
+
+                          </button>
+
+
+                          <input
+                            value={form.phone}
+                            onChange={(event) =>
+                              update(
+                                'phone',
+                                event.target.value.replace(
+                                  /\D/g,
+                                  ''
+                                )
+                              )
+                            }
+                            inputMode="numeric"
+                            className="min-w-0 flex-1 bg-transparent px-4 text-sm font-semibold outline-none"
+                            placeholder="Votre numéro"
+                          />
+
+                        </div>
+
+
+                        {showCountries && (
+
+                          <div className="absolute left-0 right-0 top-[64px] z-50 max-h-56 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-2xl">
+
+                            {countries.map(
+                              (country) => (
+
+                                <button
+                                  key={`${country.name}-${country.code}`}
+                                  type="button"
+                                  onClick={() => {
+
+                                    update(
+                                      'countryCode',
+                                      country.code
+                                    )
+
+                                    update(
+                                      'countryName',
+                                      country.name
+                                    )
+
+                                    setShowCountries(
+                                      false
+                                    )
+
+                                  }}
+                                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm hover:bg-slate-50"
+                                >
+
+                                  <span className="text-lg">
+                                    {country.flag}
+                                  </span>
+
+                                  <span className="flex-1 font-semibold">
+                                    {country.name}
+                                  </span>
+
+                                  <span className="text-slate-400">
+                                    {country.code}
+                                  </span>
+
+                                </button>
+
+                              )
+                            )}
+
+                          </div>
+
+                        )}
+
+                      </div>
+
+
+                      <label className="mb-2 mt-5 block text-xs font-black uppercase tracking-wider text-slate-500">
+                        Date de naissance *
+                      </label>
+
+                      <div className="relative">
+
+                        <CalendarDays
+                          size={19}
+                          className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                        />
+
+                        <input
+                          type="date"
+                          value={form.dateOfBirth}
+                          onChange={(event) =>
+                            update(
+                              'dateOfBirth',
+                              event.target.value
+                            )
+                          }
+                          className="h-[58px] w-full rounded-2xl border border-slate-200 bg-slate-50 pl-12 pr-4 text-sm font-semibold outline-none focus:border-[#d4a72c] focus:ring-2 focus:ring-[#d4a72c]/20"
+                        />
+
+                      </div>
+
+                    </div>
+
+
+                    {error && (
+                      <p className="mt-3 shrink-0 text-center text-xs font-semibold text-red-600">
+                        {error}
+                      </p>
+                    )}
+
+
+                    <div className="mt-4 grid shrink-0 grid-cols-2 gap-3">
+
+                      <button
+                        type="button"
+                        onClick={previousStep}
+                        className="flex h-[56px] items-center justify-center gap-2 rounded-2xl border-2 border-[#d4a72c] bg-white text-sm font-black text-[#9a7616]"
+                      >
+                        <ChevronLeft size={18} />
+                        PRÉCÉDENT
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={nextStep}
+                        className="flex h-[56px] items-center justify-center gap-2 rounded-2xl bg-[#d4a72c] text-sm font-black text-[#061b31] shadow-lg shadow-[#d4a72c]/20"
+                      >
+                        SUIVANT
+                        <ChevronRight size={18} />
+                      </button>
+
+                    </div>
+
+                  </div>
+
+                )}
+
+
+                {/* =================================================
+                    STEP 3
+                ================================================= */}
+
+                {step === 3 && (
+
+                  <div className="flex h-full flex-col">
+
+                    <div className="flex items-center gap-4 shrink-0">
+
+                      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#d4a72c] text-lg font-black text-[#061b31]">
+                        03
+                      </div>
+
+                      <div>
+
+                        <h2 className="text-2xl font-black">
+                          Informations générales
+                        </h2>
+
+                        <p className="mt-1 text-sm text-slate-400">
+                          Quelques informations complémentaires.
+                        </p>
+
+                      </div>
+
+                    </div>
+
+
+                    <div className="mt-7 min-h-0 flex-1">
+
+                      <label className="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">
+                        Nationalité *
+                      </label>
+
+                      <div className="relative">
+
+                        <User
+                          size={19}
+                          className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                        />
+
+                        <input
+                          value={form.nationality}
+                          onChange={(event) =>
+                            update(
+                              'nationality',
+                              event.target.value
+                            )
+                          }
+                          className="h-[56px] w-full rounded-2xl border border-slate-200 bg-slate-50 pl-12 pr-4 text-sm font-semibold outline-none focus:border-[#d4a72c] focus:ring-2 focus:ring-[#d4a72c]/20"
+                          placeholder="Votre nationalité"
+                        />
+
+                      </div>
+
+
+                      <label className="mb-2 mt-5 block text-xs font-black uppercase tracking-wider text-slate-500">
+                        Adresse e-mail *
+                      </label>
+
+                      <div className="relative">
+
+                        <Mail
+                          size={19}
+                          className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                        />
+
+                        <input
+                          type="email"
+                          value={form.email}
+                          onChange={(event) =>
+                            update(
+                              'email',
+                              event.target.value
+                            )
+                          }
+                          autoComplete="email"
+                          className="h-[56px] w-full rounded-2xl border border-slate-200 bg-slate-50 pl-12 pr-4 text-sm font-semibold outline-none focus:border-[#d4a72c] focus:ring-2 focus:ring-[#d4a72c]/20"
+                          placeholder="nom@exemple.com"
+                        />
+
+                      </div>
+
+
+                      <label className="mb-2 mt-5 block text-xs font-black uppercase tracking-wider text-slate-500">
+                        Adresse *
+                      </label>
+
+                      <div className="relative">
+
+                        <MapPin
+                          size={19}
+                          className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                        />
+
+                        <input
+                          value={form.address}
+                          onChange={(event) =>
+                            update(
+                              'address',
+                              event.target.value
+                            )
+                          }
+                          className="h-[56px] w-full rounded-2xl border border-slate-200 bg-slate-50 pl-12 pr-4 text-sm font-semibold outline-none focus:border-[#d4a72c] focus:ring-2 focus:ring-[#d4a72c]/20"
+                          placeholder="Votre adresse"
+                        />
+
+                      </div>
+
+                    </div>
+
+
+                    {error && (
+                      <p className="mt-3 shrink-0 text-center text-xs font-semibold text-red-600">
+                        {error}
+                      </p>
+                    )}
+
+
+                    <div className="mt-4 grid shrink-0 grid-cols-2 gap-3">
+
+                      <button
+                        type="button"
+                        onClick={previousStep}
+                        className="flex h-[56px] items-center justify-center gap-2 rounded-2xl border-2 border-[#d4a72c] bg-white text-sm font-black text-[#9a7616]"
+                      >
+                        <ChevronLeft size={18} />
+                        PRÉCÉDENT
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={nextStep}
+                        className="flex h-[56px] items-center justify-center gap-2 rounded-2xl bg-[#d4a72c] text-sm font-black text-[#061b31] shadow-lg shadow-[#d4a72c]/20"
+                      >
+                        SUIVANT
+                        <ChevronRight size={18} />
+                      </button>
+
+                    </div>
+
+                  </div>
+
+                )}
+
+
+                {/* =================================================
+                    STEP 4
+                ================================================= */}
+
+                {step === 4 && (
+
+                  <div className="flex h-full flex-col">
+
+                    <div className="flex items-center gap-4 shrink-0">
+
+                      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#d4a72c] text-lg font-black text-[#061b31]">
+                        04
+                      </div>
+
+                      <div>
+
+                        <h2 className="text-2xl font-black">
+                          Sécurisez votre compte
+                        </h2>
+
+                        <p className="mt-1 text-sm text-slate-400">
+                          Choisissez un mot de passe sécurisé.
+                        </p>
+
+                      </div>
+
+                    </div>
+
+
+                    <div className="mt-7 min-h-0 flex-1">
+
+                      <label className="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">
+                        Mot de passe *
+                      </label>
+
+                      <div className="relative">
+
+                        <Lock
+                          size={19}
+                          className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                        />
+
+                        <input
+                          type="password"
+                          value={form.password}
+                          onChange={(event) =>
+                            update(
                               'password',
                               event.target.value
                             )
                           }
                           autoComplete="new-password"
-                          className="h-[58px] w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 pr-14 text-base text-slate-900 outline-none placeholder:text-slate-400 focus:border-[#d4a72c] focus:ring-2 focus:ring-[#d4a72c]/10"
+                          className="h-[56px] w-full rounded-2xl border border-slate-200 bg-slate-50 pl-12 pr-4 text-sm font-semibold outline-none focus:border-[#d4a72c] focus:ring-2 focus:ring-[#d4a72c]/20"
                           placeholder="Votre mot de passe"
                         />
 
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setShowPassword(
-                              (value) =>
-                                !value
+                      </div>
+
+
+                      <label className="mb-2 mt-5 block text-xs font-black uppercase tracking-wider text-slate-500">
+                        Répéter le mot de passe *
+                      </label>
+
+                      <div className="relative">
+
+                        <Lock
+                          size={19}
+                          className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                        />
+
+                        <input
+                          type="password"
+                          value={form.confirmPassword}
+                          onChange={(event) =>
+                            update(
+                              'confirmPassword',
+                              event.target.value
                             )
                           }
-                          className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-                          aria-label={
-                            showPassword
-                              ? 'Masquer le mot de passe'
-                              : 'Afficher le mot de passe'
-                          }
-                        >
-                          {showPassword ? (
-                            <EyeOff />
-                          ) : (
-                            <Eye />
-                          )}
-                        </button>
+                          autoComplete="new-password"
+                          className="h-[56px] w-full rounded-2xl border border-slate-200 bg-slate-50 pl-12 pr-4 text-sm font-semibold outline-none focus:border-[#d4a72c] focus:ring-2 focus:ring-[#d4a72c]/20"
+                          placeholder="Confirmez votre mot de passe"
+                        />
+
+                      </div>
+
+
+                      {/* RÈGLES */}
+
+                      <div className="mt-5 space-y-2">
+
+                        {[
+                          [
+                            form.password.length >= 8,
+                            'Au moins 8 caractères',
+                          ],
+                          [
+                            /[a-z]/.test(
+                              form.password
+                            ),
+                            '1 lettre minuscule',
+                          ],
+                          [
+                            /[A-Z]/.test(
+                              form.password
+                            ),
+                            '1 lettre majuscule',
+                          ],
+                          [
+                            /\d/.test(
+                              form.password
+                            ),
+                            '1 chiffre',
+                          ],
+                          [
+                            /[^A-Za-z0-9]/.test(
+                              form.password
+                            ),
+                            '1 caractère spécial',
+                          ],
+                        ].map(
+                          ([valid, text]) => (
+
+                            <div
+                              key={String(text)}
+                              className="flex items-center gap-2"
+                            >
+
+                              <span
+                                className={`h-3 w-3 rounded-full ${
+                                  valid
+                                    ? 'bg-emerald-500'
+                                    : 'bg-slate-300'
+                                }`}
+                              />
+
+                              <span
+                                className={`text-xs ${
+                                  valid
+                                    ? 'font-semibold text-emerald-600'
+                                    : 'text-slate-400'
+                                }`}
+                              >
+                                {text}
+                              </span>
+
+                            </div>
+
+                          )
+                        )}
 
                       </div>
 
                     </div>
 
 
-                    <div className="rounded-2xl border border-blue-100 bg-[#f0f5fb] px-4 py-4">
+                    {error && (
+                      <p className="mt-3 shrink-0 text-center text-xs font-semibold text-red-600">
+                        {error}
+                      </p>
+                    )}
 
-                      <div className="flex items-start gap-3">
 
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm">
+                    <div className="mt-4 grid shrink-0 grid-cols-2 gap-3">
 
-                          <span className="text-lg">
-                            🛡️
-                          </span>
+                      <button
+                        type="button"
+                        onClick={previousStep}
+                        className="flex h-[56px] items-center justify-center gap-2 rounded-2xl border-2 border-[#d4a72c] bg-white text-sm font-black text-[#9a7616]"
+                      >
+                        <ChevronLeft size={18} />
+                        PRÉCÉDENT
+                      </button>
 
-                        </div>
-
-                        <div>
-
-                          <p className="text-xs font-bold text-slate-800">
-                            Création sécurisée
-                          </p>
-
-                          <p className="mt-1 text-[11px] leading-5 text-slate-500">
-                            Vos informations sont protégées
-                            par des mesures de sécurité avancées.
-                          </p>
-
-                        </div>
-
-                      </div>
+                      <button
+                        type="submit"
+                        onClick={(event) => {
+                          if (!validateStep()) {
+                            event.preventDefault()
+                          }
+                        }}
+                        className="flex h-[56px] items-center justify-center rounded-2xl bg-[#d4a72c] text-sm font-black text-[#061b31] shadow-lg shadow-[#d4a72c]/20"
+                      >
+                        ENREGISTRER
+                      </button>
 
                     </div>
 
                   </div>
+
                 )}
 
-
-                {/* =================================================
-                    NAVIGATION
-                ================================================= */}
-
-                <div className="mt-7 flex gap-3">
-
-                  {step > 1 && (
-                    <button
-                      type="button"
-                      onClick={previousStep}
-                      className="h-[54px] flex-1 rounded-2xl border border-slate-200 bg-white text-sm font-bold text-slate-600 transition hover:bg-slate-50"
-                    >
-                      PRÉCÉDENT
-                    </button>
-                  )}
-
-                  {step < 4 ? (
-                    <button
-                      type="button"
-                      onClick={nextStep}
-                      className="h-[54px] flex-1 rounded-2xl bg-[#d4a72c] text-sm font-black text-[#061b31] shadow-lg shadow-[#d4a72c]/20 transition hover:bg-[#bd9223]"
-                    >
-                      CONTINUER
-                    </button>
-                  ) : (
-                    <PrimaryButton
-                      type="submit"
-                      fullWidth
-                      size="lg"
-                      className="!h-[54px] flex-1 !rounded-2xl !bg-[#d4a72c] !text-sm !font-black !text-[#061b31] !shadow-lg !shadow-[#d4a72c]/20 hover:!bg-[#bd9223]"
-                    >
-                      CRÉER MON COMPTE
-                    </PrimaryButton>
-                  )}
-
-                </div>
-
-              </form>
-
-
-              {/* CONNEXION */}
-
-              <div className="mt-6 border-t border-slate-100 pt-5 text-center">
-
-                <p className="text-sm text-slate-500">
-                  Vous avez déjà un compte ?
-                </p>
-
-                <Link
-                  href="/login"
-                  className="mt-2 inline-block text-sm font-bold text-[#1455d9] hover:underline"
-                >
-                  Se connecter
-                </Link>
-
               </div>
 
-            </GlassCard>
+            </div>
+
+
+            {/* =================================================
+                LIEN CONNEXION
+            ================================================= */}
+
+            <div className="shrink-0 py-4 text-center">
+
+              <p className="text-xs text-slate-400">
+                Vous avez déjà un compte ?
+              </p>
+
+              <Link
+                href="/login"
+                className="mt-1 inline-block text-sm font-black text-[#d4a72c]"
+              >
+                Se connecter
+              </Link>
+
+            </div>
 
           </div>
 
         </section>
 
-      </div>
-
-
-      {/* =====================================================
-          MOBILE
-      ===================================================== */}
-
-      <div className="flex h-[100dvh] flex-col overflow-hidden bg-[#061b31] lg:hidden">
-
-        {/* HEADER */}
-
-        <header className="flex h-[70px] shrink-0 items-center justify-between bg-white px-5 shadow-lg">
-
-          <Link
-            href="/login"
-            className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl bg-white shadow-md"
-          >
-
-            <img
-              src="/ICONE.jpeg"
-              alt="Investir en Bourse"
-              className="h-full w-full object-contain"
-            />
-
-          </Link>
-
-          <div className="text-center">
-
-            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-[#d4a72c]">
-              ESPACE CLIENT
-            </p>
-
-            <h1 className="text-base font-black text-[#111827]">
-              Créer un compte
-            </h1>
-
-          </div>
-
-          <Link
-            href="/login"
-            className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-xl font-bold text-slate-700 shadow-sm"
-            aria-label="Connexion"
-          >
-            →
-          </Link>
-
-        </header>
-
-
-        {/* PROGRESSION */}
-
-        <div className="shrink-0 bg-[#061b31] px-5 pt-5">
-
-          <div className="flex items-center justify-between">
-
-            <div>
-
-              <p className="text-[9px] font-black uppercase tracking-[0.25em] text-[#d4a72c]">
-                ÉTAPE {step} / 4
-              </p>
-
-              <p className="mt-1 text-sm font-bold text-white">
-                {step === 1 &&
-                  'Votre identité'}
-
-                {step === 2 &&
-                  'Vos coordonnées'}
-
-                {step === 3 &&
-                  'Vos informations'}
-
-                {step === 4 &&
-                  'Sécurité du compte'}
-              </p>
-
-            </div>
-
-            <span className="text-xs font-bold text-slate-400">
-              {progress}%
-            </span>
-
-          </div>
-
-          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
-
-            <div
-              className="h-full rounded-full bg-[#d4a72c] transition-all duration-300"
-              style={{
-                width: `${progress}%`,
-              }}
-            />
-
-          </div>
-
-        </div>
-
-
-        {/* CONTENU */}
-
-        <section className="min-h-0 flex-1 overflow-hidden px-5 pt-7">
-
-          {error && (
-            <div className="mb-4 rounded-2xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-xs leading-5 text-red-200">
-              {error}
-            </div>
-          )}
-
-
-          <form
-            action={register}
-            className="h-full"
-          >
-
-            {/* VALEURS */}
-
-            <input
-              type="hidden"
-              name="firstName"
-              value={formData.firstName}
-            />
-
-            <input
-              type="hidden"
-              name="lastName"
-              value={formData.lastName}
-            />
-
-            <input
-              type="hidden"
-              name="countryCode"
-              value={formData.countryCode}
-            />
-
-            <input
-              type="hidden"
-              name="phone"
-              value={formData.phone}
-            />
-
-            <input
-              type="hidden"
-              name="dateOfBirth"
-              value={formData.dateOfBirth}
-            />
-
-            <input
-              type="hidden"
-              name="nationality"
-              value={formData.nationality}
-            />
-
-            <input
-              type="hidden"
-              name="email"
-              value={formData.email}
-            />
-
-            <input
-              type="hidden"
-              name="address"
-              value={formData.address}
-            />
-
-            <input
-              type="hidden"
-              name="password"
-              value={formData.password}
-            />
-
-
-            {/* =================================================
-                ÉTAPE 1
-            ================================================= */}
-
-            {step === 1 && (
-              <div className="space-y-5">
-
-                <MobileStepHeader
-                  number="01"
-                  title="Votre identité"
-                  description="Commençons par faire connaissance."
-                />
-
-                <MobileInput
-                  label="Prénom"
-                  placeholder="Prénom"
-                  value={formData.firstName}
-                  onChange={(value) =>
-                    updateField(
-                      'firstName',
-                      value
-                    )
-                  }
-                />
-
-                <MobileInput
-                  label="Nom"
-                  placeholder="Nom"
-                  value={formData.lastName}
-                  onChange={(value) =>
-                    updateField(
-                      'lastName',
-                      value
-                    )
-                  }
-                />
-
-              </div>
-            )}
-
-
-            {/* =================================================
-                ÉTAPE 2
-            ================================================= */}
-
-            {step === 2 && (
-              <div className="space-y-5">
-
-                <MobileStepHeader
-                  number="02"
-                  title="Vos coordonnées"
-                  description="Indiquez votre téléphone et votre date de naissance."
-                />
-
-                <div>
-
-                  <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-300">
-                    Téléphone
-                  </label>
-
-                  <div className="flex gap-2">
-
-                    <select
-                      value={
-                        formData.countryCode
-                      }
-                      onChange={(event) =>
-                        updateField(
-                          'countryCode',
-                          event.target.value
-                        )
-                      }
-                      className="h-[64px] w-[125px] shrink-0 rounded-[20px] border border-white/15 bg-[#153452] px-3 text-sm font-bold text-white outline-none focus:border-[#d4a72c] focus:ring-2 focus:ring-[#d4a72c]/20"
-                    >
-
-                      <optgroup label="UEMOA">
-
-                        {COUNTRIES
-                          .filter(
-                            (country) =>
-                              country.region ===
-                              'UEMOA'
-                          )
-                          .map((country) => (
-                            <option
-                              key={country.code}
-                              value={country.code}
-                            >
-                              {country.flag}{' '}
-                              {country.dialCode}
-                            </option>
-                          ))}
-
-                      </optgroup>
-
-                      <optgroup label="Afrique centrale">
-
-                        {COUNTRIES
-                          .filter(
-                            (country) =>
-                              country.region ===
-                              'Afrique centrale'
-                          )
-                          .map((country) => (
-                            <option
-                              key={country.code}
-                              value={country.code}
-                            >
-                              {country.flag}{' '}
-                              {country.dialCode}
-                            </option>
-                          ))}
-
-                      </optgroup>
-
-                      <optgroup label="Europe">
-
-                        {COUNTRIES
-                          .filter(
-                            (country) =>
-                              country.region ===
-                              'Europe'
-                          )
-                          .map((country) => (
-                            <option
-                              key={country.code}
-                              value={country.code}
-                            >
-                              {country.flag}{' '}
-                              {country.dialCode}
-                            </option>
-                          ))}
-
-                      </optgroup>
-
-                      <optgroup label="Amérique du Nord">
-
-                        {COUNTRIES
-                          .filter(
-                            (country) =>
-                              country.region ===
-                              'Amérique du Nord'
-                          )
-                          .map((country) => (
-                            <option
-                              key={country.code}
-                              value={country.code}
-                            >
-                              {country.flag}{' '}
-                              {country.dialCode}
-                            </option>
-                          ))}
-
-                      </optgroup>
-
-                    </select>
-
-                    <input
-                      type="tel"
-                      inputMode="tel"
-                      value={formData.phone}
-                      onChange={(event) =>
-                        updateField(
-                          'phone',
-                          event.target.value
-                        )
-                      }
-                      className="h-[64px] min-w-0 flex-1 rounded-[20px] border border-white/15 bg-[#153452] px-4 text-base text-white outline-none placeholder:text-slate-400 focus:border-[#d4a72c] focus:ring-2 focus:ring-[#d4a72c]/20"
-                      placeholder="07 00 00 00"
-                    />
-
-                  </div>
-
-                  <p className="mt-2 text-[10px] text-slate-400">
-                    {selectedCountry.flag}{' '}
-                    {selectedCountry.name}{' '}
-                    — {selectedCountry.dialCode}
-                  </p>
-
-                </div>
-
-
-                <MobileInput
-                  label="Date de naissance"
-                  type="date"
-                  value={
-                    formData.dateOfBirth
-                  }
-                  onChange={(value) =>
-                    updateField(
-                      'dateOfBirth',
-                      value
-                    )
-                  }
-                />
-
-              </div>
-            )}
-
-
-            {/* =================================================
-                ÉTAPE 3
-            ================================================= */}
-
-            {step === 3 && (
-              <div className="space-y-5">
-
-                <MobileStepHeader
-                  number="03"
-                  title="Vos informations"
-                  description="Quelques informations supplémentaires."
-                />
-
-                <MobileInput
-                  label="Nationalité"
-                  placeholder="Ivoirienne"
-                  value={
-                    formData.nationality
-                  }
-                  onChange={(value) =>
-                    updateField(
-                      'nationality',
-                      value
-                    )
-                  }
-                />
-
-                <MobileInput
-                  label="Adresse e-mail"
-                  type="email"
-                  placeholder="nom@exemple.com"
-                  value={formData.email}
-                  onChange={(value) =>
-                    updateField(
-                      'email',
-                      value
-                    )
-                  }
-                />
-
-                <MobileInput
-                  label="Adresse"
-                  placeholder="Cocody, Abidjan"
-                  value={formData.address}
-                  onChange={(value) =>
-                    updateField(
-                      'address',
-                      value
-                    )
-                  }
-                />
-
-              </div>
-            )}
-
-
-            {/* =================================================
-                ÉTAPE 4
-            ================================================= */}
-
-            {step === 4 && (
-              <div className="space-y-5">
-
-                <MobileStepHeader
-                  number="04"
-                  title="Sécurisez votre compte"
-                  description="Choisissez votre mot de passe."
-                />
-
-                <div>
-
-                  <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-300">
-                    Mot de passe
-                  </label>
-
-                  <div className="relative">
-
-                    <input
-                      type={
-                        showPassword
-                          ? 'text'
-                          : 'password'
-                      }
-                      value={
-                        formData.password
-                      }
-                      onChange={(event) =>
-                        updateField(
-                          'password',
-                          event.target.value
-                        )
-                      }
-                      autoComplete="new-password"
-                      className="h-[64px] w-full rounded-[20px] border border-white/15 bg-[#153452] px-5 pr-14 text-base text-white outline-none placeholder:text-slate-400 focus:border-[#d4a72c] focus:ring-2 focus:ring-[#d4a72c]/20"
-                      placeholder="Mot de passe"
-                    />
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setShowPassword(
-                          (value) =>
-                            !value
-                        )
-                      }
-                      className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-xl text-slate-400"
-                    >
-                      {showPassword ? (
-                        <EyeOff />
-                      ) : (
-                        <Eye />
-                      )}
-                    </button>
-
-                  </div>
-
-                </div>
-
-
-                <div className="rounded-[22px] border border-white/10 bg-[#102b47] px-4 py-4">
-
-                  <div className="flex items-center gap-3">
-
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#d4a72c]/30 bg-[#061b31]">
-
-                      <span className="text-lg">
-                        🛡️
-                      </span>
-
-                    </div>
-
-                    <div>
-
-                      <p className="text-xs font-black text-white">
-                        Création sécurisée
-                      </p>
-
-                      <p className="mt-1 text-[10px] leading-4 text-slate-400">
-                        Vos informations sont protégées.
-                      </p>
-
-                    </div>
-
-                  </div>
-
-                </div>
-
-              </div>
-            )}
-
-
-            {/* =================================================
-                BOUTONS
-            ================================================= */}
-
-            <div className="absolute bottom-[95px] left-5 right-5 flex gap-3">
-
-              {step > 1 && (
-                <button
-                  type="button"
-                  onClick={previousStep}
-                  className="h-[58px] flex-1 rounded-[20px] border border-white/15 bg-white/5 text-sm font-bold text-white"
-                >
-                  RETOUR
-                </button>
-              )}
-
-              {step < 4 ? (
-                <button
-                  type="button"
-                  onClick={nextStep}
-                  className="h-[58px] flex-1 rounded-[20px] bg-[#d4a72c] text-sm font-black text-[#061b31] shadow-xl shadow-[#d4a72c]/20"
-                >
-                  CONTINUER
-                </button>
-              ) : (
-                <PrimaryButton
-                  type="submit"
-                  fullWidth
-                  size="lg"
-                  className="!h-[58px] flex-1 !rounded-[20px] !bg-[#d4a72c] !text-sm !font-black !text-[#061b31]"
-                >
-                  CRÉER MON COMPTE
-                </PrimaryButton>
-              )}
-
-            </div>
-
-          </form>
-
-        </section>
-
-
-        {/* NAVIGATION */}
-
-        <nav className="flex h-[76px] shrink-0 items-center justify-around border-t border-white/10 bg-[#041526]">
-
-          <Link
-            href="/"
-            className="flex flex-col items-center gap-1 text-slate-400"
-          >
-            <span className="text-xl">
-              ⌂
-            </span>
-
-            <span className="text-[10px] font-semibold">
-              Accueil
-            </span>
-          </Link>
-
-          <Link
-            href="/login"
-            className="flex flex-col items-center gap-1 text-slate-400"
-          >
-            <span className="text-xl">
-              →
-            </span>
-
-            <span className="text-[10px] font-semibold">
-              Connexion
-            </span>
-          </Link>
-
-          <div className="flex flex-col items-center gap-1 text-[#d4a72c]">
-
-            <span className="text-xl">
-              ♙
-            </span>
-
-            <span className="text-[10px] font-bold">
-              Compte
-            </span>
-
-          </div>
-
-        </nav>
-
-      </div>
+      </form>
 
     </main>
-  )
-}
-
-
-// =========================================================
-// INPUT DESKTOP
-// =========================================================
-
-function Input({
-  label,
-  value,
-  onChange,
-  placeholder,
-  type = 'text',
-}: {
-  label: string
-  value: string
-  onChange: (value: string) => void
-  placeholder?: string
-  type?: string
-}) {
-  return (
-    <div>
-
-      <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
-        {label}
-      </label>
-
-      <input
-        type={type}
-        value={value}
-        onChange={(event) =>
-          onChange(event.target.value)
-        }
-        required
-        className="fin-input !h-[58px] !rounded-2xl !border-slate-200 !bg-slate-50 !px-5 !text-base transition focus:!border-[#d4a72c] focus:!ring-2 focus:!ring-[#d4a72c]/10"
-        placeholder={placeholder}
-      />
-
-    </div>
-  )
-}
-
-
-// =========================================================
-// INPUT MOBILE
-// =========================================================
-
-function MobileInput({
-  label,
-  value,
-  onChange,
-  placeholder,
-  type = 'text',
-}: {
-  label: string
-  value: string
-  onChange: (value: string) => void
-  placeholder?: string
-  type?: string
-}) {
-  return (
-    <div>
-
-      <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-300">
-        {label}
-      </label>
-
-      <input
-        type={type}
-        value={value}
-        onChange={(event) =>
-          onChange(event.target.value)
-        }
-        required
-        className="h-[64px] w-full rounded-[20px] border border-white/15 bg-[#153452] px-5 text-base text-white outline-none placeholder:text-slate-400 focus:border-[#d4a72c] focus:ring-2 focus:ring-[#d4a72c]/20"
-        placeholder={placeholder}
-      />
-
-    </div>
-  )
-}
-
-
-// =========================================================
-// TITRE ÉTAPE DESKTOP
-// =========================================================
-
-function StepTitle({
-  number,
-  title,
-  description,
-}: {
-  number: string
-  title: string
-  description: string
-}) {
-  return (
-    <div className="mb-2">
-
-      <div className="flex items-center gap-3">
-
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#061b31] text-xs font-black text-[#d4a72c]">
-          {number}
-        </div>
-
-        <div>
-
-          <h3 className="text-lg font-black text-[#0a1b2e]">
-            {title}
-          </h3>
-
-          <p className="text-xs text-slate-500">
-            {description}
-          </p>
-
-        </div>
-
-      </div>
-
-    </div>
-  )
-}
-
-
-// =========================================================
-// TITRE ÉTAPE MOBILE
-// =========================================================
-
-function MobileStepHeader({
-  number,
-  title,
-  description,
-}: {
-  number: string
-  title: string
-  description: string
-}) {
-  return (
-    <div className="mb-6">
-
-      <div className="flex items-center gap-3">
-
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#d4a72c] text-xs font-black text-[#061b31]">
-          {number}
-        </div>
-
-        <div>
-
-          <h2 className="text-xl font-black text-white">
-            {title}
-          </h2>
-
-          <p className="mt-1 text-xs leading-5 text-slate-400">
-            {description}
-          </p>
-
-        </div>
-
-      </div>
-
-    </div>
-  )
-}
-
-
-// =========================================================
-// ICÔNES MOT DE PASSE
-// =========================================================
-
-function Eye() {
-  return (
-    <svg
-      width="21"
-      height="21"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-    >
-      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
-  )
-}
-
-function EyeOff() {
-  return (
-    <svg
-      width="21"
-      height="21"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-    >
-      <path d="m3 3 18 18" />
-      <path d="M10.6 10.6a2 2 0 0 0 2.8 2.8" />
-      <path d="M9.9 5.1A10.8 10.8 0 0 1 12 5c6.5 0 10 7 10 7a17.7 17.7 0 0 1-3.1 4.1" />
-      <path d="M6.6 6.6C3.6 8.6 2 12 2 12s3.5 7 10 7a10.7 10.7 0 0 0 3.5-.6" />
-    </svg>
   )
 }
