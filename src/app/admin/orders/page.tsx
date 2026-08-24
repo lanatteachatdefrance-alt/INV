@@ -33,6 +33,7 @@ type Order = {
   clientName: string
   email: string
   description: string
+  type: 'achat' | 'vente'
   quantity: number
   unitPrice: number
   amount: number
@@ -79,13 +80,25 @@ function formatStatus(status: string | null) {
   return status || 'En attente'
 }
 
+function formatOrderType(
+  type: string | null
+): 'achat' | 'vente' {
+  if (type === 'vente_investissement') {
+    return 'vente'
+  }
+
+  return 'achat'
+}
+
 /*
  * =====================================================
  * VALIDATION / REFUS D'UN ORDRE
  * =====================================================
  */
 
-async function updateOrderStatus(formData: FormData) {
+async function updateOrderStatus(
+  formData: FormData
+) {
   'use server'
 
   const orderId = String(
@@ -167,10 +180,10 @@ async function updateOrderStatus(formData: FormData) {
       `
     )
     .eq('id', orderId)
-    .eq(
-      'type',
-      'achat_investissement'
-    )
+    .in('type', [
+      'achat_investissement',
+      'vente_investissement',
+    ])
     .single()
 
   if (orderError || !order) {
@@ -217,10 +230,11 @@ async function updateOrderStatus(formData: FormData) {
           new Date().toISOString(),
       })
       .eq('id', orderId)
-      .eq(
-        'type',
-        'achat_investissement'
-      )
+      .in('type', [
+        'achat_investissement',
+        'vente_investissement',
+      ])
+      .eq('status', 'pending')
 
     if (error) {
       throw new Error(
@@ -230,17 +244,158 @@ async function updateOrderStatus(formData: FormData) {
 
     revalidatePath('/admin/orders')
     revalidatePath('/dashboard/orders')
+    revalidatePath('/dashboard/investments')
+    revalidatePath('/dashboard/portfolio')
 
     return
   }
 
   /*
    * =====================================================
-   * VALIDATION
+   * VALIDATION D'UNE VENTE
+   * =====================================================
+   *
+   * IMPORTANT :
+   *
+   * La vente ne crée PAS de nouvelle position.
+   *
+   * On passe simplement la transaction à "approved".
+   *
+   * Le trigger SQL :
+   *
+   * credit_balance_on_sale_approval()
+   *
+   * s'occupe ensuite automatiquement de :
+   *
+   * - retirer les actions du portefeuille
+   * - mettre à jour current_value
+   * - passer la position à "vendu" si nécessaire
+   * - créditer le solde du client
+   */
+
+  if (
+    order.type ===
+    'vente_investissement'
+  ) {
+    if (!order.offer_id) {
+      throw new Error(
+        'Cette vente ne possède aucune valeur associée.'
+      )
+    }
+
+    const quantity =
+      Number(
+        order.quantity ?? 0
+      )
+
+    if (
+      !Number.isInteger(quantity) ||
+      quantity < 1
+    ) {
+      throw new Error(
+        'La quantité de titres à vendre est invalide.'
+      )
+    }
+
+    const amount =
+      Number(
+        order.amount ?? 0
+      )
+
+    if (
+      !Number.isFinite(amount) ||
+      amount <= 0
+    ) {
+      throw new Error(
+        'Le montant de la vente est invalide.'
+      )
+    }
+
+    const unitPrice =
+      Number(
+        order.unit_price ?? 0
+      )
+
+    if (
+      !Number.isFinite(unitPrice) ||
+      unitPrice <= 0
+    ) {
+      throw new Error(
+        'Le cours de vente est invalide.'
+      )
+    }
+
+    const expectedAmount =
+      quantity * unitPrice
+
+    if (
+      Math.abs(
+        expectedAmount - amount
+      ) > 0.01
+    ) {
+      throw new Error(
+        'Le montant de la vente ne correspond pas à la quantité et au cours.'
+      )
+    }
+
+    /*
+     * ===================================================
+     * APPROBATION
+     * ===================================================
+     *
+     * Le trigger SQL s'exécutera automatiquement.
+     */
+
+    const {
+      error: updateError,
+    } = await supabase
+      .from('transactions')
+      .update({
+        status: 'approved',
+
+        approved_by:
+          user.id,
+
+        approved_at:
+          new Date().toISOString(),
+
+        updated_at:
+          new Date().toISOString(),
+      })
+      .eq('id', orderId)
+      .eq(
+        'type',
+        'vente_investissement'
+      )
+      .eq(
+        'status',
+        'pending'
+      )
+
+    if (updateError) {
+      throw new Error(
+        `Impossible de valider la vente : ${updateError.message}`
+      )
+    }
+
+    revalidatePath('/admin/orders')
+    revalidatePath('/dashboard/orders')
+    revalidatePath('/dashboard/investments')
+    revalidatePath('/dashboard/portfolio')
+
+    return
+  }
+
+  /*
+   * =====================================================
+   * VALIDATION D'UN ACHAT
    * =====================================================
    */
 
-  if (action === 'approve') {
+  if (
+    order.type ===
+    'achat_investissement'
+  ) {
 
     /*
      * ---------------------------------------------------
@@ -400,7 +555,7 @@ async function updateOrderStatus(formData: FormData) {
 
     /*
      * ---------------------------------------------------
-     * VALEUR ACTUELLE DE LA POSITION
+     * VALEUR ACTUELLE
      * ---------------------------------------------------
      */
 
@@ -410,14 +565,8 @@ async function updateOrderStatus(formData: FormData) {
 
     /*
      * ---------------------------------------------------
-     * PROTECTION CONTRE LE DOUBLE AJOUT
+     * PROTECTION DOUBLE POSITION
      * ---------------------------------------------------
-     *
-     * On vérifie qu'une position identique
-     * n'existe pas déjà pour cet utilisateur.
-     *
-     * Cela évite de créer deux fois la même
-     * position si le bouton est envoyé deux fois.
      */
 
     const {
@@ -494,7 +643,7 @@ async function updateOrderStatus(formData: FormData) {
 
     /*
      * ---------------------------------------------------
-     * PASSAGE DE L'ORDRE À COMPLÉTÉ
+     * APPROBATION ACHAT
      * ---------------------------------------------------
      */
 
@@ -519,6 +668,10 @@ async function updateOrderStatus(formData: FormData) {
         'type',
         'achat_investissement'
       )
+      .eq(
+        'status',
+        'pending'
+      )
 
     if (updateError) {
       throw new Error(
@@ -529,7 +682,7 @@ async function updateOrderStatus(formData: FormData) {
 
   /*
    * =====================================================
-   * RAFRAÎCHISSEMENT DES PAGES
+   * RAFRAÎCHISSEMENT
    * =====================================================
    */
 
@@ -564,7 +717,7 @@ export default async function AdminOrdersPage() {
 
   /*
    * =====================================================
-   * VÉRIFICATION ADMIN
+   * ADMIN
    * =====================================================
  */
 
@@ -580,9 +733,9 @@ export default async function AdminOrdersPage() {
 
   /*
    * =====================================================
-   * RÉCUPÉRATION DES TRANSACTIONS
+   * RÉCUPÉRATION ACHATS + VENTES
    * =====================================================
-   */
+ */
 
   const {
     data: transactions,
@@ -605,10 +758,10 @@ export default async function AdminOrdersPage() {
         approved_at
       `
     )
-    .eq(
-      'type',
-      'achat_investissement'
-    )
+    .in('type', [
+      'achat_investissement',
+      'vente_investissement',
+    ])
     .order(
       'created_at',
       {
@@ -626,7 +779,7 @@ export default async function AdminOrdersPage() {
    * =====================================================
    * UTILISATEURS
    * =====================================================
-   */
+ */
 
   const userIds = Array.from(
     new Set(
@@ -662,13 +815,14 @@ export default async function AdminOrdersPage() {
    * =====================================================
    * TRANSFORMATION
    * =====================================================
-   */
+ */
 
   const orders: Order[] =
     (transactions ?? []).map(
       (
         transaction: Transaction
       ) => {
+
         const profile =
           profiles.find(
             (item) =>
@@ -701,7 +855,8 @@ export default async function AdminOrdersPage() {
           'Client'
 
         return {
-          id: transaction.id,
+          id:
+            transaction.id,
 
           user_id:
             transaction.user_id,
@@ -714,7 +869,12 @@ export default async function AdminOrdersPage() {
 
           description:
             transaction.description ||
-            'Achat investissement',
+            'Ordre d’investissement',
+
+          type:
+            formatOrderType(
+              transaction.type
+            ),
 
           quantity,
 
@@ -737,7 +897,7 @@ export default async function AdminOrdersPage() {
    * =====================================================
    * STATISTIQUES
    * =====================================================
-   */
+ */
 
   const pendingOrders =
     orders.filter(
@@ -760,35 +920,53 @@ export default async function AdminOrdersPage() {
         'Annulé'
     )
 
+  const pendingPurchases =
+    pendingOrders.filter(
+      (order) =>
+        order.type === 'achat'
+    )
+
+  const pendingSales =
+    pendingOrders.filter(
+      (order) =>
+        order.type === 'vente'
+    )
+
   /*
    * =====================================================
    * AFFICHAGE
    * =====================================================
-   */
+ */
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6 p-6">
 
       {/* =================================================
           EN-TÊTE
       ================================================= */}
 
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">
-          Validation des achats
+
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-blue-600">
+          Administration
+        </p>
+
+        <h1 className="mt-1 text-2xl font-bold text-slate-900">
+          Validation des ordres
         </h1>
 
         <p className="mt-1 text-sm text-slate-500">
-          Vérifiez et validez les ordres
-          d’investissement des clients.
+          Gérez les achats et les ventes
+          d’actions des clients.
         </p>
+
       </div>
 
       {/* =================================================
           STATISTIQUES
       ================================================= */}
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
 
         <div className="rounded-2xl border border-orange-200 bg-orange-50 p-5">
           <p className="text-xs font-semibold uppercase tracking-wider text-orange-600">
@@ -797,6 +975,26 @@ export default async function AdminOrdersPage() {
 
           <p className="mt-2 text-3xl font-bold text-orange-800">
             {pendingOrders.length}
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5">
+          <p className="text-xs font-semibold uppercase tracking-wider text-blue-600">
+            Achats
+          </p>
+
+          <p className="mt-2 text-3xl font-bold text-blue-800">
+            {pendingPurchases.length}
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
+          <p className="text-xs font-semibold uppercase tracking-wider text-amber-600">
+            Ventes
+          </p>
+
+          <p className="mt-2 text-3xl font-bold text-amber-800">
+            {pendingSales.length}
           </p>
         </div>
 
@@ -820,33 +1018,23 @@ export default async function AdminOrdersPage() {
           </p>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-5">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-            Total des ordres
-          </p>
-
-          <p className="mt-2 text-3xl font-bold text-slate-900">
-            {orders.length}
-          </p>
-        </div>
-
       </div>
 
       {/* =================================================
-          ORDRES EN ATTENTE
+          ORDRES
       ================================================= */}
 
-      <div className="rounded-3xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+      <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
 
         <div className="border-b border-slate-200 px-5 py-4">
 
           <h2 className="font-semibold text-slate-900">
-            Ordres en attente
+            Ordres d’investissement
           </h2>
 
           <p className="mt-1 text-xs text-slate-500">
-            Ces achats doivent être vérifiés
-            avant validation.
+            Les achats et ventes en attente
+            nécessitent une validation administrative.
           </p>
 
         </div>
@@ -855,7 +1043,7 @@ export default async function AdminOrdersPage() {
 
           <div className="px-5 py-16 text-center">
 
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-50 text-xl">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-50 text-xl text-green-600">
               ✓
             </div>
 
@@ -864,7 +1052,7 @@ export default async function AdminOrdersPage() {
             </h3>
 
             <p className="mt-1 text-sm text-slate-500">
-              Tous les achats ont été traités.
+              Tous les achats et ventes ont été traités.
             </p>
 
           </div>
@@ -887,7 +1075,25 @@ export default async function AdminOrdersPage() {
 
                     <div className="min-w-0">
 
-                      <p className="font-bold text-slate-900">
+                      <div className="flex items-center gap-2">
+
+                        <span
+                          className={
+                            order.type ===
+                            'vente'
+                              ? 'rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-amber-700'
+                              : 'rounded-full bg-blue-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-blue-700'
+                          }
+                        >
+                          {order.type ===
+                          'vente'
+                            ? 'Vente'
+                            : 'Achat'}
+                        </span>
+
+                      </div>
+
+                      <p className="mt-2 font-bold text-slate-900">
                         {order.clientName}
                       </p>
 
@@ -895,7 +1101,7 @@ export default async function AdminOrdersPage() {
                         {order.email}
                       </p>
 
-                      <p className="mt-2 text-sm font-semibold text-blue-700">
+                      <p className="mt-2 text-sm font-semibold text-slate-700">
                         {order.description}
                       </p>
 
@@ -906,6 +1112,7 @@ export default async function AdminOrdersPage() {
                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
 
                       <div>
+
                         <p className="text-[10px] uppercase tracking-wider text-slate-400">
                           Quantité
                         </p>
@@ -915,9 +1122,11 @@ export default async function AdminOrdersPage() {
                             'fr-FR'
                           )}
                         </p>
+
                       </div>
 
                       <div>
+
                         <p className="text-[10px] uppercase tracking-wider text-slate-400">
                           Cours
                         </p>
@@ -928,22 +1137,33 @@ export default async function AdminOrdersPage() {
                           )}{' '}
                           FCFA
                         </p>
+
                       </div>
 
                       <div>
+
                         <p className="text-[10px] uppercase tracking-wider text-slate-400">
                           Montant
                         </p>
 
-                        <p className="mt-1 font-bold text-slate-900">
+                        <p
+                          className={
+                            order.type ===
+                            'vente'
+                              ? 'mt-1 font-bold text-amber-700'
+                              : 'mt-1 font-bold text-slate-900'
+                          }
+                        >
                           {order.amount.toLocaleString(
                             'fr-FR'
                           )}{' '}
                           FCFA
                         </p>
+
                       </div>
 
                       <div>
+
                         <p className="text-[10px] uppercase tracking-wider text-slate-400">
                           Date
                         </p>
@@ -955,6 +1175,7 @@ export default async function AdminOrdersPage() {
                             'fr-FR'
                           )}
                         </p>
+
                       </div>
 
                     </div>
@@ -970,6 +1191,7 @@ export default async function AdminOrdersPage() {
                           updateOrderStatus
                         }
                       >
+
                         <input
                           type="hidden"
                           name="orderId"
@@ -986,10 +1208,16 @@ export default async function AdminOrdersPage() {
 
                         <button
                           type="submit"
-                          className="w-full rounded-xl bg-green-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-green-700 active:scale-[0.98]"
+                          className={
+                            order.type ===
+                            'vente'
+                              ? 'w-full rounded-xl bg-amber-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-amber-700 active:scale-[0.98]'
+                              : 'w-full rounded-xl bg-green-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-green-700 active:scale-[0.98]'
+                          }
                         >
                           ✓ Valider
                         </button>
+
                       </form>
 
                       {/* REFUSER */}
@@ -999,6 +1227,7 @@ export default async function AdminOrdersPage() {
                           updateOrderStatus
                         }
                       >
+
                         <input
                           type="hidden"
                           name="orderId"
@@ -1019,6 +1248,7 @@ export default async function AdminOrdersPage() {
                         >
                           Refuser
                         </button>
+
                       </form>
 
                     </div>
@@ -1028,7 +1258,10 @@ export default async function AdminOrdersPage() {
                   <div className="mt-4 flex flex-col gap-1 rounded-xl border border-orange-100 bg-orange-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
 
                     <span className="text-xs font-semibold text-orange-700">
-                      En attente de validation
+                      {order.type ===
+                      'vente'
+                        ? 'Vente en attente de validation'
+                        : 'Achat en attente de validation'}
                     </span>
 
                     <span className="text-[10px] text-orange-600">
