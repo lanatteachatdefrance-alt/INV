@@ -1,8 +1,15 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Eye, EyeOff, CircleHelp, ShieldCheck } from 'lucide-react'
+import {
+  Eye,
+  EyeOff,
+  CircleHelp,
+  ShieldCheck,
+  AlertCircle,
+  CheckCircle2,
+} from 'lucide-react'
 
 import { login } from './actions'
 
@@ -10,28 +17,63 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
 
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+
+    const errorParam = params.get('error')
+    const successParam = params.get('success')
+
+    if (errorParam) {
+      setError(errorParam)
+    }
+
+    if (successParam) {
+      setSuccess(successParam)
+    }
+  }, [])
+
+  const translateError = (message: string) => {
+    const value = message.toLowerCase()
+
+    if (
+      value.includes('invalid login credentials') ||
+      value.includes('invalid credentials')
+    ) {
+      return 'Adresse e-mail ou mot de passe incorrect.'
+    }
+
+    if (value.includes('email not confirmed')) {
+      return 'Votre adresse e-mail n’a pas encore été confirmée. Vérifiez votre boîte mail.'
+    }
+
+    if (value.includes('user not found')) {
+      return 'Aucun compte ne correspond à cette adresse e-mail.'
+    }
+
+    if (value.includes('too many requests')) {
+      return 'Trop de tentatives. Veuillez patienter quelques instants avant de réessayer.'
+    }
+
+    return message
+  }
+
   return (
     <main className="h-[100dvh] w-full overflow-hidden bg-[#061b31]">
-
-      {/* =====================================================
-          PAGE FIXE
-          ===================================================== */}
 
       <div className="relative flex h-[100dvh] w-full flex-col overflow-hidden">
 
         {/* ===================================================
             FOND BLEU
-            =================================================== */}
+        =================================================== */}
 
         <div className="absolute inset-0 overflow-hidden bg-[#061b31]">
-
-          {/* Cercle décoratif haut droit */}
 
           <div className="absolute -right-40 -top-48 h-[620px] w-[620px] rounded-full bg-[#153b69]" />
 
           <div className="absolute -right-20 -top-32 h-[500px] w-[500px] rounded-full border border-white/5" />
-
-          {/* Lumière discrète */}
 
           <div className="absolute left-[-180px] top-[-150px] h-[500px] w-[500px] rounded-full bg-blue-500/10 blur-3xl" />
 
@@ -40,17 +82,15 @@ export default function Login() {
 
         {/* ===================================================
             CONTENU HAUT
-            =================================================== */}
+        =================================================== */}
 
         <section className="relative z-10 flex min-h-0 flex-1 flex-col px-5 pt-5">
 
           {/* =================================================
-              HEADER
-              ================================================= */}
+              BOUTON AIDE
+          ================================================= */}
 
           <div className="flex shrink-0 items-start justify-end">
-
-            {/* BOUTON AIDE */}
 
             <div className="relative">
 
@@ -109,6 +149,8 @@ export default function Login() {
                   "
                 >
 
+                  {/* MOT DE PASSE OUBLIÉ */}
+
                   <Link
                     href="/forgot-password"
                     onClick={() => setHelpOpen(false)}
@@ -127,6 +169,9 @@ export default function Login() {
                     Mot de passe oublié
                   </Link>
 
+
+                  {/* OUVRIR UN COMPTE */}
+
                   <Link
                     href="/register"
                     onClick={() => setHelpOpen(false)}
@@ -144,6 +189,9 @@ export default function Login() {
                   >
                     Ouvrir un compte
                   </Link>
+
+
+                  {/* CONTACT */}
 
                   <a
                     href="mailto:contact@investirenbourse.org"
@@ -173,14 +221,12 @@ export default function Login() {
 
 
           {/* =================================================
-              LOGO CENTRAL IMPOSANT
-              ================================================= */}
+              LOGO
+          ================================================= */}
 
           <div className="flex min-h-0 flex-1 items-center justify-center">
 
             <div className="flex flex-col items-center justify-center">
-
-              {/* LOGO */}
 
               <div
                 className="
@@ -208,7 +254,7 @@ export default function Login() {
               </div>
 
 
-              {/* NOM DE LA PLATEFORME */}
+              {/* NOM */}
 
               <div className="mt-5 text-center">
 
@@ -231,7 +277,7 @@ export default function Login() {
 
         {/* ===================================================
             PANNEAU CONNEXION
-            =================================================== */}
+        =================================================== */}
 
         <section
           className="
@@ -253,7 +299,7 @@ export default function Login() {
 
             {/* =================================================
                 TITRE
-                ================================================= */}
+            ================================================= */}
 
             <div className="mb-5">
 
@@ -274,19 +320,78 @@ export default function Login() {
 
 
             {/* =================================================
-                ERREUR
-                ================================================= */}
+                MESSAGE DE SUCCÈS
+            ================================================= */}
 
-            {/* 
-              L'erreur est gérée par la redirection actuelle
-              de ton Server Action.
-              On conserve donc ton système sans le modifier.
-            */}
+            {success && (
+
+              <div
+                className="
+                  mb-4
+                  flex
+                  items-start
+                  gap-3
+                  rounded-[15px]
+                  border
+                  border-emerald-200
+                  bg-emerald-50
+                  px-4
+                  py-3
+                "
+              >
+
+                <CheckCircle2
+                  size={19}
+                  className="mt-0.5 shrink-0 text-emerald-600"
+                />
+
+                <p className="text-[12px] font-semibold leading-5 text-emerald-700">
+                  {success}
+                </p>
+
+              </div>
+
+            )}
+
+
+            {/* =================================================
+                MESSAGE D'ERREUR
+            ================================================= */}
+
+            {error && (
+
+              <div
+                className="
+                  mb-4
+                  flex
+                  items-start
+                  gap-3
+                  rounded-[15px]
+                  border
+                  border-red-200
+                  bg-red-50
+                  px-4
+                  py-3
+                "
+              >
+
+                <AlertCircle
+                  size={19}
+                  className="mt-0.5 shrink-0 text-red-600"
+                />
+
+                <p className="text-[12px] font-semibold leading-5 text-red-700">
+                  {translateError(error)}
+                </p>
+
+              </div>
+
+            )}
 
 
             {/* =================================================
                 FORMULAIRE
-                ================================================= */}
+            ================================================= */}
 
             <form
               action={login}
@@ -319,6 +424,7 @@ export default function Login() {
                     stroke="currentColor"
                     strokeWidth="2"
                   >
+
                     <circle
                       cx="12"
                       cy="7"
@@ -326,6 +432,7 @@ export default function Login() {
                     />
 
                     <path d="M4 21c.8-4 3.4-6 8-6s7.2 2 8 6" />
+
                   </svg>
 
                 </div>
@@ -481,9 +588,7 @@ export default function Login() {
               </div>
 
 
-              {/* =================================================
-                  BOUTON MOT DE PASSE OUBLIÉ
-                  ================================================= */}
+              {/* MOT DE PASSE OUBLIÉ */}
 
               <div className="flex justify-end">
 
@@ -502,9 +607,7 @@ export default function Login() {
               </div>
 
 
-              {/* =================================================
-                  BOUTON CONNEXION
-                  ================================================= */}
+              {/* BOUTON CONNEXION */}
 
               <button
                 type="submit"
@@ -534,7 +637,7 @@ export default function Login() {
 
             {/* =================================================
                 SÉCURITÉ
-                ================================================= */}
+            ================================================= */}
 
             <div
               className="
@@ -592,7 +695,7 @@ export default function Login() {
 
             {/* =================================================
                 CRÉATION DE COMPTE
-                ================================================= */}
+            ================================================= */}
 
             <div className="mt-4 flex items-center justify-center">
 

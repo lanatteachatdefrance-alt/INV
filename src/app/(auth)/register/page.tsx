@@ -2,7 +2,7 @@
 
 import { register } from './actions'
 import Link from 'next/link'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   ChevronRight,
   User,
@@ -10,6 +10,8 @@ import {
   MapPin,
   Lock,
   CalendarDays,
+  AlertCircle,
+  CheckCircle2,
 } from 'lucide-react'
 
 type Step = 1 | 2 | 3 | 4
@@ -119,6 +121,7 @@ const countries = [
 export default function Register() {
   const [step, setStep] = useState<Step>(1)
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
   const [showCountries, setShowCountries] = useState(false)
 
   const [form, setForm] = useState<FormData>({
@@ -140,6 +143,21 @@ export default function Register() {
     confirmPassword: '',
   })
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+
+    const errorParam = params.get('error')
+    const successParam = params.get('success')
+
+    if (errorParam) {
+      setError(errorParam)
+    }
+
+    if (successParam) {
+      setSuccess(successParam)
+    }
+  }, [])
+
   const update = (
     field: keyof FormData,
     value: string | boolean
@@ -150,6 +168,31 @@ export default function Register() {
     }))
 
     setError('')
+    setSuccess('')
+  }
+
+  const translateError = (message: string) => {
+    const value = message.toLowerCase()
+
+    if (
+      value.includes('user already registered') ||
+      value.includes('already registered')
+    ) {
+      return 'Cette adresse e-mail est déjà utilisée.'
+    }
+
+    if (
+      value.includes('password should be at least') ||
+      value.includes('password')
+    ) {
+      return message
+    }
+
+    if (value.includes('email')) {
+      return message
+    }
+
+    return message
   }
 
   const validateStep = () => {
@@ -198,6 +241,16 @@ export default function Register() {
         return false
       }
 
+      const emailIsValid =
+        /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+          form.email.trim()
+        )
+
+      if (!emailIsValid) {
+        setError('Veuillez renseigner une adresse e-mail valide.')
+        return false
+      }
+
       if (!form.address.trim()) {
         setError('Veuillez renseigner votre adresse.')
         return false
@@ -213,6 +266,34 @@ export default function Register() {
       if (form.password.length < 8) {
         setError(
           'Le mot de passe doit contenir au moins 8 caractères.'
+        )
+        return false
+      }
+
+      if (!/[a-z]/.test(form.password)) {
+        setError(
+          'Le mot de passe doit contenir au moins une lettre minuscule.'
+        )
+        return false
+      }
+
+      if (!/[A-Z]/.test(form.password)) {
+        setError(
+          'Le mot de passe doit contenir au moins une lettre majuscule.'
+        )
+        return false
+      }
+
+      if (!/\d/.test(form.password)) {
+        setError(
+          'Le mot de passe doit contenir au moins un chiffre.'
+        )
+        return false
+      }
+
+      if (!/[^A-Za-z0-9]/.test(form.password)) {
+        setError(
+          'Le mot de passe doit contenir au moins un caractère spécial.'
         )
         return false
       }
@@ -259,9 +340,7 @@ export default function Register() {
         className="flex h-[100dvh] flex-col"
       >
 
-        {/* =====================================================
-            DONNÉES ENVOYÉES À L'ACTION SERVER
-        ===================================================== */}
+        {/* DONNÉES ENVOYÉES À L'ACTION SERVER */}
 
         <input
           type="hidden"
@@ -341,9 +420,7 @@ export default function Register() {
           value={form.confirmPassword}
         />
 
-        {/* =====================================================
-            HEADER BLEU
-        ===================================================== */}
+        {/* HEADER */}
 
         <header
           className="
@@ -356,8 +433,6 @@ export default function Register() {
             bg-[#062665]
           "
         >
-
-          {/* Grand cercle décoratif */}
 
           <div
             className="
@@ -386,8 +461,6 @@ export default function Register() {
               border-white/5
             "
           />
-
-          {/* Logo */}
 
           <div className="relative z-10 flex h-full items-center justify-center">
 
@@ -431,9 +504,7 @@ export default function Register() {
         </header>
 
 
-        {/* =====================================================
-            CARTE BLANCHE
-        ===================================================== */}
+        {/* CARTE BLANCHE */}
 
         <section
           className="
@@ -479,8 +550,6 @@ export default function Register() {
                 "
               >
 
-                {/* TYPE DE CLIENT */}
-
                 <div className="relative shrink-0">
 
                   <select
@@ -501,11 +570,9 @@ export default function Register() {
                     "
                     defaultValue="Client"
                   >
-
                     <option value="Client">
                       Client
                     </option>
-
                   </select>
 
                   <span
@@ -526,8 +593,6 @@ export default function Register() {
 
                 </div>
 
-
-                {/* PARTICULIER / ENTREPRISE */}
 
                 <div
                   className="
@@ -567,7 +632,6 @@ export default function Register() {
                         sm:w-[34px]
                       "
                     >
-
                       <span
                         className="
                           h-[14px]
@@ -578,7 +642,6 @@ export default function Register() {
                           sm:w-[16px]
                         "
                       />
-
                     </span>
 
                     PARTICULIER
@@ -880,24 +943,12 @@ export default function Register() {
                 </button>
 
 
-                {/* ERREUR */}
-
                 {error && (
-                  <p
-                    className="
-                      mt-3
-                      text-center
-                      text-[13px]
-                      font-semibold
-                      text-red-600
-                    "
-                  >
+                  <p className="mt-3 text-center text-[13px] font-semibold text-red-600">
                     {error}
                   </p>
                 )}
 
-
-                {/* BOUTON */}
 
                 <button
                   type="button"
@@ -920,8 +971,6 @@ export default function Register() {
                   Suivant
                 </button>
 
-
-                {/* CONNEXION */}
 
                 <Link
                   href="/login"
@@ -974,8 +1023,6 @@ export default function Register() {
                 </div>
 
 
-                {/* TÉLÉPHONE */}
-
                 <label className="mb-2 text-[14px] font-bold text-[#555]">
                   Téléphone *
                 </label>
@@ -987,9 +1034,7 @@ export default function Register() {
                     <button
                       type="button"
                       onClick={() =>
-                        setShowCountries(
-                          !showCountries
-                        )
+                        setShowCountries(!showCountries)
                       }
                       className="
                         flex
@@ -1127,8 +1172,6 @@ export default function Register() {
                 </div>
 
 
-                {/* DATE */}
-
                 <label className="mb-2 mt-[28px] text-[14px] font-bold text-[#555]">
                   Date de naissance *
                 </label>
@@ -1253,8 +1296,6 @@ export default function Register() {
                 </div>
 
 
-                {/* NATIONALITÉ */}
-
                 <label className="mb-2 text-[14px] font-bold text-[#555]">
                   Nationalité *
                 </label>
@@ -1297,8 +1338,6 @@ export default function Register() {
 
                 </div>
 
-
-                {/* EMAIL */}
 
                 <label className="mb-2 mt-[25px] text-[14px] font-bold text-[#555]">
                   Adresse e-mail *
@@ -1344,8 +1383,6 @@ export default function Register() {
 
                 </div>
 
-
-                {/* ADRESSE */}
 
                 <label className="mb-2 mt-[25px] text-[14px] font-bold text-[#555]">
                   Adresse *
@@ -1629,10 +1666,69 @@ export default function Register() {
                 </div>
 
 
+                {/* MESSAGE DE SUCCÈS */}
+
+                {success && (
+
+                  <div
+                    className="
+                      mt-4
+                      flex
+                      items-start
+                      gap-3
+                      rounded-[10px]
+                      border
+                      border-emerald-200
+                      bg-emerald-50
+                      px-4
+                      py-3
+                    "
+                  >
+
+                    <CheckCircle2
+                      size={18}
+                      className="mt-0.5 shrink-0 text-emerald-600"
+                    />
+
+                    <p className="text-[12px] font-semibold leading-5 text-emerald-700">
+                      {success}
+                    </p>
+
+                  </div>
+
+                )}
+
+
+                {/* MESSAGE D'ERREUR */}
+
                 {error && (
-                  <p className="mt-3 text-center text-[13px] font-semibold text-red-600">
-                    {error}
-                  </p>
+
+                  <div
+                    className="
+                      mt-3
+                      flex
+                      items-start
+                      gap-3
+                      rounded-[10px]
+                      border
+                      border-red-200
+                      bg-red-50
+                      px-4
+                      py-3
+                    "
+                  >
+
+                    <AlertCircle
+                      size={18}
+                      className="mt-0.5 shrink-0 text-red-600"
+                    />
+
+                    <p className="text-[12px] font-semibold leading-5 text-red-700">
+                      {translateError(error)}
+                    </p>
+
+                  </div>
+
                 )}
 
 
