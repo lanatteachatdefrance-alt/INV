@@ -49,9 +49,7 @@ async function getDashboardData() {
   ] = await Promise.all([
     supabase
       .from('users')
-      .select(
-        'balance, first_name, last_name'
-      )
+      .select('balance, first_name, last_name')
       .eq('id', user.id)
       .single(),
 
@@ -71,25 +69,15 @@ async function getDashboardData() {
       )
       .eq('user_id', user.id)
       .eq('status', 'actif')
-      .not(
-        'investment_offers',
-        'is',
-        null
-      )
-      .gt(
-        'shares_bought',
-        0
-      ),
+      .not('investment_offers', 'is', null)
+      .gt('shares_bought', 0),
   ])
 
   // =====================================================
   // ERREURS
   // =====================================================
 
-  if (
-    profileError ||
-    !profile
-  ) {
+  if (profileError || !profile) {
     throw new Error(
       profileError?.message ??
         'Profil utilisateur introuvable'
@@ -97,74 +85,53 @@ async function getDashboardData() {
   }
 
   if (investmentsError) {
-    throw new Error(
-      investmentsError.message
-    )
+    throw new Error(investmentsError.message)
   }
 
   // =====================================================
   // POSITIONS
   // =====================================================
 
-  const rows = (
-    investments || []
-  ).map(
+  const rows = (investments || []).map(
     (row: InvestmentRow) => {
-
       const offer =
-        Array.isArray(
-          row.investment_offers
-        )
+        Array.isArray(row.investment_offers)
           ? row.investment_offers[0]
           : row.investment_offers
 
-      // -------------------------------------------------
-      // DONNÉES
-      // -------------------------------------------------
-
       const price =
-        Number(
-          offer?.price_per_share
-        ) || 0
+        Number(offer?.price_per_share) || 0
 
       const quantity =
-        Number(
-          row.shares_bought
-        ) || 0
+        Number(row.shares_bought) || 0
 
       const invested =
-        Number(
-          row.amount_invested
-        ) || 0
+        Number(row.amount_invested) || 0
 
-      // -------------------------------------------------
+      // =================================================
       // VALEUR ACTUELLE
-      // -------------------------------------------------
+      // =================================================
 
       const value =
-        price > 0 &&
-        quantity > 0
+        price > 0 && quantity > 0
           ? price * quantity
           : invested
 
-      // -------------------------------------------------
-      // PERFORMANCE
-      // -------------------------------------------------
+      // =================================================
+      // PLUS-VALUE / MOINS-VALUE
+      // =================================================
+
+      const gainLoss =
+        value - invested
+
+      // =================================================
+      // PERFORMANCE %
+      // =================================================
 
       const changePct =
         invested > 0
-          ? (
-              (
-                value -
-                invested
-              ) /
-              invested
-            ) * 100
+          ? (gainLoss / invested) * 100
           : 0
-
-      // -------------------------------------------------
-      // RETOUR
-      // -------------------------------------------------
 
       return {
         id: row.id,
@@ -173,14 +140,6 @@ async function getDashboardData() {
           offer?.title ??
           'Valeur',
 
-        /*
-         * IMPORTANT :
-         * On utilise maintenant le vrai
-         * symbole provenant de Supabase.
-         *
-         * Aucun tickerFromTitle()
-         * Aucun initialsFromTitle()
-         */
         symbol:
           offer?.symbol?.trim() ||
           null,
@@ -190,6 +149,10 @@ async function getDashboardData() {
         price,
 
         value,
+
+        invested,
+
+        gainLoss,
 
         changePct,
       }
@@ -201,24 +164,16 @@ async function getDashboardData() {
   // =====================================================
 
   const cashBalance =
-    Number(
-      profile.balance
-    ) || 0
+    Number(profile.balance) || 0
 
   // =====================================================
-  // VALEUR TOTALE DU PORTEFEUILLE
+  // VALEUR TOTALE
   // =====================================================
 
   const totalPortfolioValue =
     rows.reduce(
-      (
-        sum,
-        row
-      ) =>
-        sum +
-        Number(
-          row.value || 0
-        ),
+      (sum, row) =>
+        sum + Number(row.value || 0),
       0
     )
 
@@ -227,40 +182,28 @@ async function getDashboardData() {
   // =====================================================
 
   const totalInvested =
-    (
-      investments || []
-    ).reduce(
-      (
-        sum,
-        row: InvestmentRow
-      ) =>
-        sum +
-        (
-          Number(
-            row.amount_invested
-          ) || 0
-        ),
+    rows.reduce(
+      (sum, row) =>
+        sum + Number(row.invested || 0),
       0
     )
 
   // =====================================================
-  // PERFORMANCE DU PORTEFEUILLE
+  // PLUS-VALUE / MOINS-VALUE TOTALE
+  // =====================================================
+
+  const totalGainLoss =
+    totalPortfolioValue -
+    totalInvested
+
+  // =====================================================
+  // PERFORMANCE %
   // =====================================================
 
   const portfolioChangePct =
     totalInvested > 0
-      ? (
-          (
-            totalPortfolioValue -
-            totalInvested
-          ) /
-          totalInvested
-        ) * 100
+      ? (totalGainLoss / totalInvested) * 100
       : 0
-
-  // =====================================================
-  // RETOUR
-  // =====================================================
 
   return {
     firstName:
@@ -277,11 +220,13 @@ async function getDashboardData() {
 
     totalPortfolioValue,
 
+    totalInvested,
+
+    totalGainLoss,
+
     portfolioChangePct,
 
     rows,
-
-    totalInvested,
   }
 }
 
@@ -290,27 +235,22 @@ async function getDashboardData() {
 // =======================================================
 
 export default async function DashboardPage() {
-
   const {
     firstName,
     accountLabel,
     cashBalance,
     totalPortfolioValue,
+    totalInvested,
+    totalGainLoss,
     portfolioChangePct,
     rows,
-    totalInvested,
-  } =
-    await getDashboardData()
+  } = await getDashboardData()
 
   const positive =
-    portfolioChangePct >= 0
+    totalGainLoss >= 0
 
   return (
     <div className="min-h-[100dvh] bg-[#F5F7FA]">
-
-      {/* =====================================================
-          CONTENU
-          ===================================================== */}
 
       <div className="mx-auto w-full max-w-[1400px] px-4 py-5 sm:px-6 sm:py-7 lg:px-8 lg:py-8">
 
@@ -319,9 +259,7 @@ export default async function DashboardPage() {
             =================================================== */}
 
         <section className="mb-6">
-
           <div className="flex items-end justify-between gap-4">
-
             <div>
 
               <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#A77C12]">
@@ -337,9 +275,7 @@ export default async function DashboardPage() {
               </p>
 
             </div>
-
           </div>
-
         </section>
 
         {/* ===================================================
@@ -347,17 +283,13 @@ export default async function DashboardPage() {
             =================================================== */}
 
         <section className="mb-6">
-
           <BalanceCard
             accountLabel={accountLabel}
             balance={cashBalance}
             portfolioValue={totalPortfolioValue}
-            portfolioChangePct={
-              portfolioChangePct
-            }
+            portfolioChangePct={portfolioChangePct}
             status="ACTIF"
           />
-
         </section>
 
         {/* ===================================================
@@ -380,7 +312,9 @@ export default async function DashboardPage() {
 
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
 
-            {/* VALEUR */}
+            {/* =================================================
+                VALEUR TOTALE
+                ================================================= */}
 
             <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
 
@@ -389,14 +323,14 @@ export default async function DashboardPage() {
               </p>
 
               <p className="mt-2 text-lg font-black tracking-tight text-[#061B31] sm:text-xl">
-                {formatFcfa(
-                  totalPortfolioValue
-                )}
+                {formatFcfa(totalPortfolioValue)}
               </p>
 
             </div>
 
-            {/* INVESTI */}
+            {/* =================================================
+                MONTANT INVESTI
+                ================================================= */}
 
             <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
 
@@ -405,14 +339,14 @@ export default async function DashboardPage() {
               </p>
 
               <p className="mt-2 text-lg font-black tracking-tight text-[#061B31] sm:text-xl">
-                {formatFcfa(
-                  totalInvested
-                )}
+                {formatFcfa(totalInvested)}
               </p>
 
             </div>
 
-            {/* PERFORMANCE */}
+            {/* =================================================
+                PLUS-VALUE / MOINS-VALUE
+                ================================================= */}
 
             <div
               className={`
@@ -441,7 +375,9 @@ export default async function DashboardPage() {
                   }
                 `}
               >
-                Performance
+                {positive
+                  ? 'Plus-value'
+                  : 'Moins-value'}
               </p>
 
               <p
@@ -457,14 +393,32 @@ export default async function DashboardPage() {
                   }
                 `}
               >
-                {formatPct(
-                  portfolioChangePct
+                {positive ? '+' : '-'}
+                {formatFcfa(
+                  Math.abs(totalGainLoss)
                 )}
+              </p>
+
+              <p
+                className={`
+                  mt-1
+                  text-[10px]
+                  font-semibold
+                  ${
+                    positive
+                      ? 'text-emerald-600/80'
+                      : 'text-red-600/80'
+                  }
+                `}
+              >
+                {formatPct(portfolioChangePct)}
               </p>
 
             </div>
 
-            {/* SOLDE */}
+            {/* =================================================
+                SOLDE DISPONIBLE
+                ================================================= */}
 
             <div className="rounded-2xl border border-[#D4A72C]/20 bg-[#FFFBF0] p-4 shadow-sm">
 
@@ -473,15 +427,12 @@ export default async function DashboardPage() {
               </p>
 
               <p className="mt-2 text-lg font-black tracking-tight text-[#061B31] sm:text-xl">
-                {formatFcfa(
-                  cashBalance
-                )}
+                {formatFcfa(cashBalance)}
               </p>
 
             </div>
 
           </div>
-
         </section>
 
         {/* ===================================================
@@ -510,7 +461,7 @@ export default async function DashboardPage() {
 
                 <p className="mt-2 text-xs leading-5 text-white/55 sm:text-sm sm:leading-6">
                   La valeur de votre portefeuille est calculée
-                  à partir des investissements actifs et des
+                  à partir de vos investissements actifs et des
                   cours disponibles sur la plateforme.
                 </p>
 
@@ -546,7 +497,6 @@ export default async function DashboardPage() {
 
               <span className="text-[10px] font-bold text-[#A77C12]">
                 {rows.length}{' '}
-
                 {rows.length > 1
                   ? 'positions'
                   : 'position'}
@@ -564,7 +514,6 @@ export default async function DashboardPage() {
         </section>
 
       </div>
-
     </div>
   )
 }
