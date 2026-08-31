@@ -41,6 +41,48 @@ type Order = {
   createdAt: string
 }
 
+type DividendPayment = {
+  id: string
+  dividend_id: string
+  user_id: string
+  shares_eligible: number | string
+  amount: number | string
+  status: string
+  paid_at: string | null
+  created_at: string
+
+  dividends:
+    | {
+        symbol: string
+        company_name: string
+        dividend_per_share: number | string
+        ex_date: string
+        payment_date: string
+      }
+    | {
+        symbol: string
+        company_name: string
+        dividend_per_share: number | string
+        ex_date: string
+        payment_date: string
+      }[]
+    | null
+}
+
+/*
+ * =====================================================
+ * FORMATAGE
+ * =====================================================
+ */
+
+function formatMoney(value: number | string | null) {
+  const amount = Number(value ?? 0)
+
+  return amount.toLocaleString('fr-FR', {
+    maximumFractionDigits: 2,
+  })
+}
+
 function formatStatus(status: string | null) {
   const normalized =
     status?.toLowerCase().trim() ?? ''
@@ -92,7 +134,7 @@ function formatOrderType(
 
 /*
  * =====================================================
- * VALIDATION / REFUS D'UN ORDRE
+ * VALIDATION / REFUS ORDRE
  * =====================================================
  */
 
@@ -126,12 +168,6 @@ async function updateOrderStatus(
 
   const supabase = createClient()
 
-  /*
-   * =====================================================
-   * ADMIN CONNECTÉ
-   * =====================================================
-   */
-
   const {
     data: { user },
   } = await supabase.auth.getUser()
@@ -139,12 +175,6 @@ async function updateOrderStatus(
   if (!user) {
     redirect('/login')
   }
-
-  /*
-   * =====================================================
-   * VÉRIFICATION ADMIN
-   * =====================================================
-   */
 
   const isAdmin =
     await ensureAdminAccess(
@@ -155,12 +185,6 @@ async function updateOrderStatus(
   if (!isAdmin) {
     redirect('/dashboard')
   }
-
-  /*
-   * =====================================================
-   * RÉCUPÉRATION DE L'ORDRE
-   * =====================================================
-   */
 
   const {
     data: order,
@@ -191,12 +215,6 @@ async function updateOrderStatus(
       'Ordre introuvable.'
     )
   }
-
-  /*
-   * =====================================================
-   * VÉRIFICATION DU STATUT
-   * =====================================================
-   */
 
   const currentStatus =
     order.status
@@ -252,25 +270,8 @@ async function updateOrderStatus(
 
   /*
    * =====================================================
-   * VALIDATION D'UNE VENTE
+   * VENTE
    * =====================================================
-   *
-   * IMPORTANT :
-   *
-   * La vente ne crée PAS de nouvelle position.
-   *
-   * On passe simplement la transaction à "approved".
-   *
-   * Le trigger SQL :
-   *
-   * credit_balance_on_sale_approval()
-   *
-   * s'occupe ensuite automatiquement de :
-   *
-   * - retirer les actions du portefeuille
-   * - mettre à jour current_value
-   * - passer la position à "vendu" si nécessaire
-   * - créditer le solde du client
    */
 
   if (
@@ -338,27 +339,16 @@ async function updateOrderStatus(
       )
     }
 
-    /*
-     * ===================================================
-     * APPROBATION
-     * ===================================================
-     *
-     * Le trigger SQL s'exécutera automatiquement.
-     */
-
     const {
       error: updateError,
     } = await supabase
       .from('transactions')
       .update({
         status: 'approved',
-
         approved_by:
           user.id,
-
         approved_at:
           new Date().toISOString(),
-
         updated_at:
           new Date().toISOString(),
       })
@@ -388,7 +378,7 @@ async function updateOrderStatus(
 
   /*
    * =====================================================
-   * VALIDATION D'UN ACHAT
+   * ACHAT
    * =====================================================
    */
 
@@ -396,24 +386,11 @@ async function updateOrderStatus(
     order.type ===
     'achat_investissement'
   ) {
-
-    /*
-     * ---------------------------------------------------
-     * OFFRE ASSOCIÉE
-     * ---------------------------------------------------
-     */
-
     if (!order.offer_id) {
       throw new Error(
         'Cette commande ne possède aucune valeur associée.'
       )
     }
-
-    /*
-     * ---------------------------------------------------
-     * RÉCUPÉRATION DE L'OFFRE
-     * ---------------------------------------------------
-     */
 
     const {
       data: offer,
@@ -449,12 +426,6 @@ async function updateOrderStatus(
       )
     }
 
-    /*
-     * ---------------------------------------------------
-     * QUANTITÉ
-     * ---------------------------------------------------
-     */
-
     const quantity =
       Number(
         order.quantity ?? 0
@@ -468,12 +439,6 @@ async function updateOrderStatus(
         'La quantité de titres est invalide.'
       )
     }
-
-    /*
-     * ---------------------------------------------------
-     * COURS D'ACHAT
-     * ---------------------------------------------------
-     */
 
     const purchasePrice =
       Number(
@@ -491,12 +456,6 @@ async function updateOrderStatus(
       )
     }
 
-    /*
-     * ---------------------------------------------------
-     * MONTANT
-     * ---------------------------------------------------
-     */
-
     const amount =
       Number(
         order.amount ?? 0
@@ -511,12 +470,6 @@ async function updateOrderStatus(
       )
     }
 
-    /*
-     * ---------------------------------------------------
-     * VÉRIFICATION DU CALCUL
-     * ---------------------------------------------------
-     */
-
     const expectedAmount =
       quantity *
       purchasePrice
@@ -530,12 +483,6 @@ async function updateOrderStatus(
         'Le montant de l’ordre ne correspond pas à la quantité et au cours.'
       )
     }
-
-    /*
-     * ---------------------------------------------------
-     * COURS ACTUEL
-     * ---------------------------------------------------
-     */
 
     const currentPrice =
       Number(
@@ -553,21 +500,9 @@ async function updateOrderStatus(
       )
     }
 
-    /*
-     * ---------------------------------------------------
-     * VALEUR ACTUELLE
-     * ---------------------------------------------------
-     */
-
     const currentValue =
       quantity *
       currentPrice
-
-    /*
-     * ---------------------------------------------------
-     * PROTECTION DOUBLE POSITION
-     * ---------------------------------------------------
-     */
 
     const {
       data: existingInvestment,
@@ -599,12 +534,6 @@ async function updateOrderStatus(
         `Impossible de vérifier la position existante : ${existingError.message}`
       )
     }
-
-    /*
-     * ---------------------------------------------------
-     * CRÉATION DE LA POSITION
-     * ---------------------------------------------------
-     */
 
     if (!existingInvestment) {
       const {
@@ -641,25 +570,16 @@ async function updateOrderStatus(
       }
     }
 
-    /*
-     * ---------------------------------------------------
-     * APPROBATION ACHAT
-     * ---------------------------------------------------
-     */
-
     const {
       error: updateError,
     } = await supabase
       .from('transactions')
       .update({
         status: 'approved',
-
         approved_by:
           user.id,
-
         approved_at:
           new Date().toISOString(),
-
         updated_at:
           new Date().toISOString(),
       })
@@ -680,16 +600,176 @@ async function updateOrderStatus(
     }
   }
 
-  /*
-   * =====================================================
-   * RAFRAÎCHISSEMENT
-   * =====================================================
-   */
-
   revalidatePath('/admin/orders')
   revalidatePath('/dashboard/orders')
   revalidatePath('/dashboard/investments')
   revalidatePath('/dashboard/portfolio')
+}
+
+/*
+ * =====================================================
+ * VALIDATION DIVIDENDE
+ * =====================================================
+ */
+
+async function processDividendPayment(
+  formData: FormData
+) {
+  'use server'
+
+  const paymentId = String(
+    formData.get('paymentId') ?? ''
+  )
+
+  if (!paymentId) {
+    throw new Error(
+      'Identifiant du paiement manquant.'
+    )
+  }
+
+  const supabase = createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect('/login')
+  }
+
+  const isAdmin =
+    await ensureAdminAccess(
+      supabase,
+      user
+    )
+
+  if (!isAdmin) {
+    redirect('/dashboard')
+  }
+
+  const {
+    data,
+    error,
+  } = await supabase.rpc(
+    'process_dividend_payment',
+    {
+      p_dividend_payment_id:
+        paymentId,
+    }
+  )
+
+  if (error) {
+    throw new Error(
+      `Impossible de créditer le dividende : ${error.message}`
+    )
+  }
+
+  if (
+    !data?.success
+  ) {
+    throw new Error(
+      'Le paiement du dividende n’a pas pu être effectué.'
+    )
+  }
+
+  revalidatePath('/admin/orders')
+  revalidatePath('/dashboard')
+  revalidatePath('/dashboard/portfolio')
+  revalidatePath('/dashboard/orders')
+
+  return
+}
+
+/*
+ * =====================================================
+ * REFUS DIVIDENDE
+ * =====================================================
+ */
+
+async function rejectDividendPayment(
+  formData: FormData
+) {
+  'use server'
+
+  const paymentId = String(
+    formData.get('paymentId') ?? ''
+  )
+
+  if (!paymentId) {
+    throw new Error(
+      'Identifiant du paiement manquant.'
+    )
+  }
+
+  const supabase = createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect('/login')
+  }
+
+  const isAdmin =
+    await ensureAdminAccess(
+      supabase,
+      user
+    )
+
+  if (!isAdmin) {
+    redirect('/dashboard')
+  }
+
+  const {
+    data: payment,
+    error: paymentError,
+  } = await supabase
+    .from('dividend_payments')
+    .select('id, status')
+    .eq('id', paymentId)
+    .single()
+
+  if (
+    paymentError ||
+    !payment
+  ) {
+    throw new Error(
+      'Paiement de dividende introuvable.'
+    )
+  }
+
+  if (
+    payment.status !==
+    'pending'
+  ) {
+    throw new Error(
+      'Ce paiement de dividende a déjà été traité.'
+    )
+  }
+
+  const {
+    error,
+  } = await supabase
+    .from('dividend_payments')
+    .update({
+      status: 'cancelled',
+      updated_at:
+        new Date().toISOString(),
+    })
+    .eq('id', paymentId)
+    .eq(
+      'status',
+      'pending'
+    )
+
+  if (error) {
+    throw new Error(
+      `Impossible de refuser le dividende : ${error.message}`
+    )
+  }
+
+  revalidatePath('/admin/orders')
 }
 
 /*
@@ -701,12 +781,6 @@ async function updateOrderStatus(
 export default async function AdminOrdersPage() {
   const supabase = createClient()
 
-  /*
-   * =====================================================
-   * UTILISATEUR
-   * =====================================================
-   */
-
   const {
     data: { user },
   } = await supabase.auth.getUser()
@@ -714,12 +788,6 @@ export default async function AdminOrdersPage() {
   if (!user) {
     redirect('/login')
   }
-
-  /*
-   * =====================================================
-   * ADMIN
-   * =====================================================
- */
 
   const isAdmin =
     await ensureAdminAccess(
@@ -733,9 +801,9 @@ export default async function AdminOrdersPage() {
 
   /*
    * =====================================================
-   * RÉCUPÉRATION ACHATS + VENTES
+   * ACHATS + VENTES
    * =====================================================
- */
+   */
 
   const {
     data: transactions,
@@ -777,22 +845,99 @@ export default async function AdminOrdersPage() {
 
   /*
    * =====================================================
-   * UTILISATEURS
+   * DIVIDENDES
    * =====================================================
- */
+   */
 
-  const userIds = Array.from(
-    new Set(
-      (transactions ?? [])
-        .map(
-          (transaction) =>
-            transaction.user_id
+  const {
+    data: dividendPayments,
+    error: dividendError,
+  } = await supabase
+    .from('dividend_payments')
+    .select(
+      `
+        id,
+        dividend_id,
+        user_id,
+        shares_eligible,
+        amount,
+        status,
+        paid_at,
+        created_at,
+        dividends (
+          symbol,
+          company_name,
+          dividend_per_share,
+          ex_date,
+          payment_date
         )
-        .filter(Boolean)
+      `
     )
-  )
+    .order(
+      'created_at',
+      {
+        ascending: false,
+      }
+    )
 
-  let profiles: UserProfile[] = []
+  if (dividendError) {
+    throw new Error(
+      dividendError.message
+    )
+  }
+
+  /*
+   * =====================================================
+   * UTILISATEURS ORDRES
+   * =====================================================
+   */
+
+  const orderUserIds =
+    Array.from(
+      new Set(
+        (transactions ?? [])
+          .map(
+            transaction =>
+              transaction.user_id
+          )
+          .filter(Boolean)
+      )
+    )
+
+  /*
+   * =====================================================
+   * UTILISATEURS DIVIDENDES
+   * =====================================================
+   */
+
+  const dividendUserIds =
+    Array.from(
+      new Set(
+        (dividendPayments ?? [])
+          .map(
+            payment =>
+              payment.user_id
+          )
+          .filter(Boolean)
+      )
+    )
+
+  /*
+   * =====================================================
+   * TOUS LES UTILISATEURS
+   * =====================================================
+   */
+
+  const userIds =
+    Array.from(
+      new Set([
+        ...orderUserIds,
+        ...dividendUserIds,
+      ])
+    )
+
+  let profiles:
+    UserProfile[] = []
 
   if (userIds.length > 0) {
     const {
@@ -813,19 +958,18 @@ export default async function AdminOrdersPage() {
 
   /*
    * =====================================================
-   * TRANSFORMATION
+   * TRANSFORMATION ORDRES
    * =====================================================
- */
+   */
 
   const orders: Order[] =
     (transactions ?? []).map(
       (
         transaction: Transaction
       ) => {
-
         const profile =
           profiles.find(
-            (item) =>
+            item =>
               item.id ===
               transaction.user_id
           )
@@ -895,48 +1039,77 @@ export default async function AdminOrdersPage() {
 
   /*
    * =====================================================
-   * STATISTIQUES
+   * DIVIDENDES PENDING
    * =====================================================
- */
+   */
+
+  const pendingDividends =
+    (dividendPayments ?? []).filter(
+      payment =>
+        payment.status ===
+        'pending'
+    ) as DividendPayment[]
+
+  /*
+   * =====================================================
+   * STATISTIQUES ORDRES
+   * =====================================================
+   */
 
   const pendingOrders =
     orders.filter(
-      (order) =>
+      order =>
         order.status ===
         'En attente'
     )
 
   const completedOrders =
     orders.filter(
-      (order) =>
+      order =>
         order.status ===
         'Complété'
     )
 
   const cancelledOrders =
     orders.filter(
-      (order) =>
+      order =>
         order.status ===
         'Annulé'
     )
 
   const pendingPurchases =
     pendingOrders.filter(
-      (order) =>
+      order =>
         order.type === 'achat'
     )
 
   const pendingSales =
     pendingOrders.filter(
-      (order) =>
+      order =>
         order.type === 'vente'
+    )
+
+  /*
+   * =====================================================
+   * TOTAL DIVIDENDES EN ATTENTE
+   * =====================================================
+   */
+
+  const pendingDividendAmount =
+    pendingDividends.reduce(
+      (sum, payment) =>
+        sum +
+        Number(
+          payment.amount ?? 0
+        ),
+      0
     )
 
   /*
    * =====================================================
    * AFFICHAGE
    * =====================================================
- */
+   */
 
   return (
     <div className="space-y-6 p-6">
@@ -952,12 +1125,12 @@ export default async function AdminOrdersPage() {
         </p>
 
         <h1 className="mt-1 text-2xl font-bold text-slate-900">
-          Validation des ordres
+          Validation des opérations
         </h1>
 
         <p className="mt-1 text-sm text-slate-500">
-          Gérez les achats et les ventes
-          d’actions des clients.
+          Gérez les achats, les ventes et les
+          distributions de dividendes.
         </p>
 
       </div>
@@ -966,7 +1139,7 @@ export default async function AdminOrdersPage() {
           STATISTIQUES
       ================================================= */}
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
 
         <div className="rounded-2xl border border-orange-200 bg-orange-50 p-5">
           <p className="text-xs font-semibold uppercase tracking-wider text-orange-600">
@@ -1018,10 +1191,27 @@ export default async function AdminOrdersPage() {
           </p>
         </div>
 
+        <div className="rounded-2xl border border-[#D4A72C]/30 bg-[#FFFBF0] p-5">
+          <p className="text-xs font-semibold uppercase tracking-wider text-[#A77C12]">
+            Dividendes
+          </p>
+
+          <p className="mt-2 text-3xl font-bold text-[#8B6508]">
+            {pendingDividends.length}
+          </p>
+
+          <p className="mt-1 text-xs font-medium text-[#A77C12]">
+            {formatMoney(
+              pendingDividendAmount
+            )}{' '}
+            FCFA
+          </p>
+        </div>
+
       </div>
 
       {/* =================================================
-          ORDRES
+          ORDRES ACHATS / VENTES
       ================================================= */}
 
       <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
@@ -1033,15 +1223,15 @@ export default async function AdminOrdersPage() {
           </h2>
 
           <p className="mt-1 text-xs text-slate-500">
-            Les achats et ventes en attente
-            nécessitent une validation administrative.
+            Les achats et ventes nécessitant
+            une validation administrative.
           </p>
 
         </div>
 
         {pendingOrders.length === 0 ? (
 
-          <div className="px-5 py-16 text-center">
+          <div className="px-5 py-12 text-center">
 
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-50 text-xl text-green-600">
               ✓
@@ -1062,7 +1252,7 @@ export default async function AdminOrdersPage() {
           <div className="divide-y divide-slate-100">
 
             {pendingOrders.map(
-              (order) => (
+              order => (
 
                 <div
                   key={order.id}
@@ -1112,36 +1302,31 @@ export default async function AdminOrdersPage() {
                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
 
                       <div>
-
                         <p className="text-[10px] uppercase tracking-wider text-slate-400">
                           Quantité
                         </p>
 
                         <p className="mt-1 font-bold text-slate-900">
-                          {order.quantity.toLocaleString(
-                            'fr-FR'
+                          {formatMoney(
+                            order.quantity
                           )}
                         </p>
-
                       </div>
 
                       <div>
-
                         <p className="text-[10px] uppercase tracking-wider text-slate-400">
                           Cours
                         </p>
 
                         <p className="mt-1 font-bold text-slate-900">
-                          {order.unitPrice.toLocaleString(
-                            'fr-FR'
+                          {formatMoney(
+                            order.unitPrice
                           )}{' '}
                           FCFA
                         </p>
-
                       </div>
 
                       <div>
-
                         <p className="text-[10px] uppercase tracking-wider text-slate-400">
                           Montant
                         </p>
@@ -1154,16 +1339,14 @@ export default async function AdminOrdersPage() {
                               : 'mt-1 font-bold text-slate-900'
                           }
                         >
-                          {order.amount.toLocaleString(
-                            'fr-FR'
+                          {formatMoney(
+                            order.amount
                           )}{' '}
                           FCFA
                         </p>
-
                       </div>
 
                       <div>
-
                         <p className="text-[10px] uppercase tracking-wider text-slate-400">
                           Date
                         </p>
@@ -1175,7 +1358,6 @@ export default async function AdminOrdersPage() {
                             'fr-FR'
                           )}
                         </p>
-
                       </div>
 
                     </div>
@@ -1183,8 +1365,6 @@ export default async function AdminOrdersPage() {
                     {/* ACTIONS */}
 
                     <div className="flex flex-col gap-2 sm:flex-row">
-
-                      {/* VALIDER */}
 
                       <form
                         action={
@@ -1219,8 +1399,6 @@ export default async function AdminOrdersPage() {
                         </button>
 
                       </form>
-
-                      {/* REFUSER */}
 
                       <form
                         action={
@@ -1271,8 +1449,313 @@ export default async function AdminOrdersPage() {
                   </div>
 
                 </div>
-
               )
+            )}
+
+          </div>
+        )}
+
+      </div>
+
+      {/* =================================================
+          DIVIDENDES
+      ================================================= */}
+
+      <div className="overflow-hidden rounded-3xl border border-[#D4A72C]/25 bg-white shadow-sm">
+
+        <div className="border-b border-[#D4A72C]/15 bg-[#FFFBF0] px-5 py-5">
+
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+
+            <div>
+
+              <div className="flex items-center gap-2">
+
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#D4A72C] font-black text-[#061B31]">
+                  D
+                </span>
+
+                <div>
+
+                  <h2 className="font-bold text-slate-900">
+                    Dividendes
+                  </h2>
+
+                  <p className="text-xs text-slate-500">
+                    Validation et crédit des dividendes
+                    des clients.
+                  </p>
+
+                </div>
+
+              </div>
+
+            </div>
+
+            <div className="rounded-full border border-[#D4A72C]/25 bg-white px-3 py-1.5">
+
+              <span className="text-xs font-bold text-[#A77C12]">
+                {pendingDividends.length}{' '}
+                en attente
+              </span>
+
+            </div>
+
+          </div>
+
+        </div>
+
+        {pendingDividends.length === 0 ? (
+
+          <div className="px-5 py-14 text-center">
+
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-50 text-xl text-green-600">
+              ✓
+            </div>
+
+            <h3 className="font-semibold text-slate-900">
+              Aucun dividende en attente
+            </h3>
+
+            <p className="mt-1 text-sm text-slate-500">
+              Tous les dividendes générés ont été traités.
+            </p>
+
+          </div>
+
+        ) : (
+
+          <div className="divide-y divide-slate-100">
+
+            {pendingDividends.map(
+              payment => {
+
+                const dividend =
+                  Array.isArray(
+                    payment.dividends
+                  )
+                    ? payment.dividends[0]
+                    : payment.dividends
+
+                const profile =
+                  profiles.find(
+                    item =>
+                      item.id ===
+                      payment.user_id
+                  )
+
+                const clientName =
+                  [
+                    profile?.first_name,
+                    profile?.last_name,
+                  ]
+                    .filter(Boolean)
+                    .join(' ') ||
+                  'Client'
+
+                const shares =
+                  Number(
+                    payment.shares_eligible
+                  )
+
+                const dividendPerShare =
+                  Number(
+                    dividend?.dividend_per_share ??
+                    0
+                  )
+
+                const amount =
+                  Number(
+                    payment.amount
+                  )
+
+                return (
+                  <div
+                    key={
+                      payment.id
+                    }
+                    className="p-5"
+                  >
+
+                    <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+
+                      {/* CLIENT */}
+
+                      <div className="min-w-0">
+
+                        <div className="flex items-center gap-2">
+
+                          <span className="rounded-full bg-[#FFF4CC] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#8B6508]">
+                            Dividende
+                          </span>
+
+                          <span className="rounded-full bg-orange-50 px-2.5 py-1 text-[10px] font-bold text-orange-700">
+                            En attente
+                          </span>
+
+                        </div>
+
+                        <p className="mt-2 font-bold text-slate-900">
+                          {clientName}
+                        </p>
+
+                        <p className="mt-1 text-xs text-slate-500">
+                          {profile?.email ||
+                            'Email non renseigné'}
+                        </p>
+
+                        <p className="mt-2 text-sm font-bold text-[#061B31]">
+                          {dividend?.company_name ||
+                            'Société'}
+                        </p>
+
+                        <p className="mt-1 text-xs font-semibold text-[#A77C12]">
+                          {dividend?.symbol ||
+                            '—'}
+                        </p>
+
+                      </div>
+
+                      {/* INFORMATIONS */}
+
+                      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+
+                        <div>
+
+                          <p className="text-[10px] uppercase tracking-wider text-slate-400">
+                            Actions
+                          </p>
+
+                          <p className="mt-1 font-bold text-slate-900">
+                            {formatMoney(
+                              shares
+                            )}
+                          </p>
+
+                        </div>
+
+                        <div>
+
+                          <p className="text-[10px] uppercase tracking-wider text-slate-400">
+                            Dividende / action
+                          </p>
+
+                          <p className="mt-1 font-bold text-slate-900">
+                            {formatMoney(
+                              dividendPerShare
+                            )}{' '}
+                            FCFA
+                          </p>
+
+                        </div>
+
+                        <div>
+
+                          <p className="text-[10px] uppercase tracking-wider text-slate-400">
+                            À créditer
+                          </p>
+
+                          <p className="mt-1 font-black text-[#A77C12]">
+                            {formatMoney(
+                              amount
+                            )}{' '}
+                            FCFA
+                          </p>
+
+                        </div>
+
+                        <div>
+
+                          <p className="text-[10px] uppercase tracking-wider text-slate-400">
+                            Paiement prévu
+                          </p>
+
+                          <p className="mt-1 text-sm font-medium text-slate-700">
+                            {dividend?.payment_date
+                              ? new Date(
+                                  dividend.payment_date
+                                ).toLocaleDateString(
+                                  'fr-FR'
+                                )
+                              : '—'}
+                          </p>
+
+                        </div>
+
+                      </div>
+
+                      {/* ACTIONS */}
+
+                      <div className="flex flex-col gap-2 sm:flex-row">
+
+                        <form
+                          action={
+                            processDividendPayment
+                          }
+                        >
+
+                          <input
+                            type="hidden"
+                            name="paymentId"
+                            value={
+                              payment.id
+                            }
+                          />
+
+                          <button
+                            type="submit"
+                            className="w-full rounded-xl bg-[#D4A72C] px-5 py-2.5 text-sm font-bold text-[#061B31] transition hover:bg-[#C49820] active:scale-[0.98]"
+                          >
+                            ✓ Créditer
+                          </button>
+
+                        </form>
+
+                        <form
+                          action={
+                            rejectDividendPayment
+                          }
+                        >
+
+                          <input
+                            type="hidden"
+                            name="paymentId"
+                            value={
+                              payment.id
+                            }
+                          />
+
+                          <button
+                            type="submit"
+                            className="w-full rounded-xl border border-red-200 bg-red-50 px-5 py-2.5 text-sm font-bold text-red-700 transition hover:bg-red-100 active:scale-[0.98]"
+                          >
+                            Refuser
+                          </button>
+
+                        </form>
+
+                      </div>
+
+                    </div>
+
+                    <div className="mt-4 flex flex-col gap-1 rounded-xl border border-[#D4A72C]/15 bg-[#FFFBF0] px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+
+                      <span className="text-xs font-semibold text-[#8B6508]">
+                        Dividende de{' '}
+                        {dividend?.symbol ||
+                          'la valeur'}
+                        {' '}en attente de crédit
+                      </span>
+
+                      <span className="text-[10px] text-[#A77C12]">
+                        ID : {payment.id}
+                      </span>
+
+                    </div>
+
+                  </div>
+                )
+              }
             )}
 
           </div>
