@@ -28,15 +28,19 @@ type InvestmentRow = {
 }
 
 type DividendRelation = {
+  id?: string
   company_name: string | null
   symbol: string | null
   dividend_per_share: number | string | null
   ex_date: string | null
   payment_date: string | null
+  status?: string | null
 }
 
 type DividendPaymentRow = {
   id: string
+  dividend_id?: string | null
+
   shares_eligible: number | string | null
   amount: number | string | null
   status: string | null
@@ -49,12 +53,23 @@ type DividendPaymentRow = {
     | null
 }
 
+type DividendDatabaseRow = {
+  id: string
+  company_name: string | null
+  symbol: string | null
+  dividend_per_share: number | string | null
+  ex_date: string | null
+  payment_date: string | null
+  status: string | null
+}
+
 // =======================================================
 // FORMAT FCFA
-// Exemple : 1250000 → 1 250 000 FCFA
 // =======================================================
 
-function formatFcfa(value: number | string | null | undefined) {
+function formatFcfa(
+  value: number | string | null | undefined
+) {
   const amount = Number(value) || 0
 
   return (
@@ -69,7 +84,9 @@ function formatFcfa(value: number | string | null | undefined) {
 // FORMAT NOMBRE
 // =======================================================
 
-function formatNumber(value: number | string | null | undefined) {
+function formatNumber(
+  value: number | string | null | undefined
+) {
   const number = Number(value) || 0
 
   return new Intl.NumberFormat('fr-FR', {
@@ -81,7 +98,9 @@ function formatNumber(value: number | string | null | undefined) {
 // FORMAT DATE
 // =======================================================
 
-function formatDate(value: string | null | undefined) {
+function formatDate(
+  value: string | null | undefined
+) {
   if (!value) return '—'
 
   const date = new Date(value)
@@ -95,6 +114,21 @@ function formatDate(value: string | null | undefined) {
     month: '2-digit',
     year: 'numeric',
   }).format(date)
+}
+
+// =======================================================
+// NORMALISATION SYMBOLE
+// =======================================================
+
+function normalizeSymbol(
+  value: string | null | undefined
+) {
+  return (
+    value
+      ?.trim()
+      .toUpperCase()
+      .replace(/\s+/g, '') || ''
+  )
 }
 
 // =======================================================
@@ -118,7 +152,7 @@ async function getDashboardData() {
   }
 
   // =====================================================
-  // PROFIL + INVESTISSEMENTS + DIVIDENDES
+  // RÉCUPÉRATION DES DONNÉES
   // =====================================================
 
   const [
@@ -127,6 +161,8 @@ async function getDashboardData() {
     { data: investments, error: investmentsError },
 
     { data: dividendPayments, error: dividendPaymentsError },
+
+    { data: dividends, error: dividendsError },
   ] = await Promise.all([
     // ---------------------------------------------------
     // PROFIL
@@ -171,7 +207,7 @@ async function getDashboardData() {
       ),
 
     // ---------------------------------------------------
-    // DIVIDENDES DE L'UTILISATEUR
+    // PAIEMENTS DE DIVIDENDES EXISTANTS
     // ---------------------------------------------------
 
     supabase
@@ -179,22 +215,46 @@ async function getDashboardData() {
       .select(
         `
           id,
+          dividend_id,
           shares_eligible,
           amount,
           status,
           paid_at,
           created_at,
           dividends (
+            id,
             company_name,
             symbol,
             dividend_per_share,
             ex_date,
-            payment_date
+            payment_date,
+            status
           )
         `
       )
       .eq('user_id', user.id)
       .order('created_at', {
+        ascending: false,
+      }),
+
+    // ---------------------------------------------------
+    // TOUS LES DIVIDENDES BRVM
+    // ---------------------------------------------------
+
+    supabase
+      .from('dividends')
+      .select(
+        `
+          id,
+          company_name,
+          symbol,
+          dividend_per_share,
+          ex_date,
+          payment_date,
+          status
+        `
+      )
+      .order('payment_date', {
         ascending: false,
       }),
   ])
@@ -222,6 +282,12 @@ async function getDashboardData() {
     )
   }
 
+  if (dividendsError) {
+    throw new Error(
+      dividendsError.message
+    )
+  }
+
   // =====================================================
   // POSITIONS
   // =====================================================
@@ -238,10 +304,6 @@ async function getDashboardData() {
           ? row.investment_offers[0]
           : row.investment_offers
 
-      // -------------------------------------------------
-      // DONNÉES
-      // -------------------------------------------------
-
       const price =
         Number(
           offer?.price_per_share
@@ -257,19 +319,11 @@ async function getDashboardData() {
           row.amount_invested
         ) || 0
 
-      // -------------------------------------------------
-      // VALEUR ACTUELLE
-      // -------------------------------------------------
-
       const value =
         price > 0 &&
         quantity > 0
           ? price * quantity
           : invested
-
-      // -------------------------------------------------
-      // PERFORMANCE
-      // -------------------------------------------------
 
       const changePct =
         invested > 0
@@ -281,10 +335,6 @@ async function getDashboardData() {
               invested
             ) * 100
           : 0
-
-      // -------------------------------------------------
-      // RETOUR
-      // -------------------------------------------------
 
       return {
         id: row.id,
@@ -318,7 +368,7 @@ async function getDashboardData() {
     ) || 0
 
   // =====================================================
-  // VALEUR TOTALE DU PORTEFEUILLE
+  // VALEUR PORTEFEUILLE
   // =====================================================
 
   const totalPortfolioValue =
@@ -356,7 +406,7 @@ async function getDashboardData() {
     )
 
   // =====================================================
-  // PERFORMANCE DU PORTEFEUILLE
+  // PERFORMANCE
   // =====================================================
 
   const portfolioChangePct =
@@ -371,65 +421,309 @@ async function getDashboardData() {
       : 0
 
   // =====================================================
-  // DIVIDENDES
+  // ACTIONS DU PORTEFEUILLE PAR SYMBOLE
+  //
+  // Exemple :
+  //
+  // TTLC => 150 actions
+  // CIE  => 21 actions
+  // BOAB => 10 actions
   // =====================================================
 
-  const dividendRows = (
-    dividendPayments || []
-  ).map(
-    (payment: DividendPaymentRow) => {
+  const sharesBySymbol =
+    new Map<string, number>()
 
-      const dividend =
-        Array.isArray(
-          payment.dividends
+  for (const row of rows) {
+    const symbol =
+      normalizeSymbol(
+        row.symbol
+      )
+
+    if (!symbol) continue
+
+    const current =
+      sharesBySymbol.get(
+        symbol
+      ) || 0
+
+    sharesBySymbol.set(
+      symbol,
+      current +
+        Number(
+          row.quantity
         )
-          ? payment.dividends[0]
-          : payment.dividends
+    )
+  }
 
-      return {
-        id: payment.id,
+  // =====================================================
+  // PAIEMENTS EXISTANTS
+  // =====================================================
 
-        companyName:
-          dividend?.company_name ??
-          'Entreprise',
+  const existingPaymentRows =
+    (
+      dividendPayments || []
+    ).map(
+      (
+        payment: DividendPaymentRow
+      ) => {
 
-        symbol:
-          dividend?.symbol?.trim() ||
-          null,
+        const dividend =
+          Array.isArray(
+            payment.dividends
+          )
+            ? payment.dividends[0]
+            : payment.dividends
 
-        shares:
-          Number(
-            payment.shares_eligible
-          ) || 0,
+        return {
+          id:
+            payment.id,
 
-        dividendPerShare:
-          Number(
-            dividend?.dividend_per_share
-          ) || 0,
+          dividendId:
+            payment.dividend_id ??
+            dividend?.id ??
+            null,
 
-        amount:
-          Number(
-            payment.amount
-          ) || 0,
+          companyName:
+            dividend?.company_name ??
+            'Entreprise',
 
-        status:
-          payment.status ??
-          'pending',
+          symbol:
+            dividend?.symbol?.trim() ||
+            null,
 
-        paidAt:
-          payment.paid_at,
+          shares:
+            Number(
+              payment.shares_eligible
+            ) || 0,
 
-        createdAt:
-          payment.created_at,
+          dividendPerShare:
+            Number(
+              dividend?.dividend_per_share
+            ) || 0,
 
-        paymentDate:
-          dividend?.payment_date ??
-          null,
+          amount:
+            Number(
+              payment.amount
+            ) || 0,
 
-        exDate:
-          dividend?.ex_date ??
-          null,
+          status:
+            payment.status ??
+            'pending',
+
+          paidAt:
+            payment.paid_at,
+
+          createdAt:
+            payment.created_at,
+
+          paymentDate:
+            dividend?.payment_date ??
+            null,
+
+          exDate:
+            dividend?.ex_date ??
+            null,
+        }
       }
+    )
+
+  // =====================================================
+  // IDENTIFIANTS DES DIVIDENDES DÉJÀ ATTRIBUÉS
+  // =====================================================
+
+  const existingDividendIds =
+    new Set<string>()
+
+  for (
+    const payment
+    of existingPaymentRows
+  ) {
+    if (
+      payment.dividendId
+    ) {
+      existingDividendIds.add(
+        payment.dividendId
+      )
+    }
+  }
+
+  // =====================================================
+  // DIVIDENDES À AFFICHER
+  // =====================================================
+
+  const generatedPendingRows =
+    (
+      dividends || []
+    )
+      .filter(
+        (
+          dividend: DividendDatabaseRow
+        ) => {
+
+          // ---------------------------------------------
+          // DIVIDENDE ANNULÉ
+          // ---------------------------------------------
+
+          if (
+            dividend.status ===
+            'cancelled'
+          ) {
+            return false
+          }
+
+          // ---------------------------------------------
+          // DÉJÀ ATTRIBUÉ À L'UTILISATEUR
+          // ---------------------------------------------
+
+          if (
+            existingDividendIds.has(
+              dividend.id
+            )
+          ) {
+            return false
+          }
+
+          // ---------------------------------------------
+          // SYMBOLE
+          // ---------------------------------------------
+
+          const symbol =
+            normalizeSymbol(
+              dividend.symbol
+            )
+
+          if (!symbol) {
+            return false
+          }
+
+          // ---------------------------------------------
+          // NOMBRE D'ACTIONS
+          // ---------------------------------------------
+
+          const shares =
+            sharesBySymbol.get(
+              symbol
+            ) || 0
+
+          // L'utilisateur doit
+          // détenir des actions.
+          return shares > 0
+        }
+      )
+      .map(
+        (
+          dividend: DividendDatabaseRow
+        ) => {
+
+          const symbol =
+            normalizeSymbol(
+              dividend.symbol
+            )
+
+          const shares =
+            sharesBySymbol.get(
+              symbol
+            ) || 0
+
+          const dividendPerShare =
+            Number(
+              dividend.dividend_per_share
+            ) || 0
+
+          // =================================================
+          // CALCUL
+          //
+          // ACTIONS × DIVIDENDE PAR ACTION
+          // =================================================
+
+          const amount =
+            shares *
+            dividendPerShare
+
+          return {
+            id:
+              `pending-${dividend.id}`,
+
+            dividendId:
+              dividend.id,
+
+            companyName:
+              dividend.company_name ??
+              'Entreprise',
+
+            symbol:
+              dividend.symbol?.trim() ||
+              null,
+
+            shares,
+
+            dividendPerShare,
+
+            amount,
+
+            status:
+              dividend.status ===
+              'paid'
+                ? 'paid'
+                : 'pending',
+
+            paidAt:
+              null,
+
+            createdAt:
+              dividend.ex_date ??
+              null,
+
+            paymentDate:
+              dividend.payment_date ??
+              null,
+
+            exDate:
+              dividend.ex_date ??
+              null,
+          }
+        }
+      )
+
+  // =====================================================
+  // FUSION
+  //
+  // Les vrais paiements restent prioritaires.
+  // Les dividendes non encore enregistrés dans
+  // dividend_payments sont générés à partir des
+  // positions du portefeuille.
+  // =====================================================
+
+  const dividendRows = [
+    ...existingPaymentRows,
+    ...generatedPendingRows,
+  ]
+
+  // =====================================================
+  // TRI PAR DATE DE PAIEMENT
+  // =====================================================
+
+  dividendRows.sort(
+    (
+      a,
+      b
+    ) => {
+
+      const dateA =
+        new Date(
+          a.paymentDate ||
+            a.createdAt ||
+            0
+        ).getTime()
+
+      const dateB =
+        new Date(
+          b.paymentDate ||
+            b.createdAt ||
+            0
+        ).getTime()
+
+      return dateB - dateA
     }
   )
 
@@ -441,11 +735,16 @@ async function getDashboardData() {
     dividendRows
       .filter(
         (row) =>
-          row.status === 'paid'
+          row.status ===
+          'paid'
       )
       .reduce(
-        (sum, row) =>
-          sum + row.amount,
+        (
+          sum,
+          row
+        ) =>
+          sum +
+          row.amount,
         0
       )
 
@@ -457,28 +756,35 @@ async function getDashboardData() {
     dividendRows
       .filter(
         (row) =>
-          row.status === 'pending'
+          row.status ===
+          'pending'
       )
       .reduce(
-        (sum, row) =>
-          sum + row.amount,
+        (
+          sum,
+          row
+        ) =>
+          sum +
+          row.amount,
         0
       )
 
   // =====================================================
-  // NOMBRE DE DIVIDENDES
+  // NOMBRE DE PAIEMENTS
   // =====================================================
 
   const paidDividendCount =
     dividendRows.filter(
       (row) =>
-        row.status === 'paid'
+        row.status ===
+        'paid'
     ).length
 
   const pendingDividendCount =
     dividendRows.filter(
       (row) =>
-        row.status === 'pending'
+        row.status ===
+        'pending'
     ).length
 
   // =====================================================
@@ -743,13 +1049,11 @@ export default async function DashboardPage() {
 
           </div>
 
-          {/* -------------------------------------------------
-              CARTES DIVIDENDES
-              ------------------------------------------------- */}
+          {/* CARTES */}
 
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
 
-            {/* DIVIDENDES REÇUS */}
+            {/* REÇUS */}
 
             <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4 shadow-sm">
 
@@ -1007,6 +1311,9 @@ export default async function DashboardPage() {
                                       ? 'bg-emerald-50 text-emerald-600'
                                       : dividend.status ===
                                           'cancelled'
+                                      ? 'bg-red-50 text-red-600'
+                                      : dividend.status ===
+                                          'failed'
                                       ? 'bg-red-50 text-red-600'
                                       : 'bg-[#FFFBF0] text-[#A77C12]'
                                   }

@@ -1,6 +1,10 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+// =============================================================
+// CONFIGURATION
+// =============================================================
+
 const BRVM_DIVIDENDS_URL =
   "https://www.brvm.org/fr/taxonomy/term/118";
 
@@ -11,6 +15,10 @@ const corsHeaders = {
   "Access-Control-Allow-Methods":
     "POST, OPTIONS",
 };
+
+// =============================================================
+// TYPES
+// =============================================================
 
 type BrvmDividend = {
   emitter: string;
@@ -26,6 +34,10 @@ type InvestmentOffer = {
   title: string | null;
 };
 
+// =============================================================
+// NORMALISATION
+// =============================================================
+
 function normalizeText(value: string): string {
   return value
     .replace(/&nbsp;/gi, " ")
@@ -34,6 +46,8 @@ function normalizeText(value: string): string {
     .replace(/&#39;/gi, "'")
     .replace(/&apos;/gi, "'")
     .replace(/&quot;/gi, '"')
+    .replace(/&#x27;/gi, "'")
+    .replace(/&#x2F;/gi, "/")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -51,6 +65,10 @@ function normalizeName(value: string): string {
     .trim();
 }
 
+// =============================================================
+// NOMBRES
+// =============================================================
+
 function parseNumber(value: string): number | null {
   let cleaned = normalizeText(value)
     .replace(/\u00a0/g, " ")
@@ -59,29 +77,24 @@ function parseNumber(value: string): number | null {
     .replace(/F\s*CFA/gi, "")
     .replace(/\s/g, "");
 
+  if (!cleaned) {
+    return null;
+  }
+
   /*
-   * BRVM peut afficher :
+   * Cas possibles :
    *
-   * 2 606
-   * 594,528
-   * 164,1709
-   *
-   * On traite la virgule comme séparateur décimal
-   * lorsque nécessaire.
+   * 158,827
+   * 158.827
+   * 1.234,56
+   * 1 234,56
    */
 
-  if (
-    cleaned.includes(",") &&
-    cleaned.includes(".")
-  ) {
-    /*
-     * Exemple éventuel :
-     * 1.234,56
-     */
+  if (cleaned.includes(",") && cleaned.includes(".")) {
     cleaned = cleaned
       .replace(/\./g, "")
       .replace(",", ".");
-  } else {
+  } else if (cleaned.includes(",")) {
     cleaned = cleaned.replace(",", ".");
   }
 
@@ -93,6 +106,10 @@ function parseNumber(value: string): number | null {
 
   return number;
 }
+
+// =============================================================
+// DATES FRANÇAISES
+// =============================================================
 
 function parseFrenchDate(value: string): string | null {
   const cleaned = normalizeText(value)
@@ -118,7 +135,7 @@ function parseFrenchDate(value: string): string | null {
   };
 
   const match = cleaned.match(
-    /(\d{1,2})\s+([a-zéû]+)\s+(\d{4})/
+    /(\d{1,2})\s+([a-zéûàâäèêëîïôöùûüç]+)\s+(\d{4})/
   );
 
   if (!match) {
@@ -135,21 +152,19 @@ function parseFrenchDate(value: string): string | null {
   return `${match[3]}-${month}-${day}`;
 }
 
-function extractTableRows(
-  html: string
-): string[][] {
+// =============================================================
+// EXTRACTION DES TABLEAUX HTML
+// =============================================================
+
+function extractTableRows(html: string): string[][] {
   const tables =
-    html.match(
-      /<table[\s\S]*?<\/table>/gi
-    ) ?? [];
+    html.match(/<table[\s\S]*?<\/table>/gi) ?? [];
 
   const result: string[][] = [];
 
   for (const table of tables) {
     const rows =
-      table.match(
-        /<tr[\s\S]*?<\/tr>/gi
-      ) ?? [];
+      table.match(/<tr[\s\S]*?<\/tr>/gi) ?? [];
 
     for (const row of rows) {
       const cells =
@@ -164,10 +179,9 @@ function extractTableRows(
       const values = cells.map((cell) =>
         normalizeText(
           cell
-            .replace(
-              /<[^>]+>/g,
-              " "
-            )
+            .replace(/<script[\s\S]*?<\/script>/gi, " ")
+            .replace(/<style[\s\S]*?<\/style>/gi, " ")
+            .replace(/<[^>]+>/g, " ")
         )
       );
 
@@ -178,36 +192,47 @@ function extractTableRows(
   return result;
 }
 
+// =============================================================
+// PARSING DES DIVIDENDES BRVM
+// =============================================================
+
 function parseBrvmDividends(
   html: string
 ): BrvmDividend[] {
-
-  const rows =
-    extractTableRows(html);
+  const rows = extractTableRows(html);
 
   const dividends: BrvmDividend[] = [];
 
   for (const row of rows) {
-
     /*
-     * Structure officielle observée :
+     * Structure actuellement observée sur la BRVM :
      *
-     * Emetteur
-     * Obligation
-     * Action
-     * Exercice comptable
-     * Date de paiement
-     * Date ex-dividende
-     * Montant du dividende net
-     * Avis
+     * 0 = Emetteur
+     * 1 = Obligation
+     * 2 = Action
+     * 3 = Exercice comptable
+     * 4 = Date de paiement
+     * 5 = Date ex-dividende
+     * 6 = Montant du dividende net
+     * 7 = Avis
      */
 
     if (row.length < 7) {
       continue;
     }
 
-    const emitter =
-      normalizeText(row[0]);
+    const emitter = normalizeText(row[0]);
+
+    if (!emitter) {
+      continue;
+    }
+
+    if (
+      emitter.toLowerCase() === "emetteur" ||
+      emitter.toLowerCase() === "émetteur"
+    ) {
+      continue;
+    }
 
     const paymentDate =
       parseFrenchDate(row[4]);
@@ -219,21 +244,9 @@ function parseBrvmDividends(
       parseNumber(row[6]);
 
     if (
-      !emitter ||
       !paymentDate ||
       !exDate ||
       dividendPerShare === null
-    ) {
-      continue;
-    }
-
-    /*
-     * Évite de récupérer les lignes d'en-tête.
-     */
-
-    if (
-      emitter.toLowerCase() ===
-      "emetteur"
     ) {
       continue;
     }
@@ -246,51 +259,75 @@ function parseBrvmDividends(
     });
   }
 
-  /*
-   * Suppression des doublons.
-   */
+  // ===========================================================
+  // SUPPRESSION DES DOUBLONS
+  // ===========================================================
 
   const unique =
     new Map<string, BrvmDividend>();
 
   for (const dividend of dividends) {
-
-    const key =
-      [
-        normalizeName(
-          dividend.emitter
-        ),
-        dividend.dividendPerShare,
-        dividend.exDate,
-        dividend.paymentDate,
-      ].join("|");
+    const key = [
+      normalizeName(dividend.emitter),
+      dividend.dividendPerShare,
+      dividend.exDate,
+      dividend.paymentDate,
+    ].join("|");
 
     unique.set(key, dividend);
   }
 
-  return Array.from(
-    unique.values()
-  );
+  return Array.from(unique.values());
 }
+
+// =============================================================
+// CORRESPONDANCE SOCIÉTÉ → INVESTMENT OFFER
+// =============================================================
 
 function findOffer(
   emitter: string,
   offers: InvestmentOffer[]
 ): InvestmentOffer | null {
-
-  const target =
-    normalizeName(emitter);
+  const target = normalizeName(emitter);
 
   if (!target) {
     return null;
   }
 
-  /*
-   * 1. Correspondance exacte avec company_name
-   */
+  // ===========================================================
+  // CORRESPONDANCES EXPLICITES BRVM
+  // ===========================================================
+
+  const explicitSymbols: Record<string, string> = {
+    TOTAL: "TTLC",
+    TOTALCI: "TTLC",
+    TOTALENERGIES: "TTLC",
+    TOTALENERGIESCI: "TTLC",
+    TOTALCOTEIVOIRE: "TTLC",
+  };
+
+  const expectedSymbol =
+    explicitSymbols[target];
+
+  if (expectedSymbol) {
+    const explicitOffer =
+      offers.find(
+        (offer) =>
+          normalizeText(
+            offer.symbol ?? ""
+          ).toUpperCase() === expectedSymbol
+      );
+
+    if (explicitOffer) {
+      return explicitOffer;
+    }
+  }
+
+  // ===========================================================
+  // 1. CORRESPONDANCE EXACTE COMPANY_NAME
+  // ===========================================================
 
   for (const offer of offers) {
-
     if (
       normalizeName(
         offer.company_name ?? ""
@@ -300,12 +337,11 @@ function findOffer(
     }
   }
 
-  /*
-   * 2. Correspondance exacte avec title
-   */
+  // ===========================================================
+  // 2. CORRESPONDANCE EXACTE TITLE
+  // ===========================================================
 
   for (const offer of offers) {
-
     if (
       normalizeName(
         offer.title ?? ""
@@ -315,17 +351,25 @@ function findOffer(
     }
   }
 
-  /*
-   * 3. Correspondance par inclusion.
-   *
-   * Exemple :
-   * "CFAO MOTORS"
-   * avec
-   * "CFAO MOTORS COTE D'IVOIRE"
-   */
+  // ===========================================================
+  // 3. CORRESPONDANCE PAR SYMBOL
+  // ===========================================================
 
   for (const offer of offers) {
+    if (
+      normalizeName(
+        offer.symbol ?? ""
+      ) === target
+    ) {
+      return offer;
+    }
+  }
 
+  // ===========================================================
+  // 4. CORRESPONDANCE PAR INCLUSION
+  // ===========================================================
+
+  for (const offer of offers) {
     const company =
       normalizeName(
         offer.company_name ?? ""
@@ -336,15 +380,21 @@ function findOffer(
         offer.title ?? ""
       );
 
+    const symbol =
+      normalizeName(
+        offer.symbol ?? ""
+      );
+
     if (
-      (company && (
-        company.includes(target) ||
-        target.includes(company)
-      )) ||
-      (title && (
-        title.includes(target) ||
-        target.includes(title)
-      ))
+      (company &&
+        (company.includes(target) ||
+          target.includes(company))) ||
+      (title &&
+        (title.includes(target) ||
+          target.includes(title))) ||
+      (symbol &&
+        (symbol.includes(target) ||
+          target.includes(symbol)))
     ) {
       return offer;
     }
@@ -353,31 +403,30 @@ function findOffer(
   return null;
 }
 
-Deno.serve(async (req) => {
+// =============================================================
+// FONCTION EDGE
+// =============================================================
 
-  // =====================================================
+Deno.serve(async (req) => {
+  // ===========================================================
   // CORS
-  // =====================================================
+  // ===========================================================
 
   if (req.method === "OPTIONS") {
-    return new Response(
-      "ok",
-      {
-        headers: corsHeaders,
-      }
-    );
+    return new Response("ok", {
+      headers: corsHeaders,
+    });
   }
 
-  // =====================================================
+  // ===========================================================
   // POST UNIQUEMENT
-  // =====================================================
+  // ===========================================================
 
   if (req.method !== "POST") {
     return Response.json(
       {
         success: false,
-        error:
-          "Méthode non autorisée.",
+        error: "Méthode non autorisée.",
       },
       {
         status: 405,
@@ -387,15 +436,12 @@ Deno.serve(async (req) => {
   }
 
   try {
-
-    // ===================================================
+    // =========================================================
     // SUPABASE
-    // ===================================================
+    // =========================================================
 
     const supabaseUrl =
-      Deno.env.get(
-        "SUPABASE_URL"
-      );
+      Deno.env.get("SUPABASE_URL");
 
     const serviceRoleKey =
       Deno.env.get(
@@ -417,17 +463,15 @@ Deno.serve(async (req) => {
         serviceRoleKey,
         {
           auth: {
-            persistSession:
-              false,
-            autoRefreshToken:
-              false,
+            persistSession: false,
+            autoRefreshToken: false,
           },
         }
       );
 
-    // ===================================================
+    // =========================================================
     // RÉCUPÉRATION BRVM
-    // ===================================================
+    // =========================================================
 
     const response =
       await fetch(
@@ -439,7 +483,7 @@ Deno.serve(async (req) => {
             "User-Agent":
               "InvestirEnBourse-Dividends/1.0",
 
-            "Accept":
+            Accept:
               "text/html,application/xhtml+xml",
 
             "Accept-Language":
@@ -457,9 +501,15 @@ Deno.serve(async (req) => {
     const html =
       await response.text();
 
-    // ===================================================
+    if (!html || html.length < 1000) {
+      throw new Error(
+        "La page BRVM retournée est vide ou invalide."
+      );
+    }
+
+    // =========================================================
     // PARSING
-    // ===================================================
+    // =========================================================
 
     const brvmDividends =
       parseBrvmDividends(html);
@@ -472,17 +522,15 @@ Deno.serve(async (req) => {
       );
     }
 
-    // ===================================================
-    // OFFRES DE NOTRE APPLICATION
-    // ===================================================
+    // =========================================================
+    // OFFRES DE L'APPLICATION
+    // =========================================================
 
     const {
       data: offers,
       error: offersError,
     } = await supabase
-      .from(
-        "investment_offers"
-      )
+      .from("investment_offers")
       .select(
         "id, symbol, company_name, title"
       )
@@ -498,27 +546,32 @@ Deno.serve(async (req) => {
     }
 
     const investmentOffers =
-      (offers ?? []) as InvestmentOffer[];
+      (offers ??
+        []) as InvestmentOffer[];
 
-    // ===================================================
-    // TRAITEMENT
-    // ===================================================
+    // =========================================================
+    // COMPTEURS
+    // =========================================================
 
     let inserted = 0;
     let updated = 0;
-    let unmatched = 0;
     let unchanged = 0;
+    let unmatched = 0;
+    let protectedPaid = 0;
 
     const results: unknown[] = [];
+
+    // =========================================================
+    // TRAITEMENT DE CHAQUE DIVIDENDE
+    // =========================================================
 
     for (
       const dividend
       of brvmDividends
     ) {
-
-      // -------------------------------------------------
-      // CORRESPONDANCE SOCIÉTÉ
-      // -------------------------------------------------
+      // =======================================================
+      // RECHERCHE DE L'OFFRE
+      // =======================================================
 
       const offer =
         findOffer(
@@ -526,67 +579,74 @@ Deno.serve(async (req) => {
           investmentOffers
         );
 
-      /*
-       * Si nous ne trouvons pas la société
-       * dans notre application :
-       *
-       * ON NE CRÉE PAS DE DIVIDENDE.
-       *
-       * Cela évite d'associer par erreur un dividende
-       * à une mauvaise société.
-       */
-
       if (!offer) {
-
         unmatched++;
 
         results.push({
+          action: "unmatched",
           emitter:
             dividend.emitter,
-
-          status:
-            "unmatched",
+          dividendPerShare:
+            dividend.dividendPerShare,
+          exDate:
+            dividend.exDate,
+          paymentDate:
+            dividend.paymentDate,
         });
 
         continue;
       }
+
+      // =======================================================
+      // SYMBOL
+      // =======================================================
 
       const symbol =
         offer.symbol?.trim();
 
       if (!symbol) {
-
         unmatched++;
 
         results.push({
+          action: "missing_symbol",
           emitter:
             dividend.emitter,
-
-          status:
-            "missing_symbol",
+          offerId:
+            offer.id,
         });
 
         continue;
       }
+
+      // =======================================================
+      // NOM SOCIÉTÉ
+      // =======================================================
 
       const companyName =
         offer.company_name?.trim() ||
         offer.title?.trim() ||
         dividend.emitter;
 
-      // -------------------------------------------------
-      // CHERCHE UN DIVIDENDE EXISTANT
-      // -------------------------------------------------
+      // =======================================================
+      // RECHERCHE DU DIVIDENDE EXISTANT
+      // =======================================================
 
       const {
         data: existing,
         error: existingError,
       } = await supabase
-        .from(
-          "dividends"
-        )
+        .from("dividends")
         .select(
-          "id, dividend_per_share, payment_date, ex_date, status"
+          `
+          id,
+          offer_id,
+          symbol,
+          company_name,
+          dividend_per_share,
+          payment_date,
+          ex_date,
+          status
+          `
         )
         .eq(
           "symbol",
@@ -609,19 +669,16 @@ Deno.serve(async (req) => {
         );
       }
 
-      // -------------------------------------------------
+      // =======================================================
       // NOUVEAU DIVIDENDE
-      // -------------------------------------------------
+      // =======================================================
 
       if (!existing) {
-
         const {
           data: created,
           error: insertError,
         } = await supabase
-          .from(
-            "dividends"
-          )
+          .from("dividends")
           .insert({
             offer_id:
               offer.id,
@@ -644,7 +701,16 @@ Deno.serve(async (req) => {
               "pending",
           })
           .select(
-            "id, symbol, dividend_per_share, ex_date, payment_date, status"
+            `
+            id,
+            offer_id,
+            symbol,
+            company_name,
+            dividend_per_share,
+            ex_date,
+            payment_date,
+            status
+            `
           )
           .single();
 
@@ -657,11 +723,12 @@ Deno.serve(async (req) => {
         inserted++;
 
         results.push({
-          action:
-            "inserted",
+          action: "inserted",
 
           emitter:
             dividend.emitter,
+
+          symbol,
 
           dividend:
             created,
@@ -670,9 +737,9 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // -------------------------------------------------
+      // =======================================================
       // DIVIDENDE EXISTANT
-      // -------------------------------------------------
+      // =======================================================
 
       const oldAmount =
         Number(
@@ -685,15 +752,24 @@ Deno.serve(async (req) => {
         existing.ex_date !==
           dividend.exDate ||
         existing.payment_date !==
-          dividend.paymentDate;
+          dividend.paymentDate ||
+        existing.offer_id !==
+          offer.id ||
+        existing.company_name !==
+          companyName;
+
+      // =======================================================
+      // AUCUN CHANGEMENT
+      // =======================================================
 
       if (!changed) {
-
         unchanged++;
 
         results.push({
-          action:
-            "unchanged",
+          action: "unchanged",
+
+          emitter:
+            dividend.emitter,
 
           symbol,
 
@@ -704,43 +780,49 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      /*
-       * IMPORTANT :
-       *
-       * On ne modifie PAS un dividende déjà payé.
-       */
+      // =======================================================
+      // PROTECTION DES DIVIDENDES PAYÉS
+      // =======================================================
 
       if (
         existing.status ===
         "paid"
       ) {
+        protectedPaid++;
 
         results.push({
           action:
             "protected_paid_dividend",
 
+          emitter:
+            dividend.emitter,
+
           symbol,
 
           dividend_id:
             existing.id,
+
+          message:
+            "Dividende déjà payé : aucune modification effectuée.",
         });
 
         continue;
       }
 
-      // -------------------------------------------------
+      // =======================================================
       // MISE À JOUR
-      // -------------------------------------------------
+      // =======================================================
 
       const {
+        data: updatedDividend,
         error: updateError,
       } = await supabase
-        .from(
-          "dividends"
-        )
+        .from("dividends")
         .update({
           offer_id:
             offer.id,
+
+          symbol,
 
           company_name:
             companyName,
@@ -763,7 +845,20 @@ Deno.serve(async (req) => {
         .eq(
           "id",
           existing.id
-        );
+        )
+        .select(
+          `
+          id,
+          offer_id,
+          symbol,
+          company_name,
+          dividend_per_share,
+          ex_date,
+          payment_date,
+          status
+          `
+        )
+        .single();
 
       if (updateError) {
         throw new Error(
@@ -774,19 +869,21 @@ Deno.serve(async (req) => {
       updated++;
 
       results.push({
-        action:
-          "updated",
+        action: "updated",
+
+        emitter:
+          dividend.emitter,
 
         symbol,
 
-        dividend_id:
-          existing.id,
+        dividend:
+          updatedDividend,
       });
     }
 
-    // ===================================================
-    // RÉSULTAT
-    // ===================================================
+    // =========================================================
+    // RÉSULTAT FINAL
+    // =========================================================
 
     return Response.json(
       {
@@ -809,6 +906,8 @@ Deno.serve(async (req) => {
 
         unmatched,
 
+        protectedPaid,
+
         executedAt:
           new Date().toISOString(),
 
@@ -825,9 +924,7 @@ Deno.serve(async (req) => {
         },
       }
     );
-
   } catch (error) {
-
     console.error(
       "BRVM DIVIDENDS ERROR:",
       error
