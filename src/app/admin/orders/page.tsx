@@ -2,48 +2,8 @@ import { createClient } from '@/utils/supabase/server'
 import { ensureAdminAccess } from '@/lib/admin'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
-import { createClient as createSupabaseAdminClient } from '@supabase/supabase-js'
 
 export const dynamic = 'force-dynamic'
-
-
-/*
- * =====================================================
- * CLIENT SERVICE ROLE
- * =====================================================
- */
-
-function createAdminServiceClient() {
-  const supabaseUrl =
-    process.env.NEXT_PUBLIC_SUPABASE_URL
-
-  const serviceRoleKey =
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-
-  if (!supabaseUrl) {
-    throw new Error(
-      'NEXT_PUBLIC_SUPABASE_URL est manquante.'
-    )
-  }
-
-  if (!serviceRoleKey) {
-    throw new Error(
-      'SUPABASE_SERVICE_ROLE_KEY est manquante.'
-    )
-  }
-
-  return createSupabaseAdminClient(
-    supabaseUrl,
-    serviceRoleKey,
-    {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    }
-  )
-}
-
 
 /*
  * =====================================================
@@ -116,7 +76,6 @@ type DividendPayment = {
     | null
 }
 
-
 /*
  * =====================================================
  * FORMATAGE
@@ -132,7 +91,6 @@ function formatMoney(
     maximumFractionDigits: 2,
   })
 }
-
 
 function formatStatus(
   status: string | null
@@ -175,7 +133,6 @@ function formatStatus(
   return status || 'En attente'
 }
 
-
 function formatOrderType(
   type: string | null
 ): 'achat' | 'vente' {
@@ -185,7 +142,6 @@ function formatOrderType(
 
   return 'achat'
 }
-
 
 /*
  * =====================================================
@@ -284,7 +240,6 @@ async function updateOrderStatus(
     )
   }
 
-
   /*
    * =====================================================
    * REFUS
@@ -317,7 +272,6 @@ async function updateOrderStatus(
 
     return
   }
-
 
   /*
    * =====================================================
@@ -422,7 +376,6 @@ async function updateOrderStatus(
 
     return
   }
-
 
   /*
    * =====================================================
@@ -643,7 +596,6 @@ async function updateOrderStatus(
   revalidatePath('/dashboard/portfolio')
 }
 
-
 /*
  * =====================================================
  * VALIDATION DIVIDENDE
@@ -657,7 +609,7 @@ async function processDividendPayment(
 
   const paymentId = String(
     formData.get('paymentId') ?? ''
-  )
+  ).trim()
 
   if (!paymentId) {
     throw new Error(
@@ -665,12 +617,9 @@ async function processDividendPayment(
     )
   }
 
-
   /*
    * ===================================================
-   * CLIENT NORMAL
-   * Sert uniquement à identifier l'utilisateur connecté
-   * et vérifier qu'il est administrateur.
+   * CLIENT SUPABASE AUTHENTIFIÉ
    * ===================================================
    */
 
@@ -678,11 +627,18 @@ async function processDividendPayment(
 
   const {
     data: { user },
+    error: userError,
   } = await supabase.auth.getUser()
 
-  if (!user) {
+  if (userError || !user) {
     redirect('/login')
   }
+
+  /*
+   * ===================================================
+   * VÉRIFICATION ADMINISTRATEUR
+   * ===================================================
+   */
 
   const isAdmin =
     await ensureAdminAccess(
@@ -694,37 +650,40 @@ async function processDividendPayment(
     redirect('/dashboard')
   }
 
-
-  /*
-   * ===================================================
-   * CLIENT SERVICE ROLE
-   * ===================================================
-   */
-
-  const adminSupabase =
-    createAdminServiceClient()
-
-
   /*
    * ===================================================
    * APPEL RPC
    * ===================================================
+   *
+   * IMPORTANT :
+   *
+   * La fonction PostgreSQL possède cette signature :
+   *
+   * process_dividend_payment(
+   *   p_dividend_payment_id uuid
+   * )
+   *
+   * Elle ne possède PAS de p_admin_id.
+   *
+   * C'est donc volontairement le seul paramètre envoyé.
    */
 
   const {
     data,
     error,
-  } = await adminSupabase.rpc(
+  } = await supabase.rpc(
     'process_dividend_payment',
     {
       p_dividend_payment_id:
         paymentId,
-
-      p_admin_id:
-        user.id,
     }
   )
 
+  /*
+   * ===================================================
+   * ERREUR RPC
+   * ===================================================
+   */
 
   if (error) {
     throw new Error(
@@ -732,13 +691,17 @@ async function processDividendPayment(
     )
   }
 
+  /*
+   * ===================================================
+   * VÉRIFICATION RÉSULTAT
+   * ===================================================
+   */
 
   if (!data?.success) {
     throw new Error(
       'Le paiement du dividende n’a pas pu être effectué.'
     )
   }
-
 
   /*
    * ===================================================
@@ -754,7 +717,6 @@ async function processDividendPayment(
 
   return
 }
-
 
 /*
  * =====================================================
@@ -856,7 +818,6 @@ async function rejectDividendPayment(
   revalidatePath('/admin/orders')
 }
 
-
 /*
  * =====================================================
  * PAGE ADMIN
@@ -884,7 +845,6 @@ export default async function AdminOrdersPage() {
   if (!isAdmin) {
     redirect('/dashboard')
   }
-
 
   /*
    * =====================================================
@@ -928,7 +888,6 @@ export default async function AdminOrdersPage() {
     )
   }
 
-
   /*
    * =====================================================
    * DIVIDENDES
@@ -971,7 +930,6 @@ export default async function AdminOrdersPage() {
     )
   }
 
-
   /*
    * =====================================================
    * IDS UTILISATEURS
@@ -1010,7 +968,6 @@ export default async function AdminOrdersPage() {
       ])
     )
 
-
   /*
    * =====================================================
    * PROFILS
@@ -1037,7 +994,6 @@ export default async function AdminOrdersPage() {
     profiles =
       userProfiles ?? []
   }
-
 
   /*
    * =====================================================
@@ -1122,7 +1078,6 @@ export default async function AdminOrdersPage() {
       }
     )
 
-
   /*
    * =====================================================
    * DIVIDENDES EN ATTENTE
@@ -1135,7 +1090,6 @@ export default async function AdminOrdersPage() {
         payment.status ===
         'pending'
     ) as DividendPayment[]
-
 
   /*
    * =====================================================
@@ -1178,7 +1132,6 @@ export default async function AdminOrdersPage() {
         'vente'
     )
 
-
   /*
    * =====================================================
    * TOTAL DIVIDENDES
@@ -1197,7 +1150,6 @@ export default async function AdminOrdersPage() {
         ),
       0
     )
-
 
   /*
    * =====================================================
@@ -1230,7 +1182,6 @@ export default async function AdminOrdersPage() {
 
       </div>
 
-
       {/* =================================================
           STATISTIQUES
       ================================================= */}
@@ -1247,7 +1198,6 @@ export default async function AdminOrdersPage() {
           </p>
         </div>
 
-
         <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5">
           <p className="text-xs font-semibold uppercase tracking-wider text-blue-600">
             Achats
@@ -1257,7 +1207,6 @@ export default async function AdminOrdersPage() {
             {pendingPurchases.length}
           </p>
         </div>
-
 
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
           <p className="text-xs font-semibold uppercase tracking-wider text-amber-600">
@@ -1269,7 +1218,6 @@ export default async function AdminOrdersPage() {
           </p>
         </div>
 
-
         <div className="rounded-2xl border border-green-200 bg-green-50 p-5">
           <p className="text-xs font-semibold uppercase tracking-wider text-green-600">
             Complétés
@@ -1280,7 +1228,6 @@ export default async function AdminOrdersPage() {
           </p>
         </div>
 
-
         <div className="rounded-2xl border border-red-200 bg-red-50 p-5">
           <p className="text-xs font-semibold uppercase tracking-wider text-red-600">
             Refusés
@@ -1290,7 +1237,6 @@ export default async function AdminOrdersPage() {
             {cancelledOrders.length}
           </p>
         </div>
-
 
         <div className="rounded-2xl border border-[#D4A72C]/30 bg-[#FFFBF0] p-5">
 
@@ -1313,7 +1259,6 @@ export default async function AdminOrdersPage() {
 
       </div>
 
-
       {/* =================================================
           ORDRES
       ================================================= */}
@@ -1332,7 +1277,6 @@ export default async function AdminOrdersPage() {
           </p>
 
         </div>
-
 
         {pendingOrders.length === 0 ? (
 
@@ -1400,7 +1344,6 @@ export default async function AdminOrdersPage() {
 
                     </div>
 
-
                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
 
                       <div>
@@ -1417,7 +1360,6 @@ export default async function AdminOrdersPage() {
 
                       </div>
 
-
                       <div>
 
                         <p className="text-[10px] uppercase tracking-wider text-slate-400">
@@ -1432,7 +1374,6 @@ export default async function AdminOrdersPage() {
                         </p>
 
                       </div>
-
 
                       <div>
 
@@ -1456,7 +1397,6 @@ export default async function AdminOrdersPage() {
 
                       </div>
 
-
                       <div>
 
                         <p className="text-[10px] uppercase tracking-wider text-slate-400">
@@ -1474,7 +1414,6 @@ export default async function AdminOrdersPage() {
                       </div>
 
                     </div>
-
 
                     <div className="flex flex-col gap-2 sm:flex-row">
 
@@ -1512,7 +1451,6 @@ export default async function AdminOrdersPage() {
 
                       </form>
 
-
                       <form
                         action={
                           updateOrderStatus
@@ -1546,7 +1484,6 @@ export default async function AdminOrdersPage() {
 
                   </div>
 
-
                   <div className="mt-4 flex flex-col gap-1 rounded-xl border border-orange-100 bg-orange-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
 
                     <span className="text-xs font-semibold text-orange-700">
@@ -1572,7 +1509,6 @@ export default async function AdminOrdersPage() {
         )}
 
       </div>
-
 
       {/* =================================================
           DIVIDENDES
@@ -1609,7 +1545,6 @@ export default async function AdminOrdersPage() {
 
             </div>
 
-
             <div className="rounded-full border border-[#D4A72C]/25 bg-white px-3 py-1.5">
 
               <span className="text-xs font-bold text-[#A77C12]">
@@ -1622,7 +1557,6 @@ export default async function AdminOrdersPage() {
           </div>
 
         </div>
-
 
         {pendingDividends.length === 0 ? (
 
@@ -1713,7 +1647,6 @@ export default async function AdminOrdersPage() {
 
                         </div>
 
-
                         <p className="mt-2 font-bold text-slate-900">
                           {clientName}
                         </p>
@@ -1735,7 +1668,6 @@ export default async function AdminOrdersPage() {
 
                       </div>
 
-
                       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
 
                         <div>
@@ -1752,7 +1684,6 @@ export default async function AdminOrdersPage() {
 
                         </div>
 
-
                         <div>
 
                           <p className="text-[10px] uppercase tracking-wider text-slate-400">
@@ -1768,7 +1699,6 @@ export default async function AdminOrdersPage() {
 
                         </div>
 
-
                         <div>
 
                           <p className="text-[10px] uppercase tracking-wider text-slate-400">
@@ -1783,7 +1713,6 @@ export default async function AdminOrdersPage() {
                           </p>
 
                         </div>
-
 
                         <div>
 
@@ -1804,7 +1733,6 @@ export default async function AdminOrdersPage() {
                         </div>
 
                       </div>
-
 
                       <div className="flex flex-col gap-2 sm:flex-row">
 
@@ -1830,7 +1758,6 @@ export default async function AdminOrdersPage() {
                           </button>
 
                         </form>
-
 
                         <form
                           action={
@@ -1858,7 +1785,6 @@ export default async function AdminOrdersPage() {
                       </div>
 
                     </div>
-
 
                     <div className="mt-4 flex flex-col gap-1 rounded-xl border border-[#D4A72C]/15 bg-[#FFFBF0] px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
 
