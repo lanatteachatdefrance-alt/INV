@@ -2,8 +2,54 @@ import { createClient } from '@/utils/supabase/server'
 import { ensureAdminAccess } from '@/lib/admin'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
+import { createClient as createSupabaseAdminClient } from '@supabase/supabase-js'
 
 export const dynamic = 'force-dynamic'
+
+
+/*
+ * =====================================================
+ * CLIENT SERVICE ROLE
+ * =====================================================
+ */
+
+function createAdminServiceClient() {
+  const supabaseUrl =
+    process.env.NEXT_PUBLIC_SUPABASE_URL
+
+  const serviceRoleKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+
+  if (!supabaseUrl) {
+    throw new Error(
+      'NEXT_PUBLIC_SUPABASE_URL est manquante.'
+    )
+  }
+
+  if (!serviceRoleKey) {
+    throw new Error(
+      'SUPABASE_SERVICE_ROLE_KEY est manquante.'
+    )
+  }
+
+  return createSupabaseAdminClient(
+    supabaseUrl,
+    serviceRoleKey,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    }
+  )
+}
+
+
+/*
+ * =====================================================
+ * TYPES
+ * =====================================================
+ */
 
 type Transaction = {
   id: string
@@ -25,6 +71,7 @@ type UserProfile = {
   email: string | null
   first_name: string | null
   last_name: string | null
+  role?: string | null
 }
 
 type Order = {
@@ -69,13 +116,16 @@ type DividendPayment = {
     | null
 }
 
+
 /*
  * =====================================================
  * FORMATAGE
  * =====================================================
  */
 
-function formatMoney(value: number | string | null) {
+function formatMoney(
+  value: number | string | null
+) {
   const amount = Number(value ?? 0)
 
   return amount.toLocaleString('fr-FR', {
@@ -83,7 +133,10 @@ function formatMoney(value: number | string | null) {
   })
 }
 
-function formatStatus(status: string | null) {
+
+function formatStatus(
+  status: string | null
+) {
   const normalized =
     status?.toLowerCase().trim() ?? ''
 
@@ -122,6 +175,7 @@ function formatStatus(status: string | null) {
   return status || 'En attente'
 }
 
+
 function formatOrderType(
   type: string | null
 ): 'achat' | 'vente' {
@@ -131,6 +185,7 @@ function formatOrderType(
 
   return 'achat'
 }
+
 
 /*
  * =====================================================
@@ -191,18 +246,16 @@ async function updateOrderStatus(
     error: orderError,
   } = await supabase
     .from('transactions')
-    .select(
-      `
-        id,
-        user_id,
-        status,
-        type,
-        amount,
-        offer_id,
-        quantity,
-        unit_price
-      `
-    )
+    .select(`
+      id,
+      user_id,
+      status,
+      type,
+      amount,
+      offer_id,
+      quantity,
+      unit_price
+    `)
     .eq('id', orderId)
     .in('type', [
       'achat_investissement',
@@ -231,6 +284,7 @@ async function updateOrderStatus(
     )
   }
 
+
   /*
    * =====================================================
    * REFUS
@@ -248,10 +302,6 @@ async function updateOrderStatus(
           new Date().toISOString(),
       })
       .eq('id', orderId)
-      .in('type', [
-        'achat_investissement',
-        'vente_investissement',
-      ])
       .eq('status', 'pending')
 
     if (error) {
@@ -267,6 +317,7 @@ async function updateOrderStatus(
 
     return
   }
+
 
   /*
    * =====================================================
@@ -285,9 +336,7 @@ async function updateOrderStatus(
     }
 
     const quantity =
-      Number(
-        order.quantity ?? 0
-      )
+      Number(order.quantity ?? 0)
 
     if (
       !Number.isInteger(quantity) ||
@@ -299,9 +348,7 @@ async function updateOrderStatus(
     }
 
     const amount =
-      Number(
-        order.amount ?? 0
-      )
+      Number(order.amount ?? 0)
 
     if (
       !Number.isFinite(amount) ||
@@ -313,9 +360,7 @@ async function updateOrderStatus(
     }
 
     const unitPrice =
-      Number(
-        order.unit_price ?? 0
-      )
+      Number(order.unit_price ?? 0)
 
     if (
       !Number.isFinite(unitPrice) ||
@@ -345,14 +390,16 @@ async function updateOrderStatus(
       .from('transactions')
       .update({
         status: 'approved',
-        approved_by:
-          user.id,
+        approved_by: user.id,
         approved_at:
           new Date().toISOString(),
         updated_at:
           new Date().toISOString(),
       })
-      .eq('id', orderId)
+      .eq(
+        'id',
+        orderId
+      )
       .eq(
         'type',
         'vente_investissement'
@@ -376,6 +423,7 @@ async function updateOrderStatus(
     return
   }
 
+
   /*
    * =====================================================
    * ACHAT
@@ -397,14 +445,12 @@ async function updateOrderStatus(
       error: offerError,
     } = await supabase
       .from('investment_offers')
-      .select(
-        `
-          id,
-          title,
-          price_per_share,
-          is_active
-        `
-      )
+      .select(`
+        id,
+        title,
+        price_per_share,
+        is_active
+      `)
       .eq(
         'id',
         order.offer_id
@@ -427,9 +473,7 @@ async function updateOrderStatus(
     }
 
     const quantity =
-      Number(
-        order.quantity ?? 0
-      )
+      Number(order.quantity ?? 0)
 
     if (
       !Number.isInteger(quantity) ||
@@ -441,14 +485,10 @@ async function updateOrderStatus(
     }
 
     const purchasePrice =
-      Number(
-        order.unit_price ?? 0
-      )
+      Number(order.unit_price ?? 0)
 
     if (
-      !Number.isFinite(
-        purchasePrice
-      ) ||
+      !Number.isFinite(purchasePrice) ||
       purchasePrice <= 0
     ) {
       throw new Error(
@@ -457,9 +497,7 @@ async function updateOrderStatus(
     }
 
     const amount =
-      Number(
-        order.amount ?? 0
-      )
+      Number(order.amount ?? 0)
 
     if (
       !Number.isFinite(amount) ||
@@ -471,8 +509,7 @@ async function updateOrderStatus(
     }
 
     const expectedAmount =
-      quantity *
-      purchasePrice
+      quantity * purchasePrice
 
     if (
       Math.abs(
@@ -490,9 +527,7 @@ async function updateOrderStatus(
       )
 
     if (
-      !Number.isFinite(
-        currentPrice
-      ) ||
+      !Number.isFinite(currentPrice) ||
       currentPrice <= 0
     ) {
       throw new Error(
@@ -501,8 +536,7 @@ async function updateOrderStatus(
     }
 
     const currentValue =
-      quantity *
-      currentPrice
+      quantity * currentPrice
 
     const {
       data: existingInvestment,
@@ -583,7 +617,10 @@ async function updateOrderStatus(
         updated_at:
           new Date().toISOString(),
       })
-      .eq('id', orderId)
+      .eq(
+        'id',
+        orderId
+      )
       .eq(
         'type',
         'achat_investissement'
@@ -606,6 +643,7 @@ async function updateOrderStatus(
   revalidatePath('/dashboard/portfolio')
 }
 
+
 /*
  * =====================================================
  * VALIDATION DIVIDENDE
@@ -627,6 +665,15 @@ async function processDividendPayment(
     )
   }
 
+
+  /*
+   * ===================================================
+   * CLIENT NORMAL
+   * Sert uniquement à identifier l'utilisateur connecté
+   * et vérifier qu'il est administrateur.
+   * ===================================================
+   */
+
   const supabase = createClient()
 
   const {
@@ -647,16 +694,37 @@ async function processDividendPayment(
     redirect('/dashboard')
   }
 
+
+  /*
+   * ===================================================
+   * CLIENT SERVICE ROLE
+   * ===================================================
+   */
+
+  const adminSupabase =
+    createAdminServiceClient()
+
+
+  /*
+   * ===================================================
+   * APPEL RPC
+   * ===================================================
+   */
+
   const {
     data,
     error,
-  } = await supabase.rpc(
+  } = await adminSupabase.rpc(
     'process_dividend_payment',
     {
       p_dividend_payment_id:
         paymentId,
+
+      p_admin_id:
+        user.id,
     }
   )
+
 
   if (error) {
     throw new Error(
@@ -664,21 +732,29 @@ async function processDividendPayment(
     )
   }
 
-  if (
-    !data?.success
-  ) {
+
+  if (!data?.success) {
     throw new Error(
       'Le paiement du dividende n’a pas pu être effectué.'
     )
   }
 
+
+  /*
+   * ===================================================
+   * RAFRAÎCHISSEMENT
+   * ===================================================
+   */
+
   revalidatePath('/admin/orders')
   revalidatePath('/dashboard')
   revalidatePath('/dashboard/portfolio')
   revalidatePath('/dashboard/orders')
+  revalidatePath('/dashboard/investments')
 
   return
 }
+
 
 /*
  * =====================================================
@@ -726,8 +802,13 @@ async function rejectDividendPayment(
     error: paymentError,
   } = await supabase
     .from('dividend_payments')
-    .select('id, status')
-    .eq('id', paymentId)
+    .select(
+      'id, status'
+    )
+    .eq(
+      'id',
+      paymentId
+    )
     .single()
 
   if (
@@ -757,7 +838,10 @@ async function rejectDividendPayment(
       updated_at:
         new Date().toISOString(),
     })
-    .eq('id', paymentId)
+    .eq(
+      'id',
+      paymentId
+    )
     .eq(
       'status',
       'pending'
@@ -772,6 +856,7 @@ async function rejectDividendPayment(
   revalidatePath('/admin/orders')
 }
 
+
 /*
  * =====================================================
  * PAGE ADMIN
@@ -779,6 +864,7 @@ async function rejectDividendPayment(
  */
 
 export default async function AdminOrdersPage() {
+
   const supabase = createClient()
 
   const {
@@ -799,6 +885,7 @@ export default async function AdminOrdersPage() {
     redirect('/dashboard')
   }
 
+
   /*
    * =====================================================
    * ACHATS + VENTES
@@ -810,22 +897,20 @@ export default async function AdminOrdersPage() {
     error,
   } = await supabase
     .from('transactions')
-    .select(
-      `
-        id,
-        created_at,
-        user_id,
-        type,
-        amount,
-        status,
-        description,
-        offer_id,
-        quantity,
-        unit_price,
-        approved_by,
-        approved_at
-      `
-    )
+    .select(`
+      id,
+      created_at,
+      user_id,
+      type,
+      amount,
+      status,
+      description,
+      offer_id,
+      quantity,
+      unit_price,
+      approved_by,
+      approved_at
+    `)
     .in('type', [
       'achat_investissement',
       'vente_investissement',
@@ -843,6 +928,7 @@ export default async function AdminOrdersPage() {
     )
   }
 
+
   /*
    * =====================================================
    * DIVIDENDES
@@ -854,25 +940,24 @@ export default async function AdminOrdersPage() {
     error: dividendError,
   } = await supabase
     .from('dividend_payments')
-    .select(
-      `
-        id,
-        dividend_id,
-        user_id,
-        shares_eligible,
-        amount,
-        status,
-        paid_at,
-        created_at,
-        dividends (
-          symbol,
-          company_name,
-          dividend_per_share,
-          ex_date,
-          payment_date
-        )
-      `
-    )
+    .select(`
+      id,
+      dividend_id,
+      user_id,
+      shares_eligible,
+      amount,
+      status,
+      paid_at,
+      created_at,
+
+      dividends (
+        symbol,
+        company_name,
+        dividend_per_share,
+        ex_date,
+        payment_date
+      )
+    `)
     .order(
       'created_at',
       {
@@ -886,9 +971,10 @@ export default async function AdminOrdersPage() {
     )
   }
 
+
   /*
    * =====================================================
-   * UTILISATEURS ORDRES
+   * IDS UTILISATEURS
    * =====================================================
    */
 
@@ -904,12 +990,6 @@ export default async function AdminOrdersPage() {
       )
     )
 
-  /*
-   * =====================================================
-   * UTILISATEURS DIVIDENDES
-   * =====================================================
-   */
-
   const dividendUserIds =
     Array.from(
       new Set(
@@ -922,12 +1002,6 @@ export default async function AdminOrdersPage() {
       )
     )
 
-  /*
-   * =====================================================
-   * TOUS LES UTILISATEURS
-   * =====================================================
-   */
-
   const userIds =
     Array.from(
       new Set([
@@ -936,16 +1010,24 @@ export default async function AdminOrdersPage() {
       ])
     )
 
+
+  /*
+   * =====================================================
+   * PROFILS
+   * =====================================================
+   */
+
   let profiles:
     UserProfile[] = []
 
   if (userIds.length > 0) {
+
     const {
       data: userProfiles,
     } = await supabase
       .from('users')
       .select(
-        'id, email, first_name, last_name'
+        'id, email, first_name, last_name, role'
       )
       .in(
         'id',
@@ -955,6 +1037,7 @@ export default async function AdminOrdersPage() {
     profiles =
       userProfiles ?? []
   }
+
 
   /*
    * =====================================================
@@ -967,6 +1050,7 @@ export default async function AdminOrdersPage() {
       (
         transaction: Transaction
       ) => {
+
         const profile =
           profiles.find(
             item =>
@@ -999,6 +1083,7 @@ export default async function AdminOrdersPage() {
           'Client'
 
         return {
+
           id:
             transaction.id,
 
@@ -1037,9 +1122,10 @@ export default async function AdminOrdersPage() {
       }
     )
 
+
   /*
    * =====================================================
-   * DIVIDENDES PENDING
+   * DIVIDENDES EN ATTENTE
    * =====================================================
    */
 
@@ -1050,9 +1136,10 @@ export default async function AdminOrdersPage() {
         'pending'
     ) as DividendPayment[]
 
+
   /*
    * =====================================================
-   * STATISTIQUES ORDRES
+   * STATISTIQUES
    * =====================================================
    */
 
@@ -1080,30 +1167,37 @@ export default async function AdminOrdersPage() {
   const pendingPurchases =
     pendingOrders.filter(
       order =>
-        order.type === 'achat'
+        order.type ===
+        'achat'
     )
 
   const pendingSales =
     pendingOrders.filter(
       order =>
-        order.type === 'vente'
+        order.type ===
+        'vente'
     )
+
 
   /*
    * =====================================================
-   * TOTAL DIVIDENDES EN ATTENTE
+   * TOTAL DIVIDENDES
    * =====================================================
    */
 
   const pendingDividendAmount =
     pendingDividends.reduce(
-      (sum, payment) =>
+      (
+        sum,
+        payment
+      ) =>
         sum +
         Number(
           payment.amount ?? 0
         ),
       0
     )
+
 
   /*
    * =====================================================
@@ -1112,6 +1206,7 @@ export default async function AdminOrdersPage() {
    */
 
   return (
+
     <div className="space-y-6 p-6">
 
       {/* =================================================
@@ -1135,6 +1230,7 @@ export default async function AdminOrdersPage() {
 
       </div>
 
+
       {/* =================================================
           STATISTIQUES
       ================================================= */}
@@ -1151,6 +1247,7 @@ export default async function AdminOrdersPage() {
           </p>
         </div>
 
+
         <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5">
           <p className="text-xs font-semibold uppercase tracking-wider text-blue-600">
             Achats
@@ -1160,6 +1257,7 @@ export default async function AdminOrdersPage() {
             {pendingPurchases.length}
           </p>
         </div>
+
 
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
           <p className="text-xs font-semibold uppercase tracking-wider text-amber-600">
@@ -1171,6 +1269,7 @@ export default async function AdminOrdersPage() {
           </p>
         </div>
 
+
         <div className="rounded-2xl border border-green-200 bg-green-50 p-5">
           <p className="text-xs font-semibold uppercase tracking-wider text-green-600">
             Complétés
@@ -1180,6 +1279,7 @@ export default async function AdminOrdersPage() {
             {completedOrders.length}
           </p>
         </div>
+
 
         <div className="rounded-2xl border border-red-200 bg-red-50 p-5">
           <p className="text-xs font-semibold uppercase tracking-wider text-red-600">
@@ -1191,7 +1291,9 @@ export default async function AdminOrdersPage() {
           </p>
         </div>
 
+
         <div className="rounded-2xl border border-[#D4A72C]/30 bg-[#FFFBF0] p-5">
+
           <p className="text-xs font-semibold uppercase tracking-wider text-[#A77C12]">
             Dividendes
           </p>
@@ -1206,12 +1308,14 @@ export default async function AdminOrdersPage() {
             )}{' '}
             FCFA
           </p>
+
         </div>
 
       </div>
 
+
       {/* =================================================
-          ORDRES ACHATS / VENTES
+          ORDRES
       ================================================= */}
 
       <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
@@ -1228,6 +1332,7 @@ export default async function AdminOrdersPage() {
           </p>
 
         </div>
+
 
         {pendingOrders.length === 0 ? (
 
@@ -1260,8 +1365,6 @@ export default async function AdminOrdersPage() {
                 >
 
                   <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-
-                    {/* CLIENT */}
 
                     <div className="min-w-0">
 
@@ -1297,11 +1400,11 @@ export default async function AdminOrdersPage() {
 
                     </div>
 
-                    {/* INFORMATIONS */}
 
                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
 
                       <div>
+
                         <p className="text-[10px] uppercase tracking-wider text-slate-400">
                           Quantité
                         </p>
@@ -1311,9 +1414,12 @@ export default async function AdminOrdersPage() {
                             order.quantity
                           )}
                         </p>
+
                       </div>
 
+
                       <div>
+
                         <p className="text-[10px] uppercase tracking-wider text-slate-400">
                           Cours
                         </p>
@@ -1324,9 +1430,12 @@ export default async function AdminOrdersPage() {
                           )}{' '}
                           FCFA
                         </p>
+
                       </div>
 
+
                       <div>
+
                         <p className="text-[10px] uppercase tracking-wider text-slate-400">
                           Montant
                         </p>
@@ -1344,9 +1453,12 @@ export default async function AdminOrdersPage() {
                           )}{' '}
                           FCFA
                         </p>
+
                       </div>
 
+
                       <div>
+
                         <p className="text-[10px] uppercase tracking-wider text-slate-400">
                           Date
                         </p>
@@ -1358,11 +1470,11 @@ export default async function AdminOrdersPage() {
                             'fr-FR'
                           )}
                         </p>
+
                       </div>
 
                     </div>
 
-                    {/* ACTIONS */}
 
                     <div className="flex flex-col gap-2 sm:flex-row">
 
@@ -1400,6 +1512,7 @@ export default async function AdminOrdersPage() {
 
                       </form>
 
+
                       <form
                         action={
                           updateOrderStatus
@@ -1433,6 +1546,7 @@ export default async function AdminOrdersPage() {
 
                   </div>
 
+
                   <div className="mt-4 flex flex-col gap-1 rounded-xl border border-orange-100 bg-orange-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
 
                     <span className="text-xs font-semibold text-orange-700">
@@ -1449,13 +1563,16 @@ export default async function AdminOrdersPage() {
                   </div>
 
                 </div>
+
               )
             )}
 
           </div>
+
         )}
 
       </div>
+
 
       {/* =================================================
           DIVIDENDES
@@ -1492,6 +1609,7 @@ export default async function AdminOrdersPage() {
 
             </div>
 
+
             <div className="rounded-full border border-[#D4A72C]/25 bg-white px-3 py-1.5">
 
               <span className="text-xs font-bold text-[#A77C12]">
@@ -1504,6 +1622,7 @@ export default async function AdminOrdersPage() {
           </div>
 
         </div>
+
 
         {pendingDividends.length === 0 ? (
 
@@ -1570,6 +1689,7 @@ export default async function AdminOrdersPage() {
                   )
 
                 return (
+
                   <div
                     key={
                       payment.id
@@ -1578,8 +1698,6 @@ export default async function AdminOrdersPage() {
                   >
 
                     <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-
-                      {/* CLIENT */}
 
                       <div className="min-w-0">
 
@@ -1594,6 +1712,7 @@ export default async function AdminOrdersPage() {
                           </span>
 
                         </div>
+
 
                         <p className="mt-2 font-bold text-slate-900">
                           {clientName}
@@ -1616,7 +1735,6 @@ export default async function AdminOrdersPage() {
 
                       </div>
 
-                      {/* INFORMATIONS */}
 
                       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
 
@@ -1634,6 +1752,7 @@ export default async function AdminOrdersPage() {
 
                         </div>
 
+
                         <div>
 
                           <p className="text-[10px] uppercase tracking-wider text-slate-400">
@@ -1649,6 +1768,7 @@ export default async function AdminOrdersPage() {
 
                         </div>
 
+
                         <div>
 
                           <p className="text-[10px] uppercase tracking-wider text-slate-400">
@@ -1663,6 +1783,7 @@ export default async function AdminOrdersPage() {
                           </p>
 
                         </div>
+
 
                         <div>
 
@@ -1684,7 +1805,6 @@ export default async function AdminOrdersPage() {
 
                       </div>
 
-                      {/* ACTIONS */}
 
                       <div className="flex flex-col gap-2 sm:flex-row">
 
@@ -1710,6 +1830,7 @@ export default async function AdminOrdersPage() {
                           </button>
 
                         </form>
+
 
                         <form
                           action={
@@ -1738,6 +1859,7 @@ export default async function AdminOrdersPage() {
 
                     </div>
 
+
                     <div className="mt-4 flex flex-col gap-1 rounded-xl border border-[#D4A72C]/15 bg-[#FFFBF0] px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
 
                       <span className="text-xs font-semibold text-[#8B6508]">
@@ -1754,6 +1876,7 @@ export default async function AdminOrdersPage() {
                     </div>
 
                   </div>
+
                 )
               }
             )}
