@@ -10,6 +10,7 @@ import {
   LogOut,
   Mail,
   Menu,
+  Phone,
   ShieldCheck,
   User,
   Wallet,
@@ -45,6 +46,7 @@ const titles: Record<string, string> = {
 type Profile = {
   first_name: string | null
   last_name: string | null
+  phone: string | null
   balance: number | string | null
   kyc_status: string | null
 }
@@ -52,6 +54,7 @@ type Profile = {
 type ProfileMenuProps = {
   fullName: string
   email: string
+  phone: string
   initials: string
   balance: number
   kycLabel: string
@@ -144,7 +147,7 @@ export default function Navbar({
         } = await supabase
           .from('users')
           .select(
-            'first_name, last_name, balance, kyc_status'
+            'first_name, last_name, phone, balance, kyc_status'
           )
           .eq('id', user.id)
           .single()
@@ -193,8 +196,6 @@ export default function Navbar({
         '(min-width: 1024px)'
       ).matches
 
-    // Sur mobile, la fermeture est gérée
-    // par la couche du menu mobile.
     if (!isDesktop) {
       return
     }
@@ -286,11 +287,6 @@ export default function Navbar({
         return
       }
 
-      /*
-       * Navigation complète du navigateur.
-       * Cela force le rechargement de l'application
-       * avec la session supprimée.
-       */
       window.location.replace('/login')
     } catch (error) {
       console.error(
@@ -323,6 +319,10 @@ export default function Navbar({
       .toUpperCase() ||
     fullName.charAt(0).toUpperCase()
 
+  const phone =
+    profile?.phone?.trim() ||
+    'Numéro non renseigné'
+
   const balance =
     Number(profile?.balance ?? 0)
 
@@ -352,6 +352,7 @@ export default function Navbar({
           <ProfileMenu
             fullName={fullName}
             email={userEmail}
+            phone={phone}
             initials={initials}
             balance={balance}
             kycLabel={kycLabel}
@@ -553,6 +554,7 @@ export default function Navbar({
                     <ProfileMenu
                       fullName={fullName}
                       email={userEmail}
+                      phone={phone}
                       initials={initials}
                       balance={balance}
                       kycLabel={kycLabel}
@@ -636,6 +638,7 @@ export default function Navbar({
 function ProfileMenu({
   fullName,
   email,
+  phone,
   initials,
   balance,
   kycLabel,
@@ -646,10 +649,6 @@ function ProfileMenu({
   onClose,
   mobile = false,
 }: ProfileMenuProps) {
-
-  // =====================================================
-  // REF PROPRE AU MENU
-  // =====================================================
 
   const menuRef =
     useRef<HTMLDivElement>(null)
@@ -673,7 +672,9 @@ function ProfileMenu({
       "
     >
 
-      {/* HEADER PROFIL */}
+      {/* =====================================================
+          HEADER PROFIL
+      ===================================================== */}
 
       <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-blue-900 p-5 text-white">
 
@@ -709,9 +710,55 @@ function ProfileMenu({
 
       </div>
 
-      {/* INFORMATIONS */}
+      {/* =====================================================
+          INFORMATIONS
+      ===================================================== */}
 
       <div className="space-y-2 p-4">
+
+        {/* NOM COMPLET */}
+
+        <div className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-3">
+
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
+            <User size={16} />
+          </div>
+
+          <div className="min-w-0">
+
+            <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
+              Nom complet
+            </p>
+
+            <p className="mt-0.5 truncate text-xs font-bold text-slate-700">
+              {fullName}
+            </p>
+
+          </div>
+
+        </div>
+
+        {/* TÉLÉPHONE */}
+
+        <div className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-3">
+
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+            <Phone size={16} />
+          </div>
+
+          <div className="min-w-0">
+
+            <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
+              Numéro de téléphone
+            </p>
+
+            <p className="mt-0.5 truncate text-xs font-semibold text-slate-700">
+              {phone}
+            </p>
+
+          </div>
+
+        </div>
 
         {/* EMAIL */}
 
@@ -799,7 +846,9 @@ function ProfileMenu({
 
       </div>
 
-      {/* INFORMATION */}
+      {/* =====================================================
+          INFORMATION
+      ===================================================== */}
 
       <div className="mx-4 mb-3 rounded-2xl border border-blue-100 bg-blue-50/70 px-3 py-2.5">
 
@@ -820,7 +869,9 @@ function ProfileMenu({
 
       </div>
 
-      {/* DÉCONNEXION */}
+      {/* =====================================================
+          DÉCONNEXION
+      ===================================================== */}
 
       <div className="border-t border-slate-100 p-3">
 
