@@ -66,18 +66,28 @@ type DividendDatabaseRow = {
 // =======================================================
 // FORMAT FCFA
 // =======================================================
+// IMPORTANT :
+// On remplace les espaces insécables/narrow spaces générés
+// par Intl.NumberFormat par de vrais espaces classiques.
+// Exemple : 6205216 -> 6 205 216 FCFA
+// =======================================================
 
 function formatFcfa(
   value: number | string | null | undefined
 ) {
   const amount = Number(value) || 0
 
-  return (
+  const formatted =
     new Intl.NumberFormat('fr-FR', {
+      useGrouping: true,
       maximumFractionDigits: 0,
       minimumFractionDigits: 0,
-    }).format(amount) + ' FCFA'
-  )
+    })
+      .format(amount)
+      .replace(/\u202F/g, ' ')
+      .replace(/\u00A0/g, ' ')
+
+  return `${formatted} FCFA`
 }
 
 // =======================================================
@@ -90,8 +100,12 @@ function formatNumber(
   const number = Number(value) || 0
 
   return new Intl.NumberFormat('fr-FR', {
+    useGrouping: true,
     maximumFractionDigits: 2,
-  }).format(number)
+  })
+    .format(number)
+    .replace(/\u202F/g, ' ')
+    .replace(/\u00A0/g, ' ')
 }
 
 // =======================================================
@@ -406,7 +420,19 @@ async function getDashboardData() {
     )
 
   // =====================================================
-  // PERFORMANCE
+  // PERFORMANCE EN MONTANT
+  //
+  // Valeur actuelle du portefeuille
+  // moins
+  // montant total investi
+  // =====================================================
+
+  const portfolioChangeAmount =
+    totalPortfolioValue -
+    totalInvested
+
+  // =====================================================
+  // PERFORMANCE EN POURCENTAGE
   // =====================================================
 
   const portfolioChangePct =
@@ -419,6 +445,13 @@ async function getDashboardData() {
           totalInvested
         ) * 100
       : 0
+
+  // =====================================================
+  // SENS DE LA PERFORMANCE
+  // =====================================================
+
+  const positive =
+    portfolioChangeAmount >= 0
 
   // =====================================================
   // ACTIONS DU PORTEFEUILLE PAR SYMBOLE
@@ -605,8 +638,6 @@ async function getDashboardData() {
               symbol
             ) || 0
 
-          // L'utilisateur doit
-          // détenir des actions.
           return shares > 0
         }
       )
@@ -631,7 +662,7 @@ async function getDashboardData() {
             ) || 0
 
           // =================================================
-          // CALCUL
+          // CALCUL DIVIDENDE
           //
           // ACTIONS × DIVIDENDE PAR ACTION
           // =================================================
@@ -687,11 +718,6 @@ async function getDashboardData() {
 
   // =====================================================
   // FUSION
-  //
-  // Les vrais paiements restent prioritaires.
-  // Les dividendes non encore enregistrés dans
-  // dividend_payments sont générés à partir des
-  // positions du portefeuille.
   // =====================================================
 
   const dividendRows = [
@@ -806,6 +832,8 @@ async function getDashboardData() {
 
     totalPortfolioValue,
 
+    portfolioChangeAmount,
+
     portfolioChangePct,
 
     rows,
@@ -835,7 +863,10 @@ export default async function DashboardPage() {
     accountLabel,
     cashBalance,
     totalPortfolioValue,
+
+    portfolioChangeAmount,
     portfolioChangePct,
+
     rows,
     totalInvested,
 
@@ -849,7 +880,7 @@ export default async function DashboardPage() {
     await getDashboardData()
 
   const positive =
-    portfolioChangePct >= 0
+    portfolioChangeAmount >= 0
 
   return (
     <div className="min-h-[100dvh] bg-[#F5F7FA]">
@@ -955,7 +986,10 @@ export default async function DashboardPage() {
 
             </div>
 
-            {/* PERFORMANCE */}
+            {/* =================================================
+                PERFORMANCE
+                MONTANT + POURCENTAGE
+                ================================================= */}
 
             <div
               className={`
@@ -987,12 +1021,40 @@ export default async function DashboardPage() {
                 Performance
               </p>
 
+              {/* MONTANT DE VALORISATION */}
+
               <p
                 className={`
                   mt-2
                   text-lg
                   font-black
                   tracking-tight
+                  leading-tight
+                  sm:text-xl
+                  ${
+                    positive
+                      ? 'text-emerald-600'
+                      : 'text-red-600'
+                  }
+                `}
+              >
+                {positive
+                  ? '+'
+                  : '−'}
+                {formatFcfa(
+                  Math.abs(
+                    portfolioChangeAmount
+                  )
+                )}
+              </p>
+
+              {/* POURCENTAGE */}
+
+              <p
+                className={`
+                  mt-1
+                  text-xs
+                  font-bold
                   ${
                     positive
                       ? 'text-emerald-600'
