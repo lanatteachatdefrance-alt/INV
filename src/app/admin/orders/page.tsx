@@ -24,6 +24,12 @@ type Transaction = {
   unit_price: number | string | null
   approved_by: string | null
   approved_at: string | null
+
+  withdrawal_method: string | null
+  withdrawal_provider: string | null
+  withdrawal_account: string | null
+  withdrawal_name: string | null
+  rejection_reason: string | null
 }
 
 type UserProfile = {
@@ -46,6 +52,21 @@ type Order = {
   amount: number
   status: string
   createdAt: string
+}
+
+type Withdrawal = {
+  id: string
+  user_id: string
+  clientName: string
+  email: string
+  amount: number
+  status: string
+  createdAt: string
+  method: string
+  provider: string
+  account: string
+  name: string
+  description: string
 }
 
 type DividendPayment = {
@@ -98,11 +119,21 @@ function formatStatus(
   const normalized =
     status?.toLowerCase().trim() ?? ''
 
-  if (normalized === 'approved') {
+  if (
+    normalized === 'approved' ||
+    normalized === 'complete' ||
+    normalized === 'completed' ||
+    normalized === 'complété'
+  ) {
     return 'Complété'
   }
 
-  if (normalized === 'rejected') {
+  if (
+    normalized === 'rejected' ||
+    normalized === 'cancelled' ||
+    normalized === 'annule' ||
+    normalized === 'annulé'
+  ) {
     return 'Annulé'
   }
 
@@ -112,22 +143,6 @@ function formatStatus(
     normalized === 'en attente'
   ) {
     return 'En attente'
-  }
-
-  if (
-    normalized === 'completed' ||
-    normalized === 'complete' ||
-    normalized === 'complété'
-  ) {
-    return 'Complété'
-  }
-
-  if (
-    normalized === 'cancelled' ||
-    normalized === 'annule' ||
-    normalized === 'annulé'
-  ) {
-    return 'Annulé'
   }
 
   return status || 'En attente'
@@ -617,12 +632,6 @@ async function processDividendPayment(
     )
   }
 
-  /*
-   * ===================================================
-   * CLIENT SUPABASE AUTHENTIFIÉ
-   * ===================================================
-   */
-
   const supabase = createClient()
 
   const {
@@ -634,12 +643,6 @@ async function processDividendPayment(
     redirect('/login')
   }
 
-  /*
-   * ===================================================
-   * VÉRIFICATION ADMINISTRATEUR
-   * ===================================================
-   */
-
   const isAdmin =
     await ensureAdminAccess(
       supabase,
@@ -649,24 +652,6 @@ async function processDividendPayment(
   if (!isAdmin) {
     redirect('/dashboard')
   }
-
-  /*
-   * ===================================================
-   * APPEL RPC
-   * ===================================================
-   *
-   * IMPORTANT :
-   *
-   * La fonction PostgreSQL possède cette signature :
-   *
-   * process_dividend_payment(
-   *   p_dividend_payment_id uuid
-   * )
-   *
-   * Elle ne possède PAS de p_admin_id.
-   *
-   * C'est donc volontairement le seul paramètre envoyé.
-   */
 
   const {
     data,
@@ -679,35 +664,17 @@ async function processDividendPayment(
     }
   )
 
-  /*
-   * ===================================================
-   * ERREUR RPC
-   * ===================================================
-   */
-
   if (error) {
     throw new Error(
       `Impossible de créditer le dividende : ${error.message}`
     )
   }
 
-  /*
-   * ===================================================
-   * VÉRIFICATION RÉSULTAT
-   * ===================================================
-   */
-
   if (!data?.success) {
     throw new Error(
       'Le paiement du dividende n’a pas pu être effectué.'
     )
   }
-
-  /*
-   * ===================================================
-   * RAFRAÎCHISSEMENT
-   * ===================================================
-   */
 
   revalidatePath('/admin/orders')
   revalidatePath('/dashboard')
@@ -820,6 +787,200 @@ async function rejectDividendPayment(
 
 /*
  * =====================================================
+ * VALIDATION RETRAIT
+ * =====================================================
+ */
+
+async function processWithdrawal(
+  formData: FormData
+) {
+  'use server'
+
+  const transactionId = String(
+    formData.get('transactionId') ?? ''
+  ).trim()
+
+  if (!transactionId) {
+    throw new Error(
+      'Identifiant du retrait manquant.'
+    )
+  }
+
+  const supabase = createClient()
+
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser()
+
+  if (userError || !user) {
+    redirect('/login')
+  }
+
+  const isAdmin =
+    await ensureAdminAccess(
+      supabase,
+      user
+    )
+
+  if (!isAdmin) {
+    redirect('/dashboard')
+  }
+
+  /*
+   * Le RPC verrouille le retrait et le compte client
+   * afin d'éviter un double débit.
+   */
+
+  const {
+    data,
+    error,
+  } = await supabase.rpc(
+    'process_withdrawal',
+    {
+      p_transaction_id:
+        transactionId,
+    }
+  )
+
+  if (error) {
+    throw new Error(
+      `Impossible de valider le retrait : ${error.message}`
+    )
+  }
+
+  if (!data?.success) {
+    throw new Error(
+      'Le retrait n’a pas pu être validé.'
+    )
+  }
+
+  revalidatePath('/admin/orders')
+  revalidatePath('/dashboard')
+  revalidatePath('/dashboard/orders')
+  revalidatePath('/dashboard/portfolio')
+
+  return
+}
+
+/*
+ * =====================================================
+ * REFUS RETRAIT
+ * =====================================================
+ */
+
+async function rejectWithdrawal(
+  formData: FormData
+) {
+  'use server'
+
+  const transactionId = String(
+    formData.get('transactionId') ?? ''
+  ).trim()
+
+  if (!transactionId) {
+    throw new Error(
+      'Identifiant du retrait manquant.'
+    )
+  }
+
+  const supabase = createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect('/login')
+  }
+
+  const isAdmin =
+    await ensureAdminAccess(
+      supabase,
+      user
+    )
+
+  if (!isAdmin) {
+    redirect('/dashboard')
+  }
+
+  const {
+    data: withdrawal,
+    error: withdrawalError,
+  } = await supabase
+    .from('transactions')
+    .select(`
+      id,
+      type,
+      status
+    `)
+    .eq(
+      'id',
+      transactionId
+    )
+    .eq(
+      'type',
+      'withdraw'
+    )
+    .single()
+
+  if (
+    withdrawalError ||
+    !withdrawal
+  ) {
+    throw new Error(
+      'Retrait introuvable.'
+    )
+  }
+
+  if (
+    withdrawal.status !==
+    'pending'
+  ) {
+    throw new Error(
+      'Ce retrait a déjà été traité.'
+    )
+  }
+
+  const {
+    error,
+  } = await supabase
+    .from('transactions')
+    .update({
+      status: 'rejected',
+      approved_by:
+        user.id,
+      approved_at:
+        new Date().toISOString(),
+      updated_at:
+        new Date().toISOString(),
+    })
+    .eq(
+      'id',
+      transactionId
+    )
+    .eq(
+      'type',
+      'withdraw'
+    )
+    .eq(
+      'status',
+      'pending'
+    )
+
+  if (error) {
+    throw new Error(
+      `Impossible de refuser le retrait : ${error.message}`
+    )
+  }
+
+  revalidatePath('/admin/orders')
+  revalidatePath('/dashboard')
+  revalidatePath('/dashboard/orders')
+}
+
+/*
+ * =====================================================
  * PAGE ADMIN
  * =====================================================
  */
@@ -848,7 +1009,7 @@ export default async function AdminOrdersPage() {
 
   /*
    * =====================================================
-   * ACHATS + VENTES
+   * ACHATS + VENTES + RETRAITS
    * =====================================================
    */
 
@@ -869,11 +1030,17 @@ export default async function AdminOrdersPage() {
       quantity,
       unit_price,
       approved_by,
-      approved_at
+      approved_at,
+      withdrawal_method,
+      withdrawal_provider,
+      withdrawal_account,
+      withdrawal_name,
+      rejection_reason
     `)
     .in('type', [
       'achat_investissement',
       'vente_investissement',
+      'withdraw',
     ])
     .order(
       'created_at',
@@ -936,36 +1103,21 @@ export default async function AdminOrdersPage() {
    * =====================================================
    */
 
-  const orderUserIds =
-    Array.from(
-      new Set(
-        (transactions ?? [])
-          .map(
-            transaction =>
-              transaction.user_id
-          )
-          .filter(Boolean)
-      )
-    )
-
-  const dividendUserIds =
-    Array.from(
-      new Set(
-        (dividendPayments ?? [])
-          .map(
-            payment =>
-              payment.user_id
-          )
-          .filter(Boolean)
-      )
-    )
-
   const userIds =
     Array.from(
-      new Set([
-        ...orderUserIds,
-        ...dividendUserIds,
-      ])
+      new Set(
+        [
+          ...(transactions ?? []).map(
+            transaction =>
+              transaction.user_id
+          ),
+
+          ...(dividendPayments ?? []).map(
+            payment =>
+              payment.user_id
+          ),
+        ].filter(Boolean)
+      )
     )
 
   /*
@@ -1002,81 +1154,173 @@ export default async function AdminOrdersPage() {
    */
 
   const orders: Order[] =
-    (transactions ?? []).map(
-      (
-        transaction: Transaction
-      ) => {
+    (transactions ?? [])
+      .filter(
+        transaction =>
+          transaction.type ===
+            'achat_investissement' ||
+          transaction.type ===
+            'vente_investissement'
+      )
+      .map(
+        (
+          transaction: Transaction
+        ) => {
 
-        const profile =
-          profiles.find(
-            item =>
-              item.id ===
-              transaction.user_id
-          )
+          const profile =
+            profiles.find(
+              item =>
+                item.id ===
+                transaction.user_id
+            )
 
-        const quantity =
-          Number(
-            transaction.quantity ?? 0
-          )
+          const quantity =
+            Number(
+              transaction.quantity ?? 0
+            )
 
-        const unitPrice =
-          Number(
-            transaction.unit_price ?? 0
-          )
+          const unitPrice =
+            Number(
+              transaction.unit_price ?? 0
+            )
 
-        const amount =
-          Number(
-            transaction.amount ?? 0
-          )
+          const amount =
+            Number(
+              transaction.amount ?? 0
+            )
 
-        const clientName =
-          [
-            profile?.first_name,
-            profile?.last_name,
-          ]
-            .filter(Boolean)
-            .join(' ') ||
-          'Client'
+          const clientName =
+            [
+              profile?.first_name,
+              profile?.last_name,
+            ]
+              .filter(Boolean)
+              .join(' ') ||
+            'Client'
 
-        return {
+          return {
 
-          id:
-            transaction.id,
+            id:
+              transaction.id,
 
-          user_id:
-            transaction.user_id,
+            user_id:
+              transaction.user_id,
 
-          clientName,
+            clientName,
 
-          email:
-            profile?.email ||
-            'Email non renseigné',
+            email:
+              profile?.email ||
+              'Email non renseigné',
 
-          description:
-            transaction.description ||
-            'Ordre d’investissement',
+            description:
+              transaction.description ||
+              'Ordre d’investissement',
 
-          type:
-            formatOrderType(
-              transaction.type
-            ),
+            type:
+              formatOrderType(
+                transaction.type
+              ),
 
-          quantity,
+            quantity,
 
-          unitPrice,
+            unitPrice,
 
-          amount,
+            amount,
 
-          status:
-            formatStatus(
-              transaction.status
-            ),
+            status:
+              formatStatus(
+                transaction.status
+              ),
 
-          createdAt:
-            transaction.created_at,
+            createdAt:
+              transaction.created_at,
+          }
         }
-      }
-    )
+      )
+
+  /*
+   * =====================================================
+   * TRANSFORMATION RETRAITS
+   * =====================================================
+   */
+
+  const withdrawals: Withdrawal[] =
+    (transactions ?? [])
+      .filter(
+        transaction =>
+          transaction.type ===
+          'withdraw'
+      )
+      .map(
+        (
+          transaction: Transaction
+        ) => {
+
+          const profile =
+            profiles.find(
+              item =>
+                item.id ===
+                transaction.user_id
+            )
+
+          const clientName =
+            [
+              profile?.first_name,
+              profile?.last_name,
+            ]
+              .filter(Boolean)
+              .join(' ') ||
+            'Client'
+
+          return {
+
+            id:
+              transaction.id,
+
+            user_id:
+              transaction.user_id,
+
+            clientName,
+
+            email:
+              profile?.email ||
+              'Email non renseigné',
+
+            amount:
+              Number(
+                transaction.amount ?? 0
+              ),
+
+            status:
+              formatStatus(
+                transaction.status
+              ),
+
+            createdAt:
+              transaction.created_at,
+
+            method:
+              transaction.withdrawal_method ||
+              '—',
+
+            provider:
+              transaction.withdrawal_provider ||
+              '—',
+
+            account:
+              transaction.withdrawal_account ||
+              '—',
+
+            name:
+              transaction.withdrawal_name ||
+              clientName,
+
+            description:
+              transaction.description ||
+              'Demande de retrait',
+          }
+        }
+      )
 
   /*
    * =====================================================
@@ -1093,7 +1337,20 @@ export default async function AdminOrdersPage() {
 
   /*
    * =====================================================
-   * STATISTIQUES
+   * RETRAITS EN ATTENTE
+   * =====================================================
+   */
+
+  const pendingWithdrawals =
+    withdrawals.filter(
+      withdrawal =>
+        withdrawal.status ===
+        'En attente'
+    )
+
+  /*
+   * =====================================================
+   * STATISTIQUES ORDRES
    * =====================================================
    */
 
@@ -1153,6 +1410,25 @@ export default async function AdminOrdersPage() {
 
   /*
    * =====================================================
+   * TOTAL RETRAITS
+   * =====================================================
+   */
+
+  const pendingWithdrawalAmount =
+    pendingWithdrawals.reduce(
+      (
+        sum,
+        withdrawal
+      ) =>
+        sum +
+        Number(
+          withdrawal.amount ?? 0
+        ),
+      0
+    )
+
+  /*
+   * =====================================================
    * AFFICHAGE
    * =====================================================
    */
@@ -1176,8 +1452,8 @@ export default async function AdminOrdersPage() {
         </h1>
 
         <p className="mt-1 text-sm text-slate-500">
-          Gérez les achats, les ventes et les
-          distributions de dividendes.
+          Gérez les achats, les ventes, les retraits
+          et les distributions de dividendes.
         </p>
 
       </div>
@@ -1186,7 +1462,7 @@ export default async function AdminOrdersPage() {
           STATISTIQUES
       ================================================= */}
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-7">
 
         <div className="rounded-2xl border border-orange-200 bg-orange-50 p-5">
           <p className="text-xs font-semibold uppercase tracking-wider text-orange-600">
@@ -1251,6 +1527,25 @@ export default async function AdminOrdersPage() {
           <p className="mt-1 text-xs font-medium text-[#A77C12]">
             {formatMoney(
               pendingDividendAmount
+            )}{' '}
+            FCFA
+          </p>
+
+        </div>
+
+        <div className="rounded-2xl border border-purple-200 bg-purple-50 p-5">
+
+          <p className="text-xs font-semibold uppercase tracking-wider text-purple-600">
+            Retraits
+          </p>
+
+          <p className="mt-2 text-3xl font-bold text-purple-800">
+            {pendingWithdrawals.length}
+          </p>
+
+          <p className="mt-1 text-xs font-medium text-purple-600">
+            {formatMoney(
+              pendingWithdrawalAmount
             )}{' '}
             FCFA
           </p>
@@ -1495,6 +1790,260 @@ export default async function AdminOrdersPage() {
 
                     <span className="text-[10px] text-orange-600">
                       ID : {order.id}
+                    </span>
+
+                  </div>
+
+                </div>
+
+              )
+            )}
+
+          </div>
+
+        )}
+
+      </div>
+
+      {/* =================================================
+          RETRAITS
+      ================================================= */}
+
+      <div className="overflow-hidden rounded-3xl border border-purple-200 bg-white shadow-sm">
+
+        <div className="border-b border-purple-100 bg-purple-50 px-5 py-5">
+
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+
+            <div>
+
+              <div className="flex items-center gap-2">
+
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-600 font-black text-white">
+                  R
+                </span>
+
+                <div>
+
+                  <h2 className="font-bold text-slate-900">
+                    Retraits
+                  </h2>
+
+                  <p className="text-xs text-slate-500">
+                    Validation des demandes de retrait
+                    des clients.
+                  </p>
+
+                </div>
+
+              </div>
+
+            </div>
+
+            <div className="rounded-full border border-purple-200 bg-white px-3 py-1.5">
+
+              <span className="text-xs font-bold text-purple-700">
+                {pendingWithdrawals.length}{' '}
+                en attente
+              </span>
+
+            </div>
+
+          </div>
+
+        </div>
+
+        {pendingWithdrawals.length === 0 ? (
+
+          <div className="px-5 py-14 text-center">
+
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-50 text-xl text-green-600">
+              ✓
+            </div>
+
+            <h3 className="font-semibold text-slate-900">
+              Aucun retrait en attente
+            </h3>
+
+            <p className="mt-1 text-sm text-slate-500">
+              Toutes les demandes de retrait ont été traitées.
+            </p>
+
+          </div>
+
+        ) : (
+
+          <div className="divide-y divide-slate-100">
+
+            {pendingWithdrawals.map(
+              withdrawal => (
+
+                <div
+                  key={
+                    withdrawal.id
+                  }
+                  className="p-5"
+                >
+
+                  <div className="flex flex-col gap-5">
+
+                    {/* CLIENT */}
+
+                    <div>
+
+                      <div className="flex items-center gap-2">
+
+                        <span className="rounded-full bg-purple-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-purple-700">
+                          Retrait
+                        </span>
+
+                        <span className="rounded-full bg-orange-50 px-2.5 py-1 text-[10px] font-bold text-orange-700">
+                          En attente
+                        </span>
+
+                      </div>
+
+                      <p className="mt-2 font-bold text-slate-900">
+                        {withdrawal.clientName}
+                      </p>
+
+                      <p className="mt-1 text-xs text-slate-500">
+                        {withdrawal.email}
+                      </p>
+
+                    </div>
+
+                    {/* INFORMATIONS RETRAIT */}
+
+                    <div className="grid gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:grid-cols-2 lg:grid-cols-5">
+
+                      <div>
+
+                        <p className="text-[10px] uppercase tracking-wider text-slate-400">
+                          Montant
+                        </p>
+
+                        <p className="mt-1 text-lg font-black text-purple-700">
+                          {formatMoney(
+                            withdrawal.amount
+                          )}{' '}
+                          FCFA
+                        </p>
+
+                      </div>
+
+                      <div>
+
+                        <p className="text-[10px] uppercase tracking-wider text-slate-400">
+                          Méthode
+                        </p>
+
+                        <p className="mt-1 font-bold text-slate-900">
+                          {withdrawal.method}
+                        </p>
+
+                      </div>
+
+                      <div>
+
+                        <p className="text-[10px] uppercase tracking-wider text-slate-400">
+                          Opérateur
+                        </p>
+
+                        <p className="mt-1 font-bold text-slate-900">
+                          {withdrawal.provider}
+                        </p>
+
+                      </div>
+
+                      <div>
+
+                        <p className="text-[10px] uppercase tracking-wider text-slate-400">
+                          Compte
+                        </p>
+
+                        <p className="mt-1 font-bold text-slate-900">
+                          {withdrawal.account}
+                        </p>
+
+                      </div>
+
+                      <div>
+
+                        <p className="text-[10px] uppercase tracking-wider text-slate-400">
+                          Nom bénéficiaire
+                        </p>
+
+                        <p className="mt-1 font-bold text-slate-900">
+                          {withdrawal.name}
+                        </p>
+
+                      </div>
+
+                    </div>
+
+                    {/* ACTIONS */}
+
+                    <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+
+                      <form
+                        action={
+                          processWithdrawal
+                        }
+                      >
+
+                        <input
+                          type="hidden"
+                          name="transactionId"
+                          value={
+                            withdrawal.id
+                          }
+                        />
+
+                        <button
+                          type="submit"
+                          className="w-full rounded-xl bg-purple-600 px-6 py-3 text-sm font-bold text-white transition hover:bg-purple-700 active:scale-[0.98] sm:w-auto"
+                        >
+                          ✓ Valider le retrait
+                        </button>
+
+                      </form>
+
+                      <form
+                        action={
+                          rejectWithdrawal
+                        }
+                      >
+
+                        <input
+                          type="hidden"
+                          name="transactionId"
+                          value={
+                            withdrawal.id
+                          }
+                        />
+
+                        <button
+                          type="submit"
+                          className="w-full rounded-xl border border-red-200 bg-red-50 px-6 py-3 text-sm font-bold text-red-700 transition hover:bg-red-100 active:scale-[0.98] sm:w-auto"
+                        >
+                          Refuser
+                        </button>
+
+                      </form>
+
+                    </div>
+
+                  </div>
+
+                  <div className="mt-4 flex flex-col gap-1 rounded-xl border border-purple-100 bg-purple-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+
+                    <span className="text-xs font-semibold text-purple-700">
+                      Demande de retrait en attente
+                    </span>
+
+                    <span className="text-[10px] text-purple-600">
+                      ID : {withdrawal.id}
                     </span>
 
                   </div>
