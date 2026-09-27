@@ -19,12 +19,13 @@ type Order = {
   id: string
   symbol: string
   title: string
-  type: 'Achat' | 'Vente'
+  type: 'Achat' | 'Vente' | 'Dépôt' | 'Retrait'
   quantity: number
   price: number
   amount: number
   status: string
   created_at: string
+  method: string | null
 }
 
 /*
@@ -77,6 +78,83 @@ function extractQuantity(description: string | null) {
 
 /*
  * =====================================================
+ * EXTRACTION MOYEN DE PAIEMENT / RETRAIT
+ * =====================================================
+ */
+
+function extractMethod(
+  description: string | null,
+  type: string | null
+) {
+  if (!description) return null
+
+  const text = description.trim()
+
+  const methods = [
+    {
+      regex: /orange\s*money/i,
+      label: 'Orange Money',
+    },
+    {
+      regex: /mtn\s*money/i,
+      label: 'MTN Money',
+    },
+    {
+      regex: /moov\s*money/i,
+      label: 'Moov Money',
+    },
+    {
+      regex: /wave/i,
+      label: 'Wave',
+    },
+    {
+      regex: /mobile\s*money/i,
+      label: 'Mobile Money',
+    },
+    {
+      regex: /virement\s*bancaire/i,
+      label: 'Virement bancaire',
+    },
+    {
+      regex: /virement/i,
+      label: 'Virement bancaire',
+    },
+    {
+      regex: /banque/i,
+      label: 'Virement bancaire',
+    },
+    {
+      regex: /carte\s*bancaire/i,
+      label: 'Carte bancaire',
+    },
+  ]
+
+  const detectedMethod = methods.find(
+    (item) => item.regex.test(text)
+  )
+
+  if (detectedMethod) {
+    return detectedMethod.label
+  }
+
+  if (
+    type === 'deposit' ||
+    type === 'withdrawal'
+  ) {
+    const match = text.match(
+      /(?:via|par|moyen|avec|sur)\s*[:\-]?\s*([^,|]+)/i
+    )
+
+    if (match?.[1]) {
+      return match[1].trim()
+    }
+  }
+
+  return null
+}
+
+/*
+ * =====================================================
  * RECHERCHE VALEUR
  * =====================================================
  */
@@ -104,9 +182,17 @@ function findOffer(description: string | null) {
 
 function formatTransactionType(
   type: string | null
-): 'Achat' | 'Vente' {
+): 'Achat' | 'Vente' | 'Dépôt' | 'Retrait' {
   if (type === 'vente_investissement') {
     return 'Vente'
+  }
+
+  if (type === 'deposit') {
+    return 'Dépôt'
+  }
+
+  if (type === 'withdrawal') {
+    return 'Retrait'
   }
 
   return 'Achat'
@@ -144,7 +230,6 @@ function formatStatus(status: string | null) {
 
   if (
     normalized === 'rejected' ||
-    normalized === 'cancelled' ||
     normalized === 'cancelled' ||
     normalized === 'annule' ||
     normalized === 'annulé'
@@ -205,6 +290,8 @@ export default async function OrdersPage() {
     .in('type', [
       'achat_investissement',
       'vente_investissement',
+      'deposit',
+      'withdrawal',
     ])
     .order('created_at', {
       ascending: false,
@@ -227,34 +314,79 @@ export default async function OrdersPage() {
       const description =
         transaction.description ?? ''
 
+      const transactionType =
+        formatTransactionType(
+          transaction.type
+        )
+
+      const isInvestment =
+        transactionType === 'Achat' ||
+        transactionType === 'Vente'
+
       const quantity =
-        extractQuantity(description)
+        isInvestment
+          ? extractQuantity(description)
+          : 0
 
       const offer =
-        findOffer(description)
+        isInvestment
+          ? findOffer(description)
+          : null
 
       const amount =
         Number(transaction.amount ?? 0)
 
       const price =
-        quantity > 0
-          ? Math.round(amount / quantity)
+        isInvestment && quantity > 0
+          ? Math.round(
+              amount / quantity
+            )
           : offer?.price_per_share ?? 0
+
+      const method =
+        extractMethod(
+          description,
+          transaction.type
+        )
+
+      let symbol = '—'
+
+      if (offer) {
+        symbol = offer.symbol
+      } else if (
+        transactionType === 'Dépôt'
+      ) {
+        symbol = 'DEP'
+      } else if (
+        transactionType === 'Retrait'
+      ) {
+        symbol = 'RET'
+      }
+
+      let title =
+        offer?.title ??
+        (description || 'Ordre')
+
+      if (
+        transactionType === 'Dépôt'
+      ) {
+        title = 'Dépôt'
+      }
+
+      if (
+        transactionType === 'Retrait'
+      ) {
+        title = 'Retrait'
+      }
 
       return {
         id: transaction.id,
 
-        symbol:
-          offer?.symbol ?? '—',
+        symbol,
 
-        title:
-          offer?.title ??
-          (description || 'Ordre'),
+        title,
 
-        type:
-          formatTransactionType(
-            transaction.type
-          ),
+        type: transactionType,
 
         quantity,
 
@@ -269,6 +401,8 @@ export default async function OrdersPage() {
 
         created_at:
           transaction.created_at,
+
+        method,
       }
     }
   )
@@ -553,6 +687,12 @@ export default async function OrdersPage() {
                                   {order.symbol}
                                 </p>
 
+                                {order.method && (
+                                  <p className="mt-1 text-[10px] font-semibold text-slate-500">
+                                    {order.method}
+                                  </p>
+                                )}
+
                               </div>
 
                             </div>
@@ -765,6 +905,12 @@ export default async function OrdersPage() {
                                   <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
                                     {order.symbol}
                                   </p>
+
+                                  {order.method && (
+                                    <p className="mt-1 text-[10px] font-semibold text-slate-500">
+                                      {order.method}
+                                    </p>
+                                  )}
 
                                 </div>
 
