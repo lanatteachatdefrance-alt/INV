@@ -27,6 +27,23 @@ type InvestmentRow = {
     | null
 }
 
+type TransactionOfferRelation = {
+  symbol: string | null
+}
+
+type TransactionRow = {
+  id: string
+  type: string | null
+  created_at: string | null
+  quantity: number | string | null
+  offer_id: string | null
+
+  investment_offers:
+    | TransactionOfferRelation
+    | TransactionOfferRelation[]
+    | null
+}
+
 type DividendRelation = {
   id?: string
   company_name: string | null
@@ -65,11 +82,6 @@ type DividendDatabaseRow = {
 
 // =======================================================
 // FORMAT FCFA
-// =======================================================
-// IMPORTANT :
-// On remplace les espaces insécables/narrow spaces générés
-// par Intl.NumberFormat par de vrais espaces classiques.
-// Exemple : 6205216 -> 6 205 216 FCFA
 // =======================================================
 
 function formatFcfa(
@@ -174,10 +186,13 @@ async function getDashboardData() {
 
     { data: investments, error: investmentsError },
 
+    { data: transactions, error: transactionsError },
+
     { data: dividendPayments, error: dividendPaymentsError },
 
     { data: dividends, error: dividendsError },
   ] = await Promise.all([
+
     // ---------------------------------------------------
     // PROFIL
     // ---------------------------------------------------
@@ -191,7 +206,7 @@ async function getDashboardData() {
       .single(),
 
     // ---------------------------------------------------
-    // INVESTISSEMENTS
+    // INVESTISSEMENTS ACTIFS
     // ---------------------------------------------------
 
     supabase
@@ -219,6 +234,33 @@ async function getDashboardData() {
         'shares_bought',
         0
       ),
+
+    // ---------------------------------------------------
+    // HISTORIQUE DES ACHATS / VENTES
+    // ---------------------------------------------------
+
+    supabase
+      .from('transactions')
+      .select(
+        `
+          id,
+          type,
+          created_at,
+          quantity,
+          offer_id,
+          investment_offers (
+            symbol
+          )
+        `
+      )
+      .eq('user_id', user.id)
+      .in('type', [
+        'achat_investissement',
+        'vente_investissement',
+      ])
+      .order('created_at', {
+        ascending: true,
+      }),
 
     // ---------------------------------------------------
     // PAIEMENTS DE DIVIDENDES EXISTANTS
@@ -290,6 +332,12 @@ async function getDashboardData() {
     )
   }
 
+  if (transactionsError) {
+    throw new Error(
+      transactionsError.message
+    )
+  }
+
   if (dividendPaymentsError) {
     throw new Error(
       dividendPaymentsError.message
@@ -303,7 +351,7 @@ async function getDashboardData() {
   }
 
   // =====================================================
-  // POSITIONS
+  // POSITIONS ACTUELLES
   // =====================================================
 
   const rows = (
@@ -421,10 +469,6 @@ async function getDashboardData() {
 
   // =====================================================
   // PERFORMANCE EN MONTANT
-  //
-  // Valeur actuelle du portefeuille
-  // moins
-  // montant total investi
   // =====================================================
 
   const portfolioChangeAmount =
@@ -454,19 +498,14 @@ async function getDashboardData() {
     portfolioChangeAmount >= 0
 
   // =====================================================
-  // ACTIONS DU PORTEFEUILLE PAR SYMBOLE
-  //
-  // Exemple :
-  //
-  // TTLC => 150 actions
-  // CIE  => 21 actions
-  // BOAB => 10 actions
+  // ACTIONS ACTUELLES PAR SYMBOLE
   // =====================================================
 
   const sharesBySymbol =
     new Map<string, number>()
 
   for (const row of rows) {
+
     const symbol =
       normalizeSymbol(
         row.symbol
@@ -489,7 +528,145 @@ async function getDashboardData() {
   }
 
   // =====================================================
-  // PAIEMENTS EXISTANTS
+  // ACTIONS ÉLIGIBLES À UN DIVIDENDE
+  //
+  // RÈGLE :
+  //
+  // Achat avant la date ex-dividende
+  // = éligible
+  //
+  // Achat le jour de l'ex-dividende
+  // = non éligible
+  //
+  // Achat après l'ex-dividende
+  // = non éligible
+  //
+  // Vente avant l'ex-dividende
+  // = déduction
+  // =====================================================
+
+  function getEligibleShares(
+    symbol: string,
+    exDate: string | null
+  ) {
+
+    if (
+      !symbol ||
+      !exDate
+    ) {
+      return 0
+    }
+
+    let eligibleShares = 0
+
+    const exDateTimestamp =
+      new Date(
+        `${exDate}T00:00:00.000Z`
+      ).getTime()
+
+    if (
+      Number.isNaN(
+        exDateTimestamp
+      )
+    ) {
+      return 0
+    }
+
+    for (
+      const transaction
+      of (transactions || []) as TransactionRow[]
+    ) {
+
+      const offer =
+        Array.isArray(
+          transaction.investment_offers
+        )
+          ? transaction.investment_offers[0]
+          : transaction.investment_offers
+
+      const transactionSymbol =
+        normalizeSymbol(
+          offer?.symbol
+        )
+
+      if (
+        transactionSymbol !==
+        symbol
+      ) {
+        continue
+      }
+
+      if (
+        !transaction.created_at
+      ) {
+        continue
+      }
+
+      const transactionTimestamp =
+        new Date(
+          transaction.created_at
+        ).getTime()
+
+      if (
+        Number.isNaN(
+          transactionTimestamp
+        )
+      ) {
+        continue
+      }
+
+      const quantity =
+        Number(
+          transaction.quantity
+        ) || 0
+
+      if (
+        quantity <= 0
+      ) {
+        continue
+      }
+
+      // -------------------------------------------------
+      // ACHAT AVANT LA DATE EX-DIVIDENDE
+      // -------------------------------------------------
+
+      if (
+        transaction.type ===
+          'achat_investissement' &&
+        transactionTimestamp <
+          exDateTimestamp
+      ) {
+
+        eligibleShares +=
+          quantity
+
+      }
+
+      // -------------------------------------------------
+      // VENTE AVANT LA DATE EX-DIVIDENDE
+      // -------------------------------------------------
+
+      if (
+        transaction.type ===
+          'vente_investissement' &&
+        transactionTimestamp <
+          exDateTimestamp
+      ) {
+
+        eligibleShares -=
+          quantity
+
+      }
+    }
+
+    return Math.max(
+      0,
+      eligibleShares
+    )
+  }
+
+  // =====================================================
+  // PAIEMENTS DE DIVIDENDES EXISTANTS
   // =====================================================
 
   const existingPaymentRows =
@@ -508,6 +685,7 @@ async function getDashboardData() {
             : payment.dividends
 
         return {
+
           id:
             payment.id,
 
@@ -571,12 +749,15 @@ async function getDashboardData() {
     const payment
     of existingPaymentRows
   ) {
+
     if (
       payment.dividendId
     ) {
+
       existingDividendIds.add(
         payment.dividendId
       )
+
     }
   }
 
@@ -593,9 +774,9 @@ async function getDashboardData() {
           dividend: DividendDatabaseRow
         ) => {
 
-          // ---------------------------------------------
+          // ------------------------------------------------
           // DIVIDENDE ANNULÉ
-          // ---------------------------------------------
+          // ------------------------------------------------
 
           if (
             dividend.status ===
@@ -604,9 +785,9 @@ async function getDashboardData() {
             return false
           }
 
-          // ---------------------------------------------
-          // DÉJÀ ATTRIBUÉ À L'UTILISATEUR
-          // ---------------------------------------------
+          // ------------------------------------------------
+          // DÉJÀ ATTRIBUÉ
+          // ------------------------------------------------
 
           if (
             existingDividendIds.has(
@@ -616,9 +797,9 @@ async function getDashboardData() {
             return false
           }
 
-          // ---------------------------------------------
+          // ------------------------------------------------
           // SYMBOLE
-          // ---------------------------------------------
+          // ------------------------------------------------
 
           const symbol =
             normalizeSymbol(
@@ -629,16 +810,19 @@ async function getDashboardData() {
             return false
           }
 
-          // ---------------------------------------------
-          // NOMBRE D'ACTIONS
-          // ---------------------------------------------
+          // ------------------------------------------------
+          // ACTIONS ÉLIGIBLES
+          // ------------------------------------------------
 
-          const shares =
-            sharesBySymbol.get(
-              symbol
-            ) || 0
+          const eligibleShares =
+            getEligibleShares(
+              symbol,
+              dividend.ex_date
+            )
 
-          return shares > 0
+          return (
+            eligibleShares > 0
+          )
         }
       )
       .map(
@@ -651,27 +835,35 @@ async function getDashboardData() {
               dividend.symbol
             )
 
+          // ------------------------------------------------
+          // CALCUL DES ACTIONS ÉLIGIBLES
+          // ------------------------------------------------
+
           const shares =
-            sharesBySymbol.get(
-              symbol
-            ) || 0
+            getEligibleShares(
+              symbol,
+              dividend.ex_date
+            )
+
+          // ------------------------------------------------
+          // DIVIDENDE PAR ACTION
+          // ------------------------------------------------
 
           const dividendPerShare =
             Number(
               dividend.dividend_per_share
             ) || 0
 
-          // =================================================
-          // CALCUL DIVIDENDE
-          //
-          // ACTIONS × DIVIDENDE PAR ACTION
-          // =================================================
+          // ------------------------------------------------
+          // MONTANT TOTAL
+          // ------------------------------------------------
 
           const amount =
             shares *
             dividendPerShare
 
           return {
+
             id:
               `pending-${dividend.id}`,
 
@@ -818,6 +1010,7 @@ async function getDashboardData() {
   // =====================================================
 
   return {
+
     firstName:
       profile.first_name?.trim() ||
       'Client',
@@ -883,6 +1076,7 @@ export default async function DashboardPage() {
     portfolioChangeAmount >= 0
 
   return (
+
     <div className="min-h-[100dvh] bg-[#F5F7FA]">
 
       <div className="mx-auto w-full max-w-[1400px] px-4 py-5 sm:px-6 sm:py-7 lg:px-8 lg:py-8">
@@ -925,7 +1119,9 @@ export default async function DashboardPage() {
           <BalanceCard
             accountLabel={accountLabel}
             balance={cashBalance}
-            portfolioValue={totalPortfolioValue}
+            portfolioValue={
+              totalPortfolioValue
+            }
             portfolioChangePct={
               portfolioChangePct
             }
@@ -986,10 +1182,7 @@ export default async function DashboardPage() {
 
             </div>
 
-            {/* =================================================
-                PERFORMANCE
-                MONTANT + POURCENTAGE
-                ================================================= */}
+            {/* PERFORMANCE */}
 
             <div
               className={`
@@ -1021,8 +1214,6 @@ export default async function DashboardPage() {
                 Performance
               </p>
 
-              {/* MONTANT DE VALORISATION */}
-
               <p
                 className={`
                   mt-2
@@ -1038,17 +1229,18 @@ export default async function DashboardPage() {
                   }
                 `}
               >
+
                 {positive
                   ? '+'
                   : '−'}
+
                 {formatFcfa(
                   Math.abs(
                     portfolioChangeAmount
                   )
                 )}
-              </p>
 
-              {/* POURCENTAGE */}
+              </p>
 
               <p
                 className={`
@@ -1130,10 +1322,13 @@ export default async function DashboardPage() {
               </p>
 
               <p className="mt-1 text-[11px] text-emerald-700/70">
+
                 {paidDividendCount}{' '}
+
                 {paidDividendCount > 1
                   ? 'paiements'
                   : 'paiement'}
+
               </p>
 
             </div>
@@ -1153,10 +1348,13 @@ export default async function DashboardPage() {
               </p>
 
               <p className="mt-1 text-[11px] text-[#A77C12]/70">
+
                 {pendingDividendCount}{' '}
+
                 {pendingDividendCount > 1
                   ? 'paiements'
                   : 'paiement'}
+
               </p>
 
             </div>
@@ -1209,10 +1407,13 @@ export default async function DashboardPage() {
             <div className="rounded-full border border-[#D4A72C]/20 bg-[#FFFBF0] px-3 py-1.5">
 
               <span className="text-[10px] font-bold text-[#A77C12]">
+
                 {dividendRows.length}{' '}
+
                 {dividendRows.length > 1
                   ? 'opérations'
                   : 'opération'}
+
               </span>
 
             </div>
@@ -1347,9 +1548,11 @@ export default async function DashboardPage() {
                             <td className="px-5 py-4">
 
                               <p className="text-sm font-black text-[#061B31]">
+
                                 {formatFcfa(
                                   dividend.amount
                                 )}
+
                               </p>
 
                             </td>
@@ -1490,11 +1693,13 @@ export default async function DashboardPage() {
             <div className="rounded-full border border-[#D4A72C]/20 bg-[#FFFBF0] px-3 py-1.5">
 
               <span className="text-[10px] font-bold text-[#A77C12]">
+
                 {rows.length}{' '}
 
                 {rows.length > 1
                   ? 'positions'
                   : 'position'}
+
               </span>
 
             </div>
