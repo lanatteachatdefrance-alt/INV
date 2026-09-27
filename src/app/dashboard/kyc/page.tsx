@@ -4,7 +4,9 @@ import { createClient } from '@/utils/supabase/server'
 
 export const dynamic = 'force-dynamic'
 
-export default async function KycPage() {
+async function setWithdrawalPin(formData: FormData) {
+  'use server'
+
   const supabase = createClient()
 
   const {
@@ -14,6 +16,55 @@ export default async function KycPage() {
   if (!user) {
     redirect('/login')
   }
+
+  const pin = String(formData.get('pin') || '')
+  const confirmPin = String(formData.get('confirmPin') || '')
+
+  if (!/^[0-9]{6}$/.test(pin)) {
+    redirect('/kyc?pinError=Le+code+doit+contenir+exactement+6+chiffres')
+  }
+
+  if (pin !== confirmPin) {
+    redirect('/kyc?pinError=Les+deux+codes+ne+correspondent+pas')
+  }
+
+  const { error } = await supabase.rpc(
+    'set_withdrawal_pin',
+    {
+      p_pin: pin,
+    }
+  )
+
+  if (error) {
+    console.error('Set withdrawal PIN error:', error)
+
+    redirect(
+      '/kyc?pinError=Impossible+de+configurer+le+code+de+retrait'
+    )
+  }
+
+  redirect('/kyc?pinSuccess=1')
+}
+
+export default async function KycPage({
+  searchParams,
+}: {
+  searchParams: Promise<{
+    pinSuccess?: string
+    pinError?: string
+  }>
+}) {
+  const supabase = createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect('/login')
+  }
+
+  const params = await searchParams
 
   return (
     <div className="min-h-[100dvh] bg-[#F5F7FA]">
@@ -48,7 +99,6 @@ export default async function KycPage() {
 
             <div className="flex items-center gap-4">
 
-              {/* LOGO */}
               <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-[#D4A72C]/20 bg-white shadow-sm">
                 <Image
                   src="/logo.png"
@@ -105,6 +155,145 @@ export default async function KycPage() {
         </section>
 
         {/* =====================================================
+            CODE DE RETRAIT
+        ===================================================== */}
+
+        <section className="mb-5 overflow-hidden rounded-3xl border border-[#D4A72C]/20 bg-white shadow-sm">
+
+          <div className="border-b border-slate-100 bg-[#FFFBF0] px-5 py-5 sm:px-6">
+
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#A77C12]">
+              Sécurité du compte
+            </p>
+
+            <h2 className="mt-1 text-lg font-black text-[#061B31]">
+              Code de retrait
+            </h2>
+
+            <p className="mt-2 text-xs leading-5 text-slate-500">
+              Configurez un code personnel à 6 chiffres qui sera
+              demandé avant chaque demande de retrait.
+            </p>
+
+          </div>
+
+          <form
+            action={setWithdrawalPin}
+            className="space-y-5 px-5 py-6 sm:px-6"
+          >
+
+            {/* MESSAGE SUCCÈS */}
+
+            {params.pinSuccess === '1' && (
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+
+                <p className="text-sm font-bold text-emerald-800">
+                  Code de retrait configuré
+                </p>
+
+                <p className="mt-1 text-xs leading-5 text-emerald-700">
+                  Votre code de retrait a été enregistré avec succès.
+                  Il sera demandé lors de vos prochaines demandes de
+                  retrait.
+                </p>
+
+              </div>
+            )}
+
+            {/* MESSAGE ERREUR */}
+
+            {params.pinError && (
+              <div className="rounded-2xl border border-red-200 bg-red-50 p-4">
+
+                <p className="text-sm font-bold text-red-800">
+                  Impossible de configurer le code
+                </p>
+
+                <p className="mt-1 text-xs leading-5 text-red-700">
+                  {params.pinError}
+                </p>
+
+              </div>
+            )}
+
+            {/* NOUVEAU CODE */}
+
+            <div>
+
+              <label
+                htmlFor="pin"
+                className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500"
+              >
+                Nouveau code
+              </label>
+
+              <input
+                id="pin"
+                name="pin"
+                type="password"
+                inputMode="numeric"
+                autoComplete="new-password"
+                maxLength={6}
+                pattern="[0-9]{6}"
+                required
+                placeholder="••••••"
+                className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-lg font-bold tracking-[0.5em] text-[#061B31] outline-none focus:border-[#D4A72C] focus:ring-2 focus:ring-[#D4A72C]/20"
+              />
+
+            </div>
+
+            {/* CONFIRMATION */}
+
+            <div>
+
+              <label
+                htmlFor="confirmPin"
+                className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500"
+              >
+                Confirmer le code
+              </label>
+
+              <input
+                id="confirmPin"
+                name="confirmPin"
+                type="password"
+                inputMode="numeric"
+                autoComplete="new-password"
+                maxLength={6}
+                pattern="[0-9]{6}"
+                required
+                placeholder="••••••"
+                className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-lg font-bold tracking-[0.5em] text-[#061B31] outline-none focus:border-[#D4A72C] focus:ring-2 focus:ring-[#D4A72C]/20"
+              />
+
+            </div>
+
+            {/* INFORMATION */}
+
+            <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4">
+
+              <p className="text-xs leading-5 text-blue-800">
+                🔐 Votre code est personnel. Il sera utilisé pour
+                sécuriser vos demandes de retrait. Ne le communiquez
+                à personne.
+              </p>
+
+            </div>
+
+            {/* BOUTON */}
+
+            <button
+              type="submit"
+              className="w-full rounded-xl bg-[#061B31] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#0A2948]"
+            >
+              Configurer mon code de retrait
+            </button>
+
+          </form>
+
+        </section>
+
+        {/* =====================================================
             PROGRESSION
         ===================================================== */}
 
@@ -123,8 +312,6 @@ export default async function KycPage() {
           </div>
 
           <div className="space-y-5">
-
-            {/* ÉTAPE 1 */}
 
             <div className="flex items-start gap-4">
 
@@ -148,8 +335,6 @@ export default async function KycPage() {
 
             <div className="ml-4 h-5 w-px bg-slate-200" />
 
-            {/* ÉTAPE 2 */}
-
             <div className="flex items-start gap-4">
 
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#FFFBF0] text-sm font-black text-[#A77C12] ring-1 ring-[#D4A72C]/30">
@@ -171,8 +356,6 @@ export default async function KycPage() {
             </div>
 
             <div className="ml-4 h-5 w-px bg-slate-200" />
-
-            {/* ÉTAPE 3 */}
 
             <div className="flex items-start gap-4">
 
@@ -330,6 +513,7 @@ export default async function KycPage() {
           <div className="flex items-start gap-4">
 
             <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white">
+
               <Image
                 src="/logo.png"
                 alt="Investir en Bourse"
@@ -337,6 +521,7 @@ export default async function KycPage() {
                 height={32}
                 className="h-7 w-7 object-contain"
               />
+
             </div>
 
             <div>
