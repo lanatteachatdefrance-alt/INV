@@ -463,7 +463,9 @@ async function getPortfolioData() {
     )
 
   // =====================================================
-  // DIVIDENDES EXISTANTS
+  // DIVIDENDES
+  //
+  // MÊME LOGIQUE QUE LE DASHBOARD
   // =====================================================
 
   const existingPaymentRows =
@@ -530,6 +532,13 @@ async function getPortfolioData() {
 
   // =====================================================
   // DIVIDENDES GÉNÉRÉS
+  //
+  // EXACTEMENT COMME LE DASHBOARD :
+  // - exclusion des annulés
+  // - exclusion des déjà attribués
+  // - uniquement les sociétés détenues
+  // - calcul avec les actions détenues
+  // - statut paid si le dividende est paid
   // =====================================================
 
   const generatedPendingRows =
@@ -541,6 +550,7 @@ async function getPortfolioData() {
           dividend: DividendDatabaseRow
         ) => {
 
+          // Exclure les dividendes annulés
           if (
             dividend.status ===
             'cancelled'
@@ -548,10 +558,18 @@ async function getPortfolioData() {
             return false
           }
 
+          // Éviter les doublons
           if (
             existingDividendIds.has(
               dividend.id
             )
+          ) {
+            return false
+          }
+
+          // Le symbole est obligatoire
+          if (
+            !dividend.symbol
           ) {
             return false
           }
@@ -561,15 +579,13 @@ async function getPortfolioData() {
               dividend.symbol
             )
 
-          if (!symbol) {
-            return false
-          }
-
+          // Récupérer les actions détenues
           const company =
             companyMap.get(
               symbol
             )
 
+          // L'utilisateur doit posséder des actions
           return Boolean(
             company &&
             company.shares > 0
@@ -599,92 +615,108 @@ async function getPortfolioData() {
               dividend.dividend_per_share
             ) || 0
 
-          return {
-            amount:
-              shares *
-              dividendPerShare,
+          const amount =
+            shares *
+            dividendPerShare
 
+          return {
+            id:
+              `generated-${dividend.id}`,
+
+            dividendId:
+              dividend.id,
+
+            shares,
+
+            amount,
+
+            // IMPORTANT :
+            // même logique que Dashboard
             status:
-              'pending',
+              dividend.status ===
+              'paid'
+                ? 'paid'
+                : 'pending',
           }
         }
       )
 
   // =====================================================
+  // FUSION DES DIVIDENDES
+  //
+  // Même logique que Dashboard
+  // =====================================================
+
+  const dividendRows = [
+    ...existingPaymentRows,
+    ...generatedPendingRows,
+  ]
+
+  // =====================================================
   // DIVIDENDES PAYÉS
+  //
+  // Calculé sur l'ensemble des dividendes
   // =====================================================
 
   const totalDividendsPaid =
-    existingPaymentRows
+    dividendRows
       .filter(
-        payment =>
-          payment.status ===
+        row =>
+          row.status ===
           'paid'
       )
       .reduce(
         (
-          sum,
-          payment
+          total,
+          row
         ) =>
-          sum +
-          payment.amount,
+          total +
+          row.amount,
         0
       )
 
   // =====================================================
   // DIVIDENDES EN ATTENTE
+  //
+  // Calculé sur l'ensemble des dividendes
   // =====================================================
 
-  const existingPendingDividends =
-    existingPaymentRows
+  const totalDividendsPending =
+    dividendRows
       .filter(
-        payment =>
-          payment.status ===
+        row =>
+          row.status ===
           'pending'
       )
       .reduce(
         (
-          sum,
-          payment
+          total,
+          row
         ) =>
-          sum +
-          payment.amount,
+          total +
+          row.amount,
         0
       )
 
-  const generatedPendingDividends =
-    generatedPendingRows.reduce(
-      (
-        sum,
-        payment
-      ) =>
-        sum +
-        payment.amount,
-      0
-    )
-
-  const totalDividendsPending =
-    existingPendingDividends +
-    generatedPendingDividends
-
   // =====================================================
-  // NOMBRE DIVIDENDES
+  // NOMBRE DE DIVIDENDES
+  //
+  // Même logique que Dashboard
   // =====================================================
 
   const paidDividendCount =
-    existingPaymentRows.filter(
-      payment =>
-        payment.status ===
+    dividendRows.filter(
+      row =>
+        row.status ===
         'paid'
     ).length
 
   const pendingDividendCount =
-    existingPaymentRows.filter(
-      payment =>
-        payment.status ===
+    dividendRows.filter(
+      row =>
+        row.status ===
         'pending'
-    ).length +
-    generatedPendingRows.length
+    ).length
 
   // =====================================================
   // RETOUR
@@ -785,7 +817,6 @@ export default async function PortfolioPage() {
 
         </section>
 
-
         {/* =================================================
             SOLDES ET PERFORMANCE
         ================================================= */}
@@ -803,7 +834,6 @@ export default async function PortfolioPage() {
             </h2>
 
           </div>
-
 
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
 
@@ -823,7 +853,6 @@ export default async function PortfolioPage() {
 
             </div>
 
-
             {/* VALEUR */}
 
             <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -840,7 +869,6 @@ export default async function PortfolioPage() {
 
             </div>
 
-
             {/* INVESTI */}
 
             <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -856,7 +884,6 @@ export default async function PortfolioPage() {
               </p>
 
             </div>
-
 
             {/* PERFORMANCE */}
 
@@ -937,7 +964,6 @@ export default async function PortfolioPage() {
 
         </section>
 
-
         {/* =================================================
             DIVIDENDES
         ================================================= */}
@@ -955,7 +981,6 @@ export default async function PortfolioPage() {
             </h2>
 
           </div>
-
 
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
 
@@ -982,7 +1007,6 @@ export default async function PortfolioPage() {
 
             </div>
 
-
             {/* EN ATTENTE */}
 
             <div className="rounded-2xl border border-[#D4A72C]/20 bg-[#FFFBF0] p-4 shadow-sm">
@@ -1005,7 +1029,6 @@ export default async function PortfolioPage() {
               </p>
 
             </div>
-
 
             {/* TOTAL */}
 
@@ -1032,7 +1055,6 @@ export default async function PortfolioPage() {
 
         </section>
 
-
         {/* =================================================
             TITRES DÉTENUS
         ================================================= */}
@@ -1057,7 +1079,6 @@ export default async function PortfolioPage() {
 
             </div>
 
-
             <div className="rounded-full border border-[#D4A72C]/20 bg-[#FFFBF0] px-3 py-1.5">
 
               <span className="text-[10px] font-bold text-[#A77C12]">
@@ -1070,7 +1091,6 @@ export default async function PortfolioPage() {
             </div>
 
           </div>
-
 
           {/* =================================================
               TABLEAU
@@ -1123,7 +1143,6 @@ export default async function PortfolioPage() {
 
                   </thead>
 
-
                   <tbody className="divide-y divide-slate-100">
 
                     {companyHoldings.map(
@@ -1165,7 +1184,6 @@ export default async function PortfolioPage() {
 
                           </td>
 
-
                           {/* SYMBOLE */}
 
                           <td className="px-5 py-5">
@@ -1175,7 +1193,6 @@ export default async function PortfolioPage() {
                             </span>
 
                           </td>
-
 
                           {/* ACTIONS */}
 
@@ -1209,7 +1226,6 @@ export default async function PortfolioPage() {
           )}
 
         </section>
-
 
         {/* =================================================
             INFORMATION
