@@ -11,34 +11,18 @@ export default function ServiceWorkerRegister() {
       return
     }
 
-    const unregisterServiceWorkers = async () => {
+    const registerServiceWorker = async () => {
       try {
-        const registrations =
-          await navigator.serviceWorker.getRegistrations()
-
-        for (const registration of registrations) {
-          await registration.unregister()
-        }
-
-        // Nettoyage des anciens caches PWA
-        if ('caches' in window) {
-          const cacheNames = await caches.keys()
-
-          await Promise.all(
-            cacheNames.map((cacheName) =>
-              caches.delete(cacheName)
-            )
-          )
-        }
+        await navigator.serviceWorker.register('/sw.js')
       } catch (error) {
         console.error(
-          'Erreur désactivation PWA:',
+          'Erreur enregistrement du service worker:',
           error
         )
       }
     }
 
-    unregisterServiceWorkers()
+    void registerServiceWorker()
   }, [])
 
   return null

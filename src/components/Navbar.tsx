@@ -27,6 +27,7 @@ import {
 
 import { createClient } from '@/utils/supabase/client'
 import { PrimaryButton } from '@/components/ui/Buttons'
+import PushNotificationButton from '@/components/PushNotificationButton'
 import { cn, formatFcfa } from '@/lib/utils'
 
 const titles: Record<string, string> = {
@@ -426,6 +427,8 @@ export default function Navbar({
           </div>
 
           {userEmail ? (
+            <>
+              <PushNotificationButton compact />
             <div className="relative">
 
               <button
@@ -451,6 +454,7 @@ export default function Navbar({
               </button>
 
             </div>
+            </>
           ) : (
             <button
               type="button"
@@ -495,13 +499,7 @@ export default function Navbar({
             {userEmail ? (
               <>
 
-                <button
-                  type="button"
-                  className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:text-slate-900"
-                  aria-label="Notifications"
-                >
-                  <Bell size={18} />
-                </button>
+                <PushNotificationButton />
 
                 <div
                   className="relative"

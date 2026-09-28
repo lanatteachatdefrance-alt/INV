@@ -7,6 +7,7 @@ import { createClient } from '@/utils/supabase/server'
 
 import SplashScreen from '@/components/SplashScreen'
 import AppShell from '@/components/AppShell'
+import ServiceWorkerRegister from '@/components/ServiceWorkerRegister'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -98,6 +99,8 @@ export default async function RootLayout({
             ===================================================== */}
 
         <SplashScreen />
+
+        <ServiceWorkerRegister />
 
         {/* =====================================================
             APPLICATION
