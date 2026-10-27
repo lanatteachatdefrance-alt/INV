@@ -3,17 +3,29 @@
 import { useCallback, useEffect, useState } from 'react'
 import { BellRing } from 'lucide-react'
 import { Capacitor } from '@capacitor/core'
-import { PushNotifications, type PluginListenerHandle } from '@capacitor/push-notifications'
+import type { PluginListenerHandle } from '@capacitor/core'
+import { PushNotifications } from '@capacitor/push-notifications'
 
-type PushState = 'idle' | 'active' | 'working' | 'denied' | 'unsupported' | 'error'
+type PushState =
+  | 'idle'
+  | 'active'
+  | 'working'
+  | 'denied'
+  | 'unsupported'
+  | 'error'
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
   const base64 = `${base64String}${padding}`
     .replace(/-/g, '+')
     .replace(/_/g, '/')
+
   const rawData = window.atob(base64)
-  return Uint8Array.from(rawData, (character) => character.charCodeAt(0))
+
+  return Uint8Array.from(
+    rawData,
+    (character) => character.charCodeAt(0)
+  )
 }
 
 async function saveSubscription(subscription: PushSubscription) {
@@ -25,7 +37,9 @@ async function saveSubscription(subscription: PushSubscription) {
 
   if (!response.ok) {
     const result = await response.json().catch(() => null)
-    throw new Error(result?.error || 'Impossible d’enregistrer cet appareil.')
+    throw new Error(
+      result?.error || 'Impossible d’enregistrer cet appareil.'
+    )
   }
 }
 
@@ -38,7 +52,9 @@ async function saveFcmToken(token: string) {
 
   if (!response.ok) {
     const result = await response.json().catch(() => null)
-    throw new Error(result?.error || 'Impossible d’enregistrer le token FCM.')
+    throw new Error(
+      result?.error || 'Impossible d’enregistrer le token FCM.'
+    )
   }
 }
 
@@ -51,8 +67,14 @@ async function sendFcmTestNotification() {
       body: 'Les notifications Android fonctionnent sur cet appareil.',
     }),
   })
+
   const result = await response.json().catch(() => null)
-  if (!response.ok) throw new Error(result?.error || 'Échec de l’envoi du test FCM.')
+
+  if (!response.ok) {
+    throw new Error(
+      result?.error || 'Échec de l’envoi du test FCM.'
+    )
+  }
 }
 
 export default function PushNotificationButton({
@@ -66,70 +88,132 @@ export default function PushNotificationButton({
 
   useEffect(() => {
     const isNative = Capacitor.isNativePlatform()
-    setNativeAndroid(isNative && Capacitor.getPlatform() === 'android')
-    if (!isNative || Capacitor.getPlatform() !== 'android') return
+    const isAndroid =
+      isNative && Capacitor.getPlatform() === 'android'
+
+    setNativeAndroid(isAndroid)
+
+    if (!isAndroid) return
 
     let cancelled = false
     let listeners: PluginListenerHandle[] = []
 
     const installListeners = async () => {
       try {
-        const registrationListener = await PushNotifications.addListener('registration', async ({ value }) => {
-          try {
-            await saveFcmToken(value)
-            if (!cancelled) {
-              setState('active')
-              setMessage('Notifications Android activées sur cet appareil.')
-            }
-          } catch (error) {
-            if (!cancelled) {
-              setState('error')
-              setMessage(error instanceof Error ? error.message : 'Enregistrement du token FCM impossible.')
-            }
-          }
-        })
-        const errorListener = await PushNotifications.addListener('registrationError', ({ error }) => {
-          if (!cancelled) {
-            setState('error')
-            setMessage(error || 'Échec de l’inscription aux notifications Android.')
-          }
-        })
-        const receivedListener = await PushNotifications.addListener('pushNotificationReceived', (notification) => {
-          if (!cancelled) setMessage(notification.body || 'Nouvelle notification reçue.')
-        })
-        const actionListener = await PushNotifications.addListener('pushNotificationActionPerformed', ({ notification }) => {
-          const target = notification.data?.url
-          if (typeof target === 'string' && target.startsWith('/') && !target.startsWith('//')) {
-            window.location.assign(target)
-          }
-        })
+        const registrationListener =
+          await PushNotifications.addListener(
+            'registration',
+            async ({ value }) => {
+              try {
+                await saveFcmToken(value)
 
-        listeners = [registrationListener, errorListener, receivedListener, actionListener]
-        if (cancelled) await Promise.all(listeners.map((listener) => listener.remove()))
+                if (!cancelled) {
+                  setState('active')
+                  setMessage(
+                    'Notifications Android activées sur cet appareil.'
+                  )
+                }
+              } catch (error) {
+                if (!cancelled) {
+                  setState('error')
+                  setMessage(
+                    error instanceof Error
+                      ? error.message
+                      : 'Enregistrement du token FCM impossible.'
+                  )
+                }
+              }
+            }
+          )
+
+        const errorListener =
+          await PushNotifications.addListener(
+            'registrationError',
+            ({ error }) => {
+              if (!cancelled) {
+                setState('error')
+                setMessage(
+                  error ||
+                    'Échec de l’inscription aux notifications Android.'
+                )
+              }
+            }
+          )
+
+        const receivedListener =
+          await PushNotifications.addListener(
+            'pushNotificationReceived',
+            (notification) => {
+              if (!cancelled) {
+                setMessage(
+                  notification.body || 'Nouvelle notification reçue.'
+                )
+              }
+            }
+          )
+
+        const actionListener =
+          await PushNotifications.addListener(
+            'pushNotificationActionPerformed',
+            ({ notification }) => {
+              const target = notification.data?.url
+
+              if (
+                typeof target === 'string' &&
+                target.startsWith('/') &&
+                !target.startsWith('//')
+              ) {
+                window.location.assign(target)
+              }
+            }
+          )
+
+        listeners = [
+          registrationListener,
+          errorListener,
+          receivedListener,
+          actionListener,
+        ]
+
+        if (cancelled) {
+          await Promise.all(
+            listeners.map((listener) => listener.remove())
+          )
+        }
       } catch (error) {
         if (!cancelled) {
           setState('error')
-          setMessage(error instanceof Error ? error.message : 'Initialisation des notifications Android impossible.')
+          setMessage(
+            error instanceof Error
+              ? error.message
+              : 'Initialisation des notifications Android impossible.'
+          )
         }
       }
     }
 
     void installListeners()
+
     return () => {
       cancelled = true
-      void Promise.all(listeners.map((listener) => listener.remove()))
+      void Promise.all(
+        listeners.map((listener) => listener.remove())
+      )
     }
   }, [])
 
-  const isSupported = useCallback(() =>
-    typeof window !== 'undefined' &&
-    'serviceWorker' in navigator &&
-    'PushManager' in window &&
-    'Notification' in window,
-  [])
+  const isSupported = useCallback(
+    () =>
+      typeof window !== 'undefined' &&
+      'serviceWorker' in navigator &&
+      'PushManager' in window &&
+      'Notification' in window,
+    []
+  )
 
   useEffect(() => {
     if (nativeAndroid) return
+
     if (!isSupported()) {
       setState('unsupported')
       return
@@ -146,15 +230,23 @@ export default function PushNotificationButton({
 
     void navigator.serviceWorker.ready
       .then(async (registration) => {
-        const subscription = await registration.pushManager.getSubscription()
+        const subscription =
+          await registration.pushManager.getSubscription()
+
         if (!subscription) return
+
         await saveSubscription(subscription)
+
         if (!cancelled) setState('active')
       })
       .catch((error: unknown) => {
         if (!cancelled) {
           setState('error')
-          setMessage(error instanceof Error ? error.message : 'Erreur de synchronisation.')
+          setMessage(
+            error instanceof Error
+              ? error.message
+              : 'Erreur de synchronisation.'
+          )
         }
       })
 
@@ -167,6 +259,7 @@ export default function PushNotificationButton({
     if (nativeAndroid) {
       setState('working')
       setMessage('')
+
       try {
         if (state === 'active') {
           await sendFcmTestNotification()
@@ -175,13 +268,19 @@ export default function PushNotificationButton({
           return
         }
 
-        let permission = await PushNotifications.checkPermissions()
+        let permission =
+          await PushNotifications.checkPermissions()
+
         if (permission.receive !== 'granted') {
-          permission = await PushNotifications.requestPermissions()
+          permission =
+            await PushNotifications.requestPermissions()
         }
+
         if (permission.receive !== 'granted') {
           setState('denied')
-          setMessage('Autorisez les notifications dans les réglages Android.')
+          setMessage(
+            'Autorisez les notifications dans les réglages Android.'
+          )
           return
         }
 
@@ -189,8 +288,13 @@ export default function PushNotificationButton({
         setMessage('Inscription FCM en cours…')
       } catch (error) {
         setState('error')
-        setMessage(error instanceof Error ? error.message : 'Impossible d’activer les notifications Android.')
+        setMessage(
+          error instanceof Error
+            ? error.message
+            : 'Impossible d’activer les notifications Android.'
+        )
       }
+
       return
     }
 
@@ -212,68 +316,105 @@ export default function PushNotificationButton({
             body: 'Les notifications push fonctionnent sur cet appareil.',
           }),
         })
+
         const result = await response.json().catch(() => null)
-        if (!response.ok) throw new Error(result?.error || 'Échec de l’envoi du test.')
+
+        if (!response.ok) {
+          throw new Error(
+            result?.error || 'Échec de l’envoi du test.'
+          )
+        }
+
         setMessage('Notification de test envoyée.')
         setState('active')
         return
       }
 
       const permission = await Notification.requestPermission()
+
       if (permission !== 'granted') {
         setState(permission === 'denied' ? 'denied' : 'idle')
-        setMessage(permission === 'denied'
-          ? 'Autorisez les notifications dans les réglages du navigateur.'
-          : 'Autorisation non accordée.')
+        setMessage(
+          permission === 'denied'
+            ? 'Autorisez les notifications dans les réglages du navigateur.'
+            : 'Autorisation non accordée.'
+        )
         return
       }
 
-      const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
-      if (!publicKey) throw new Error('NEXT_PUBLIC_VAPID_PUBLIC_KEY est manquante.')
+      const publicKey =
+        process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+
+      if (!publicKey) {
+        throw new Error(
+          'NEXT_PUBLIC_VAPID_PUBLIC_KEY est manquante.'
+        )
+      }
 
       const registration = await navigator.serviceWorker.ready
-      const subscription = await registration.pushManager.getSubscription() ??
-        await registration.pushManager.subscribe({
+
+      const subscription =
+        (await registration.pushManager.getSubscription()) ??
+        (await registration.pushManager.subscribe({
           userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(publicKey),
-        })
+          applicationServerKey:
+            urlBase64ToUint8Array(publicKey) as BufferSource,
+        }))
 
       await saveSubscription(subscription)
+
       setState('active')
-      setMessage('Notifications activées. Touchez à nouveau pour recevoir un test.')
+      setMessage(
+        'Notifications activées. Touchez à nouveau pour recevoir un test.'
+      )
     } catch (error) {
       setState('error')
-      setMessage(error instanceof Error ? error.message : 'Impossible d’activer les notifications.')
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : 'Impossible d’activer les notifications.'
+      )
     }
   }
 
-  const label = state === 'active'
-    ? 'Envoyer une notification test'
-    : state === 'denied'
-      ? 'Notifications bloquées'
-      : state === 'unsupported'
-        ? 'Push non pris en charge'
-        : state === 'working'
-          ? 'Patientez…'
-          : state === 'error'
-            ? 'Réessayer les notifications'
-            : 'Activer les notifications'
+  const label =
+    state === 'active'
+      ? 'Envoyer une notification test'
+      : state === 'denied'
+        ? 'Notifications bloquées'
+        : state === 'unsupported'
+          ? 'Push non pris en charge'
+          : state === 'working'
+            ? 'Patientez…'
+            : state === 'error'
+              ? 'Réessayer les notifications'
+              : 'Activer les notifications'
 
   return (
     <div className="flex flex-col items-end gap-1">
       <button
         type="button"
         onClick={handleClick}
-        disabled={state === 'working' || state === 'unsupported'}
+        disabled={
+          state === 'working' || state === 'unsupported'
+        }
         title={message || label}
         aria-label={label}
-        className={`flex h-10 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50/40 disabled:cursor-not-allowed disabled:opacity-60 ${compact ? 'w-10 px-0' : ''}`}
+        className={`flex h-10 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50/40 disabled:cursor-not-allowed disabled:opacity-60 ${
+          compact ? 'w-10 px-0' : ''
+        }`}
       >
         <BellRing size={18} aria-hidden="true" />
-        {!compact && <span className="text-xs font-semibold">{label}</span>}
+        {!compact && (
+          <span className="text-xs font-semibold">{label}</span>
+        )}
       </button>
+
       {!compact && message && (
-        <span className="max-w-64 text-right text-[11px] text-slate-500" role="status">
+        <span
+          className="max-w-64 text-right text-[11px] text-slate-500"
+          role="status"
+        >
           {message}
         </span>
       )}
