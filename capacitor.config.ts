@@ -7,6 +7,11 @@ const config: CapacitorConfig = {
   server: {
     url: 'https://investirenbourse.org',
     cleartext: false
+  },
+  plugins: {
+    PushNotifications: {
+      presentationOptions: ['alert', 'sound', 'badge']
+    }
   }
 };
 

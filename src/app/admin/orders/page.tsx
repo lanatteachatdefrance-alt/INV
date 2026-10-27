@@ -2,6 +2,10 @@ import { createClient } from '@/utils/supabase/server'
 import { ensureAdminAccess } from '@/lib/admin'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
+import {
+  formatTransactionAmount,
+  notifyUserOfTransaction,
+} from '@/lib/transactionPushNotifications'
 
 export const dynamic = 'force-dynamic'
 
@@ -354,6 +358,7 @@ async function updateOrderStatus(
     }
 
     const {
+      data: updatedOrder,
       error: updateError,
     } = await supabase
       .from('transactions')
@@ -377,10 +382,23 @@ async function updateOrderStatus(
         'status',
         'pending'
       )
+      .select('id')
+      .maybeSingle()
 
     if (updateError) {
       throw new Error(
         `Impossible de valider la vente : ${updateError.message}`
+      )
+    }
+
+    if (updatedOrder) {
+      await notifyUserOfTransaction(
+        order.user_id,
+        {
+          title: 'Vente d’action validée ✅',
+          body: `Votre vente de ${quantity} action(s) a été validée (${formatTransactionAmount(amount)}).`,
+          url: '/dashboard/orders',
+        }
       )
     }
 
@@ -573,6 +591,7 @@ async function updateOrderStatus(
     }
 
     const {
+      data: updatedOrder,
       error: updateError,
     } = await supabase
       .from('transactions')
@@ -597,10 +616,23 @@ async function updateOrderStatus(
         'status',
         'pending'
       )
+      .select('id')
+      .maybeSingle()
 
     if (updateError) {
       throw new Error(
         `La position a été créée mais l’ordre n’a pas pu être validé : ${updateError.message}`
+      )
+    }
+
+    if (updatedOrder) {
+      await notifyUserOfTransaction(
+        order.user_id,
+        {
+          title: 'Achat d’action validé ✅',
+          body: `Votre achat de ${quantity} action(s) a été validé (${formatTransactionAmount(amount)}).`,
+          url: '/dashboard/orders',
+        }
       )
     }
   }
@@ -673,6 +705,23 @@ async function processDividendPayment(
   if (!data?.success) {
     throw new Error(
       'Le paiement du dividende n’a pas pu être effectué.'
+    )
+  }
+
+  const { data: payment } = await supabase
+    .from('dividend_payments')
+    .select('user_id, amount')
+    .eq('id', paymentId)
+    .maybeSingle()
+
+  if (payment) {
+    await notifyUserOfTransaction(
+      payment.user_id,
+      {
+        title: 'Dividende crédité ✅',
+        body: `${formatTransactionAmount(payment.amount)} ont été crédités sur votre compte.`,
+        url: '/dashboard/portfolio',
+      }
     )
   }
 
@@ -855,6 +904,24 @@ async function processWithdrawal(
     )
   }
 
+  const { data: withdrawal } = await supabase
+    .from('transactions')
+    .select('user_id, amount')
+    .eq('id', transactionId)
+    .eq('type', 'withdraw')
+    .maybeSingle()
+
+  if (withdrawal) {
+    await notifyUserOfTransaction(
+      withdrawal.user_id,
+      {
+        title: 'Retrait validé ✅',
+        body: `Votre retrait de ${formatTransactionAmount(withdrawal.amount)} a été validé.`,
+        url: '/dashboard/orders',
+      }
+    )
+  }
+
   revalidatePath('/admin/orders')
   revalidatePath('/dashboard')
   revalidatePath('/dashboard/orders')
@@ -912,7 +979,9 @@ async function rejectWithdrawal(
     .select(`
       id,
       type,
-      status
+      status,
+      user_id,
+      amount
     `)
     .eq(
       'id',
@@ -943,6 +1012,7 @@ async function rejectWithdrawal(
   }
 
   const {
+    data: updatedWithdrawal,
     error,
   } = await supabase
     .from('transactions')
@@ -967,10 +1037,23 @@ async function rejectWithdrawal(
       'status',
       'pending'
     )
+    .select('id')
+    .maybeSingle()
 
   if (error) {
     throw new Error(
       `Impossible de refuser le retrait : ${error.message}`
+    )
+  }
+
+  if (updatedWithdrawal) {
+    await notifyUserOfTransaction(
+      withdrawal.user_id,
+      {
+        title: 'Retrait refusé ❌',
+        body: `Votre demande de retrait de ${formatTransactionAmount(withdrawal.amount)} a été refusée.`,
+        url: '/dashboard/orders',
+      }
     )
   }
 

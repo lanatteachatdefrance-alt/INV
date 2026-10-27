@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { BellRing } from 'lucide-react'
+import { Capacitor } from '@capacitor/core'
+import { PushNotifications, type PluginListenerHandle } from '@capacitor/push-notifications'
 
 type PushState = 'idle' | 'active' | 'working' | 'denied' | 'unsupported' | 'error'
 
@@ -27,6 +29,32 @@ async function saveSubscription(subscription: PushSubscription) {
   }
 }
 
+async function saveFcmToken(token: string) {
+  const response = await fetch('/api/push/fcm-token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token }),
+  })
+
+  if (!response.ok) {
+    const result = await response.json().catch(() => null)
+    throw new Error(result?.error || 'Impossible d’enregistrer le token FCM.')
+  }
+}
+
+async function sendFcmTestNotification() {
+  const response = await fetch('/api/push/fcm-send', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      title: 'Investir Bourse',
+      body: 'Les notifications Android fonctionnent sur cet appareil.',
+    }),
+  })
+  const result = await response.json().catch(() => null)
+  if (!response.ok) throw new Error(result?.error || 'Échec de l’envoi du test FCM.')
+}
+
 export default function PushNotificationButton({
   compact = false,
 }: {
@@ -34,6 +62,64 @@ export default function PushNotificationButton({
 }) {
   const [state, setState] = useState<PushState>('idle')
   const [message, setMessage] = useState('')
+  const [nativeAndroid, setNativeAndroid] = useState(false)
+
+  useEffect(() => {
+    const isNative = Capacitor.isNativePlatform()
+    setNativeAndroid(isNative && Capacitor.getPlatform() === 'android')
+    if (!isNative || Capacitor.getPlatform() !== 'android') return
+
+    let cancelled = false
+    let listeners: PluginListenerHandle[] = []
+
+    const installListeners = async () => {
+      try {
+        const registrationListener = await PushNotifications.addListener('registration', async ({ value }) => {
+          try {
+            await saveFcmToken(value)
+            if (!cancelled) {
+              setState('active')
+              setMessage('Notifications Android activées sur cet appareil.')
+            }
+          } catch (error) {
+            if (!cancelled) {
+              setState('error')
+              setMessage(error instanceof Error ? error.message : 'Enregistrement du token FCM impossible.')
+            }
+          }
+        })
+        const errorListener = await PushNotifications.addListener('registrationError', ({ error }) => {
+          if (!cancelled) {
+            setState('error')
+            setMessage(error || 'Échec de l’inscription aux notifications Android.')
+          }
+        })
+        const receivedListener = await PushNotifications.addListener('pushNotificationReceived', (notification) => {
+          if (!cancelled) setMessage(notification.body || 'Nouvelle notification reçue.')
+        })
+        const actionListener = await PushNotifications.addListener('pushNotificationActionPerformed', ({ notification }) => {
+          const target = notification.data?.url
+          if (typeof target === 'string' && target.startsWith('/') && !target.startsWith('//')) {
+            window.location.assign(target)
+          }
+        })
+
+        listeners = [registrationListener, errorListener, receivedListener, actionListener]
+        if (cancelled) await Promise.all(listeners.map((listener) => listener.remove()))
+      } catch (error) {
+        if (!cancelled) {
+          setState('error')
+          setMessage(error instanceof Error ? error.message : 'Initialisation des notifications Android impossible.')
+        }
+      }
+    }
+
+    void installListeners()
+    return () => {
+      cancelled = true
+      void Promise.all(listeners.map((listener) => listener.remove()))
+    }
+  }, [])
 
   const isSupported = useCallback(() =>
     typeof window !== 'undefined' &&
@@ -43,6 +129,7 @@ export default function PushNotificationButton({
   [])
 
   useEffect(() => {
+    if (nativeAndroid) return
     if (!isSupported()) {
       setState('unsupported')
       return
@@ -74,9 +161,39 @@ export default function PushNotificationButton({
     return () => {
       cancelled = true
     }
-  }, [isSupported])
+  }, [isSupported, nativeAndroid])
 
   const handleClick = async () => {
+    if (nativeAndroid) {
+      setState('working')
+      setMessage('')
+      try {
+        if (state === 'active') {
+          await sendFcmTestNotification()
+          setState('active')
+          setMessage('Notification de test envoyée.')
+          return
+        }
+
+        let permission = await PushNotifications.checkPermissions()
+        if (permission.receive !== 'granted') {
+          permission = await PushNotifications.requestPermissions()
+        }
+        if (permission.receive !== 'granted') {
+          setState('denied')
+          setMessage('Autorisez les notifications dans les réglages Android.')
+          return
+        }
+
+        await PushNotifications.register()
+        setMessage('Inscription FCM en cours…')
+      } catch (error) {
+        setState('error')
+        setMessage(error instanceof Error ? error.message : 'Impossible d’activer les notifications Android.')
+      }
+      return
+    }
+
     if (!isSupported()) {
       setState('unsupported')
       return

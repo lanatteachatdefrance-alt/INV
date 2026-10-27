@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "890298275616",
+    "project_id": "investir-en-bourse",
+    "storage_bucket": "investir-en-bourse.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:890298275616:android:efb7e998bf16d516dc2945",
+        "android_client_info": {
+          "package_name": "com.investirbourse.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBOdtVDKmCsp-9_QtRbevJHlSI_SRoLv68"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

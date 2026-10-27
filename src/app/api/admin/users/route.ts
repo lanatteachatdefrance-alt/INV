@@ -1,5 +1,9 @@
 import { createClient } from '@/utils/supabase/server'
 import { ensureAdminAccess } from '@/lib/admin'
+import {
+  formatTransactionAmount,
+  notifyUserOfTransaction,
+} from '@/lib/transactionPushNotifications'
 
 export async function POST(request: Request) {
   try {
@@ -64,6 +68,26 @@ export async function POST(request: Request) {
         status: 'complété',
         description: reason || `Opération admin ${action}`,
       })
+
+      if (action === 'deposit') {
+        await notifyUserOfTransaction(
+          userId,
+          {
+            title: 'Dépôt effectué ✅',
+            body: `Votre compte a été crédité de ${formatTransactionAmount(value ?? 0)}.`,
+            url: '/dashboard',
+          }
+        )
+      } else if (action === 'withdraw') {
+        await notifyUserOfTransaction(
+          userId,
+          {
+            title: 'Retrait effectué ✅',
+            body: `Votre compte a été débité de ${formatTransactionAmount(value ?? 0)}.`,
+            url: '/dashboard',
+          }
+        )
+      }
 
       return Response.json({ success: true, balance: nextBalance })
     }

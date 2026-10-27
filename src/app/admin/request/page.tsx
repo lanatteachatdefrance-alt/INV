@@ -2,6 +2,10 @@ import { createClient } from '@/utils/supabase/server'
 import { ensureAdminAccess } from '@/lib/admin'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
+import {
+  formatTransactionAmount,
+  notifyUserOfTransaction,
+} from '@/lib/transactionPushNotifications'
 
 export const dynamic = 'force-dynamic'
 
@@ -128,7 +132,7 @@ async function updateRequest(formData: FormData) {
    */
 
   if (action === 'reject') {
-    const { error } = await supabase
+    const { data: updatedTransaction, error } = await supabase
       .from('transactions')
       .update({
         status: 'rejected',
@@ -139,10 +143,23 @@ async function updateRequest(formData: FormData) {
       .eq('id', transactionId)
       .eq('type', 'withdraw')
       .eq('status', 'pending')
+      .select('id')
+      .maybeSingle()
 
     if (error) {
       throw new Error(
         `Impossible de rejeter la demande : ${error.message}`
+      )
+    }
+
+    if (updatedTransaction) {
+      await notifyUserOfTransaction(
+        transaction.user_id,
+        {
+          title: 'Retrait refusé ❌',
+          body: `Votre demande de retrait de ${formatTransactionAmount(transaction.amount)} a été refusée.`,
+          url: '/dashboard/orders',
+        }
       )
     }
 
@@ -204,7 +221,7 @@ async function updateRequest(formData: FormData) {
    * le solde du client.
    */
 
-  const { error: updateError } = await supabase
+  const { data: updatedTransaction, error: updateError } = await supabase
     .from('transactions')
     .update({
       status: 'approved',
@@ -215,10 +232,23 @@ async function updateRequest(formData: FormData) {
     .eq('id', transactionId)
     .eq('type', 'withdraw')
     .eq('status', 'pending')
+    .select('id')
+    .maybeSingle()
 
   if (updateError) {
     throw new Error(
       `Impossible de valider la demande : ${updateError.message}`
+    )
+  }
+
+  if (updatedTransaction) {
+    await notifyUserOfTransaction(
+      transaction.user_id,
+      {
+        title: 'Retrait validé ✅',
+        body: `Votre retrait de ${formatTransactionAmount(transaction.amount)} a été validé.`,
+        url: '/dashboard/orders',
+      }
     )
   }
 
