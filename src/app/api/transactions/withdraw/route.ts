@@ -4,30 +4,30 @@ export async function POST(request: Request) {
   try {
     const supabase = createClient()
 
-    /*
-     * =====================================================
-     * UTILISATEUR
-     * =====================================================
-     */
-
+    // 1. Vérifier l'utilisateur connecté
     const {
       data: { user },
+      error: authError,
     } = await supabase.auth.getUser()
 
-    if (!user) {
+    if (authError || !user) {
       return Response.json(
         { error: 'Vous devez être connecté.' },
         { status: 401 }
       )
     }
 
-    /*
-     * =====================================================
-     * DONNÉES DE LA DEMANDE
-     * =====================================================
-     */
+    // 2. Lire les données du formulaire
+    let body: Record<string, unknown>
 
-    const body = await request.json()
+    try {
+      body = await request.json()
+    } catch {
+      return Response.json(
+        { error: 'Les données envoyées sont invalides.' },
+        { status: 400 }
+      )
+    }
 
     const {
       amount,
@@ -38,72 +38,54 @@ export async function POST(request: Request) {
       withdrawalPin,
     } = body
 
-    /*
-     * =====================================================
-     * MONTANT
-     * =====================================================
-     */
-
+    // 3. Vérifier le montant
     const numericAmount = Number(amount)
 
     if (
+      amount === null ||
+      amount === undefined ||
+      amount === '' ||
       !Number.isFinite(numericAmount) ||
       numericAmount <= 0
     ) {
       return Response.json(
-        {
-          error: 'Montant de retrait invalide.',
-        },
+        { error: 'Montant de retrait invalide.' },
         { status: 400 }
       )
     }
 
-    /*
-     * =====================================================
-     * MODE DE RETRAIT
-     * =====================================================
-     */
-
+    // 4. Vérifier le mode de retrait
     if (
-      ![
-        'mobile_money',
-        'bank_transfer',
-      ].includes(withdrawalMethod)
+      typeof withdrawalMethod !== 'string' ||
+      !['mobile_money', 'bank_transfer'].includes(
+        withdrawalMethod
+      )
     ) {
       return Response.json(
-        {
-          error: 'Mode de retrait invalide.',
-        },
+        { error: 'Mode de retrait invalide.' },
         { status: 400 }
       )
     }
 
-    /*
-     * =====================================================
-     * INFORMATIONS RETRAIT
-     * =====================================================
-     */
-
+    // 5. Vérifier les coordonnées de paiement
     if (
-      !withdrawalProvider ||
-      !withdrawalAccount ||
-      !withdrawalName
+      typeof withdrawalProvider !== 'string' ||
+      !withdrawalProvider.trim() ||
+      typeof withdrawalAccount !== 'string' ||
+      !withdrawalAccount.trim() ||
+      typeof withdrawalName !== 'string' ||
+      !withdrawalName.trim()
     ) {
       return Response.json(
         {
           error:
-            'Veuillez compléter toutes les informations.',
+            'Veuillez compléter toutes les informations de retrait.',
         },
         { status: 400 }
       )
     }
 
-    /*
-     * =====================================================
-     * VÉRIFICATION DU PIN
-     * =====================================================
-     */
-
+    // 6. Vérifier le PIN à 6 chiffres
     if (
       typeof withdrawalPin !== 'string' ||
       !/^[0-9]{6}$/.test(withdrawalPin)
@@ -111,57 +93,43 @@ export async function POST(request: Request) {
       return Response.json(
         {
           error:
-            'Veuillez saisir un code de retrait à 6 chiffres.',
+            'Entrez votre code PIN à 6 chiffres pour continuer.',
         },
         { status: 400 }
       )
     }
 
-    /*
-     * Vérification du PIN côté serveur
-     */
-
+    // 7. Vérifier le PIN côté serveur
     const {
       data: pinValid,
       error: pinError,
-    } = await supabase.rpc(
-      'verify_withdrawal_pin',
-      {
-        p_pin: withdrawalPin,
-      }
-    )
+    } = await supabase.rpc('verify_withdrawal_pin', {
+      p_pin: withdrawalPin,
+    })
 
     if (pinError) {
       console.error(
         'Withdrawal PIN verification error:',
-        pinError
+        pinError.message
       )
 
       return Response.json(
         {
           error:
-            'Impossible de vérifier votre code de retrait.',
+            'Impossible de vérifier votre code PIN. Réessayez plus tard.',
         },
         { status: 500 }
       )
     }
 
-    if (!pinValid) {
+    if (pinValid !== true) {
       return Response.json(
-        {
-          error:
-            'Code de retrait incorrect.',
-        },
+        { error: 'Code PIN incorrect. Vérifiez votre saisie.' },
         { status: 400 }
       )
     }
 
-    /*
-     * =====================================================
-     * VÉRIFICATION DU SOLDE
-     * =====================================================
-     */
-
+    // 8. Récupérer le solde du client
     const {
       data: profile,
       error: profileError,
@@ -172,97 +140,89 @@ export async function POST(request: Request) {
       .single()
 
     if (profileError || !profile) {
+      console.error(
+        'Withdrawal balance lookup error:',
+        profileError?.message
+      )
+
       return Response.json(
         {
-          error:
-            'Impossible de récupérer votre solde.',
+          error: 'Impossible de récupérer votre solde.',
         },
         { status: 500 }
       )
     }
 
-    const balance =
-      Number(profile.balance || 0)
+    const balance = Number(profile.balance ?? 0)
 
-    /*
-     * =====================================================
-     * RETRAITS EN ATTENTE
-     * =====================================================
-     *
-     * IMPORTANT :
-     * On accepte ici les deux anciens types :
-     * - withdraw
-     * - withdrawal
-     *
-     * Cela évite de perdre les anciennes demandes.
-     */
+    if (!Number.isFinite(balance) || balance < 0) {
+      return Response.json(
+        { error: 'Votre solde est invalide.' },
+        { status: 400 }
+      )
+    }
 
+    // 9. Calculer les retraits déjà en attente
+    // Prend en compte les deux types historiques.
     const {
       data: pendingWithdrawals,
       error: pendingError,
     } = await supabase
       .from('transactions')
-      .select('amount, type')
+      .select('amount')
       .eq('user_id', user.id)
-      .in('type', [
-        'withdraw',
-        'withdrawal',
-      ])
-      .eq('status', 'pending')
+      .in('type', ['withdraw', 'withdrawal'])
+      .in('status', ['pending', 'en_attente', 'en attente'])
 
     if (pendingError) {
+      console.error(
+        'Pending withdrawals lookup error:',
+        pendingError.message
+      )
+
       return Response.json(
         {
           error:
-            'Impossible de vérifier les retraits en attente.',
+            'Impossible de vérifier vos retraits en attente.',
         },
         { status: 500 }
       )
     }
 
-    const pendingAmount =
-      (
-        pendingWithdrawals || []
-      ).reduce(
-        (
-          total,
-          transaction
-        ) =>
-          total +
-          Number(
-            transaction.amount || 0
-          ),
-        0
+    const pendingAmount = (pendingWithdrawals ?? []).reduce(
+      (total, transaction) =>
+        total + Number(transaction.amount ?? 0),
+      0
+    )
+
+    if (!Number.isFinite(pendingAmount) || pendingAmount < 0) {
+      return Response.json(
+        {
+          error:
+            'Impossible de calculer le montant disponible.',
+        },
+        { status: 500 }
       )
+    }
 
-    const availableForWithdrawal =
-      balance - pendingAmount
-
-    /*
-     * =====================================================
-     * VÉRIFICATION DU SOLDE DISPONIBLE
-     * =====================================================
-     */
+    const availableForWithdrawal = balance - pendingAmount
 
     if (
-      numericAmount >
-      availableForWithdrawal
+      availableForWithdrawal <= 0 ||
+      numericAmount > availableForWithdrawal
     ) {
       return Response.json(
         {
           error:
-            'Le montant demandé dépasse votre solde disponible.',
+            'Le montant demandé dépasse votre solde disponible après prise en compte des retraits en attente.',
         },
         { status: 400 }
       )
     }
 
-    /*
-     * =====================================================
-     * CRÉATION DE LA DEMANDE
-     * =====================================================
-     */
-
+    // 10. Enregistrer la demande
+    // Type "withdraw" : compatible avec /admin/requests.
+    // Aucun débit n'est effectué ici.
     const {
       data: transaction,
       error: transactionError,
@@ -270,78 +230,50 @@ export async function POST(request: Request) {
       .from('transactions')
       .insert({
         user_id: user.id,
-
-        /*
-         * Nouveau type standardisé
-         */
-        type: 'withdrawal',
-
+        type: 'withdraw',
         amount: numericAmount,
-
         status: 'pending',
-
-        description:
-          `Demande de retrait - ${withdrawalProvider}`,
-
-        withdrawal_method:
-          withdrawalMethod,
-
-        withdrawal_provider:
-          withdrawalProvider,
-
-        withdrawal_account:
-          withdrawalAccount,
-
-        withdrawal_name:
-          withdrawalName,
+        description: `Demande de retrait - ${withdrawalProvider.trim()}`,
+        withdrawal_method: withdrawalMethod,
+        withdrawal_provider: withdrawalProvider.trim(),
+        withdrawal_account: withdrawalAccount.trim(),
+        withdrawal_name: withdrawalName.trim(),
       })
-      .select()
+      .select(
+        'id, created_at, amount, type, status, description'
+      )
       .single()
 
-    if (transactionError) {
+    if (transactionError || !transaction) {
       console.error(
-        'Withdrawal transaction error:',
-        transactionError
+        'Withdrawal transaction creation error:',
+        transactionError?.message
       )
 
       return Response.json(
         {
           error:
-            transactionError.message ||
-            'Impossible de créer la demande.',
+            'Impossible d’enregistrer votre demande. Veuillez réessayer.',
         },
         { status: 500 }
       )
     }
 
-    /*
-     * =====================================================
-     * RÉPONSE
-     * =====================================================
-     */
-
-    return Response.json({
-      success: true,
-
-      transaction,
-
-      message:
-        'Votre demande de retrait a été envoyée et sera traitée par votre gestionnaire.',
-    })
-
-  } catch (error) {
-    console.error(
-      'Withdrawal API error:',
-      error
-    )
-
+    // 11. Confirmer la demande
     return Response.json(
       {
-        error:
-          error instanceof Error
-            ? error.message
-            : 'Erreur serveur.',
+        success: true,
+        transaction,
+        message:
+          'Votre demande de retrait a été envoyée avec succès. Elle est en attente de validation.',
       },
+      { status: 201 }
+    )
+  } catch (error) {
+    console.error('Withdrawal API error:', error)
+
+    return Response.json(
+      { error: 'Une erreur serveur est survenue.' },
       { status: 500 }
     )
   }
