@@ -1,6 +1,6 @@
 import { createClient } from '@/utils/supabase/server'
 import { ensureAdminAccess } from '@/lib/admin'
-import { redirect, notFound } from 'next/navigation'
+import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import PrintStatementButton from '@/components/admin/PrintStatementButton'
 
@@ -133,7 +133,7 @@ export default async function ClientStatementPage({
 }: PageProps) {
   const supabase = await createClient()
 
-  // Vérification de la session
+  // 1. Vérification de la session
   const {
     data: { user },
   } = await supabase.auth.getUser()
@@ -142,14 +142,14 @@ export default async function ClientStatementPage({
     redirect('/login')
   }
 
-  // Vérification des droits administrateur
+  // 2. Vérification des droits administrateur
   const isAdmin = await ensureAdminAccess(supabase, user)
 
   if (!isAdmin) {
     redirect('/dashboard')
   }
 
-  // Récupération du client
+  // 3. Récupération du client
   const { data: client, error: clientError } = await supabase
     .from('users')
     .select(
@@ -164,11 +164,39 @@ export default async function ClientStatementPage({
     )
   }
 
+  // DIAGNOSTIC TEMPORAIRE : le client est-il retrouvé ?
   if (!client) {
-    notFound()
+    return (
+      <main className="min-h-screen bg-white p-8">
+        <div className="mx-auto max-w-2xl rounded-xl border border-red-200 bg-red-50 p-6">
+          <h1 className="text-xl font-bold text-red-600">
+            Client introuvable
+          </h1>
+
+          <p className="mt-4 text-sm text-slate-700">
+            Identifiant recherché :
+          </p>
+
+          <p className="mt-1 break-all font-mono text-sm text-slate-600">
+            {params.id}
+          </p>
+
+          <p className="mt-4 text-sm text-slate-600">
+            Aucun profil correspondant n’a été retourné par Supabase.
+          </p>
+
+          <Link
+            href="/admin/users"
+            className="mt-6 inline-flex rounded-lg bg-[#14283b] px-5 py-3 text-sm font-semibold text-white"
+          >
+            Retour aux clients
+          </Link>
+        </div>
+      </main>
+    )
   }
 
-  // Récupération des transactions
+  // 4. Récupération des transactions
   const { data: transactionData, error: transactionError } =
     await supabase
       .from('transactions')
@@ -193,7 +221,7 @@ export default async function ClientStatementPage({
 
   const transactions = (transactionData ?? []) as Transaction[]
 
-  // Récupération des dividendes
+  // 5. Récupération des dividendes
   const { data: dividendData, error: dividendError } =
     await supabase
       .from('dividend_payments')
@@ -220,7 +248,7 @@ export default async function ClientStatementPage({
 
   const dividends = (dividendData ?? []) as unknown as DividendPayment[]
 
-  // Calcul des totaux validés
+  // 6. Calcul des totaux validés
   const deposits = transactions
     .filter(
       (item) =>
@@ -273,7 +301,7 @@ export default async function ClientStatementPage({
       0
     )
 
-  // Construction de l'historique
+  // 7. Construction de l'historique
   const history: HistoryItem[] = [
     ...transactions.map((item) => ({
       id: `transaction-${item.id}`,
