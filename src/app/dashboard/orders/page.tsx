@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/utils/supabase/server'
 import { BRVM_OFFERS } from '@/lib/brvmOffersData'
 
@@ -587,15 +588,21 @@ export default async function OrdersPage() {
 
             </div>
 
-            <div className="rounded-full border border-[#D4A72C]/20 bg-[#FFFBF0] px-3 py-1.5">
-
-              <span className="text-[10px] font-bold text-[#A77C12]">
-                {totalOrders}{' '}
-                {totalOrders > 1
-                  ? 'opérations'
-                  : 'opération'}
-              </span>
-
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <div className="rounded-full border border-[#D4A72C]/20 bg-[#FFFBF0] px-3 py-1.5">
+                <span className="text-[10px] font-bold text-[#A77C12]">
+                  {totalOrders}{' '}
+                  {totalOrders > 1
+                    ? 'opérations'
+                    : 'opération'}
+                </span>
+              </div>
+              <Link
+                href="/dashboard/statement"
+                className="inline-flex items-center rounded-xl bg-[#14283B] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#203D59]"
+              >
+                Télécharger mon relevé PDF
+              </Link>
             </div>
 
           </div>
