@@ -34,6 +34,13 @@ export async function notifyUserOfTransaction(
 }
 
 export async function notifyAllUsers(payload: PushNotificationPayload) {
+  type ChannelResult = {
+    sent: number
+    failed: number
+    removed: number
+    error?: string
+  }
+
   const supabase = createAdminClient()
   const results = await Promise.allSettled([
     sendPushNotificationToAllUsers(supabase, payload),
@@ -42,19 +49,33 @@ export async function notifyAllUsers(payload: PushNotificationPayload) {
 
   for (const result of results) {
     if (result.status === 'rejected') {
-      console.error('Un canal de diffusion push a échoué.')
+      console.error(
+        'Un canal de diffusion push a échoué:',
+        result.reason instanceof Error ? result.reason.message : 'Erreur inconnue'
+      )
     }
   }
 
+  const channelResult = (result: typeof results[number]): ChannelResult => {
+    if (result.status === 'fulfilled') return result.value
+
+    const message = result.reason instanceof Error ? result.reason.message : ''
+    let error = 'Erreur technique du canal. Vérifiez les journaux serveur.'
+
+    if (/VAPID/i.test(message)) {
+      error = 'Configuration Web Push manquante : vérifiez NEXT_PUBLIC_VAPID_PUBLIC_KEY et VAPID_PRIVATE_KEY dans l’environnement de déploiement.'
+    } else if (/FIREBASE_SERVICE_ACCOUNT_JSON|Firebase|FCM/i.test(message)) {
+      error = 'Configuration Android manquante ou invalide : vérifiez FIREBASE_SERVICE_ACCOUNT_JSON dans l’environnement de déploiement.'
+    } else if (/push_subscriptions|fcm_tokens|abonnements push|tokens FCM/i.test(message)) {
+      error = 'Lecture des appareils abonnés impossible : vérifiez les tables push_subscriptions et fcm_tokens ainsi que les droits du service Supabase.'
+    }
+
+    return { sent: 0, failed: 1, removed: 0, error }
+  }
+
   return {
-    webPush:
-      results[0].status === 'fulfilled'
-        ? results[0].value
-        : { sent: 0, failed: 1, removed: 0 },
-    fcm:
-      results[1].status === 'fulfilled'
-        ? results[1].value
-        : { sent: 0, failed: 1, removed: 0 },
+    webPush: channelResult(results[0]),
+    fcm: channelResult(results[1]),
   }
 }
 

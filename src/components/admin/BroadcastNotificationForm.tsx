@@ -5,8 +5,10 @@ import { useState } from 'react'
 type DeliveryResult = {
   sent: number
   failed: number
-  webPush: { sent: number; failed: number; removed: number }
-  fcm: { sent: number; failed: number; removed: number }
+  message?: string
+  channelErrors?: string[]
+  webPush: { sent: number; failed: number; removed: number; error?: string }
+  fcm: { sent: number; failed: number; removed: number; error?: string }
 }
 
 export default function BroadcastNotificationForm() {
@@ -38,11 +40,11 @@ export default function BroadcastNotificationForm() {
         body: JSON.stringify({ title, body, url }),
       })
       const data = await response.json()
+      setResult(data)
 
       if (!response.ok) throw new Error(data.error || data.message || 'Échec de la diffusion.')
 
       setMessage(data.message)
-      setResult(data)
       setConfirmed(false)
       setBody('')
     } catch (caught) {
@@ -120,10 +122,12 @@ export default function BroadcastNotificationForm() {
           <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm">
             <p className="font-bold text-slate-900">Web Push</p>
             <p className="mt-1 text-slate-600">Envoyées : {result.webPush.sent} · Échecs : {result.webPush.failed} · Expirées supprimées : {result.webPush.removed}</p>
+            {result.webPush.error && <p className="mt-2 text-xs font-medium text-red-700">{result.webPush.error}</p>}
           </div>
           <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm">
             <p className="font-bold text-slate-900">Android (FCM)</p>
             <p className="mt-1 text-slate-600">Envoyées : {result.fcm.sent} · Échecs : {result.fcm.failed} · Expirées supprimées : {result.fcm.removed}</p>
+            {result.fcm.error && <p className="mt-2 text-xs font-medium text-red-700">{result.fcm.error}</p>}
           </div>
         </div>
       )}

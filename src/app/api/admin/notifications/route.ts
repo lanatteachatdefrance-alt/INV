@@ -70,6 +70,7 @@ export async function POST(request: Request) {
         : failed > 0
           ? 'Aucune notification n’a pu être envoyée. Vérifiez la configuration des services push.'
           : 'Aucun appareil n’est abonné aux notifications.',
+          channelErrors: [delivery.webPush.error, delivery.fcm.error].filter(Boolean),
     }, { status })
   } catch (error) {
     console.error(

@@ -47,6 +47,10 @@ async function sendToSubscriptions(
   subscriptions: PushSubscriptionRow[],
   payload: PushNotificationPayload
 ): Promise<SendSummary> {
+  if (subscriptions.length === 0) {
+    return { sent: 0, failed: 0, removed: 0 }
+  }
+
   configureWebPush()
 
   const message = JSON.stringify({
