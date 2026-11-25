@@ -55,39 +55,45 @@ async function sendToSubscriptions(
     url: normalizeUrl(payload.url),
   })
 
-  const results = await Promise.all(subscriptions.map(async (row) => {
-    try {
-      await webpush.sendNotification(
-        {
-          endpoint: row.endpoint,
-          keys: { p256dh: row.p256dh, auth: row.auth },
-        },
-        message
-      )
-      return 'sent' as const
-    } catch (error) {
-      const statusCode = typeof error === 'object' && error !== null && 'statusCode' in error
-        ? Number(error.statusCode)
-        : undefined
+  const summary: SendSummary = { sent: 0, failed: 0, removed: 0 }
+  const batchSize = 50
 
-      if (statusCode === 404 || statusCode === 410) {
-        await supabase
-          .from('push_subscriptions')
-          .delete()
-          .eq('endpoint', row.endpoint)
-        return 'removed' as const
+  for (let index = 0; index < subscriptions.length; index += batchSize) {
+    const batch = subscriptions.slice(index, index + batchSize)
+    const results = await Promise.all(batch.map(async (row) => {
+      try {
+        await webpush.sendNotification(
+          {
+            endpoint: row.endpoint,
+            keys: { p256dh: row.p256dh, auth: row.auth },
+          },
+          message
+        )
+        return 'sent' as const
+      } catch (error) {
+        const statusCode = typeof error === 'object' && error !== null && 'statusCode' in error
+          ? Number(error.statusCode)
+          : undefined
+
+        if (statusCode === 404 || statusCode === 410) {
+          await supabase
+            .from('push_subscriptions')
+            .delete()
+            .eq('endpoint', row.endpoint)
+          return 'removed' as const
+        }
+
+        console.error('Échec d’envoi push:', error)
+        return 'failed' as const
       }
+    }))
 
-      console.error('Échec d’envoi push:', error)
-      return 'failed' as const
-    }
-  }))
-
-  return {
-    sent: results.filter((result) => result === 'sent').length,
-    failed: results.filter((result) => result === 'failed').length,
-    removed: results.filter((result) => result === 'removed').length,
+    summary.sent += results.filter((result) => result === 'sent').length
+    summary.failed += results.filter((result) => result === 'failed').length
+    summary.removed += results.filter((result) => result === 'removed').length
   }
+
+  return summary
 }
 
 async function loadSubscriptions(

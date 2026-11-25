@@ -12,6 +12,7 @@ import {
   Users,
   Package,
   Inbox,
+  BellRing,
   LogIn,
   UserPlus,
   type LucideIcon,
@@ -111,6 +112,14 @@ const adminItems: Item[] = [
   },
 
   {
+    href: '/admin/notifications',
+    label: 'Push',
+    icon: BellRing,
+    match: (p) =>
+      p.startsWith('/admin/notifications'),
+  },
+
+  {
     href: '/dashboard',
     label: 'App',
     icon: Home,
@@ -186,12 +195,10 @@ export default function MobileBottomNav({
     >
 
       <ul
-        className={cn(
-          'grid max-w-lg mx-auto h-[4.35rem]',
-          items.length === 3
-            ? 'grid-cols-3'
-            : 'grid-cols-5'
-        )}
+        className="mx-auto grid h-[4.35rem] w-full max-w-2xl"
+        style={{
+          gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))`,
+        }}
       >
 
         {items.map((item) => {

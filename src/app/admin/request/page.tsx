@@ -157,7 +157,7 @@ async function updateRequest(formData: FormData) {
         transaction.user_id,
         {
           title: 'Retrait refusé ❌',
-          body: `Votre demande de retrait de ${formatTransactionAmount(transaction.amount)} a été refusée.`,
+          body: `Votre demande de retrait de ${formatTransactionAmount(transaction.amount)} a été refusée. Motif : Demande de retrait rejetée par l’administrateur.`,
           url: '/dashboard/orders',
         }
       )
@@ -245,8 +245,8 @@ async function updateRequest(formData: FormData) {
     await notifyUserOfTransaction(
       transaction.user_id,
       {
-        title: 'Retrait validé ✅',
-        body: `Votre retrait de ${formatTransactionAmount(transaction.amount)} a été validé.`,
+        title: 'Demande de retrait approuvée ✅',
+        body: `Votre demande de retrait de ${formatTransactionAmount(transaction.amount)} a été approuvée par l’administrateur.`,
         url: '/dashboard/orders',
       }
     )

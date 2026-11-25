@@ -1,4 +1,8 @@
 import { createClient } from '@/utils/supabase/server'
+import {
+  formatTransactionAmount,
+  notifyUserOfTransaction,
+} from '@/lib/transactionPushNotifications'
 
 export async function POST(request: Request) {
   try {
@@ -258,6 +262,12 @@ export async function POST(request: Request) {
         { status: 500 }
       )
     }
+
+    await notifyUserOfTransaction(user.id, {
+      title: 'Demande de retrait reçue',
+      body: `Votre demande de retrait de ${formatTransactionAmount(numericAmount)} est en attente de validation.`,
+      url: '/dashboard/orders',
+    })
 
     // 11. Confirmer la demande
     return Response.json(

@@ -267,6 +267,7 @@ async function updateOrderStatus(
 
   if (action === 'reject') {
     const {
+      data: rejectedOrder,
       error,
     } = await supabase
       .from('transactions')
@@ -277,10 +278,25 @@ async function updateOrderStatus(
       })
       .eq('id', orderId)
       .eq('status', 'pending')
+      .select('id')
+      .maybeSingle()
 
     if (error) {
       throw new Error(
         `Impossible de refuser l’ordre : ${error.message}`
+      )
+    }
+
+    if (rejectedOrder) {
+      await notifyUserOfTransaction(
+        order.user_id,
+        {
+          title: order.type === 'achat_investissement'
+            ? 'Achat d’action refusé'
+            : 'Vente d’action refusée',
+          body: `Votre ordre de ${formatTransactionAmount(order.amount)} a été refusé par l’administrateur.`,
+          url: '/dashboard/orders',
+        }
       )
     }
 
@@ -915,8 +931,8 @@ async function processWithdrawal(
     await notifyUserOfTransaction(
       withdrawal.user_id,
       {
-        title: 'Retrait validé ✅',
-        body: `Votre retrait de ${formatTransactionAmount(withdrawal.amount)} a été validé.`,
+        title: 'Demande de retrait approuvée ✅',
+        body: `Votre demande de retrait de ${formatTransactionAmount(withdrawal.amount)} a été approuvée par l’administrateur.`,
         url: '/dashboard/orders',
       }
     )
