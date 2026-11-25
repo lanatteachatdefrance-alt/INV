@@ -11,6 +11,7 @@ import {
   Users,
   Package,
   Inbox,
+  BellRing,
   ChevronLeft,
   ChevronRight,
   LogOut,
@@ -65,6 +66,11 @@ const adminLinks = [
     href: '/admin/requests',
     label: 'Demandes',
     icon: Inbox,
+  },
+  {
+    href: '/admin/notifications',
+    label: 'Notifications push',
+    icon: BellRing,
   },
 ]
 
