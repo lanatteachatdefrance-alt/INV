@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
+import { AdminUserActions } from '@/components/admin/AdminUserActions'
 
 type Profile = {
   id: string
@@ -21,32 +22,28 @@ export default function UsersSearch({
   const [search, setSearch] = useState('')
 
   const filteredProfiles = useMemo(() => {
-    const query = search.trim().toLowerCase()
+    const normalize = (value: string) =>
+      value
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+    const query = normalize(search.trim())
 
     if (!query) return profiles
 
     return profiles.filter((profile) => {
-      const fullName = [
-        profile.first_name,
-        profile.last_name,
-      ].filter(Boolean).join(' ')
+      const fullName = [profile.first_name, profile.last_name]
+        .filter(Boolean)
+        .join(' ')
 
-      return [
-        fullName,
-        profile.first_name,
-        profile.last_name,
-        profile.email,
-        profile.id,
-      ].some((value) =>
-        String(value ?? '').toLowerCase().includes(query)
-      )
+      return normalize(`${fullName} ${profile.email ?? ''}`).includes(query)
     })
   }, [profiles, search])
 
   return (
-    <div>
+    <section aria-labelledby="client-list-title">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-lg font-semibold text-slate-900">
+        <h2 id="client-list-title" className="text-lg font-semibold text-slate-900">
           Comptes clients
         </h2>
 
@@ -55,7 +52,8 @@ export default function UsersSearch({
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Rechercher un client..."
+            aria-label="Rechercher un client par nom ou adresse e-mail"
+            placeholder="Nom ou e-mail du client..."
             className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-900 outline-none transition focus:border-[#d6a62c] focus:ring-2 focus:ring-[#d6a62c]/20"
           />
 
@@ -74,73 +72,67 @@ export default function UsersSearch({
 
       <p className="mt-2 text-xs text-slate-500">
         {filteredProfiles.length} client(s) trouvé(s)
+        {search.trim() ? ` pour « ${search.trim()} »` : ''}
       </p>
 
-      <div className="mt-4 overflow-x-auto">
-        <table className="min-w-full text-sm">
-          <thead>
-            <tr className="text-left text-slate-600">
-              <th className="py-2 pr-4">Email</th>
-              <th className="py-2 pr-4">Nom</th>
-              <th className="py-2 pr-4">Rôle</th>
-              <th className="py-2 pr-4">KYC</th>
-              <th className="py-2 pr-4">Solde</th>
-              <th className="py-2">Relevé</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {filteredProfiles.map((profile) => (
-              <tr
-                key={profile.id}
-                className="border-t border-slate-100"
-              >
-                <td className="py-3 pr-4">
-                  {profile.email || '—'}
-                </td>
-
-                <td className="py-3 pr-4">
+      <div className="mt-4 grid gap-4">
+        {filteredProfiles.map((profile) => (
+          <article
+            key={profile.id}
+            className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+          >
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="min-w-0">
+                <p className="break-words font-semibold text-slate-900">
+                  {profile.email || 'E-mail non renseigné'}
+                </p>
+                <p className="mt-1 text-sm text-slate-600">
                   {[profile.first_name, profile.last_name]
                     .filter(Boolean)
-                    .join(' ') || '—'}
-                </td>
+                    .join(' ') || 'Nom non renseigné'}
+                </p>
+              </div>
 
-                <td className="py-3 pr-4">
-                  {profile.role || '—'}
-                </td>
+              <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-600">
+                <p>
+                  KYC :{' '}
+                  <span className="font-semibold text-slate-900">
+                    {profile.kyc_status || 'en_attente'}
+                  </span>
+                </p>
+                <p>
+                  Solde :{' '}
+                  <span className="font-semibold text-slate-900">
+                    {Number(profile.balance ?? 0).toLocaleString('fr-FR')} FCFA
+                  </span>
+                </p>
+              </div>
+            </div>
 
-                <td className="py-3 pr-4">
-                  {profile.kyc_status || 'en_attente'}
-                </td>
-
-                <td className="py-3 pr-4 whitespace-nowrap">
-                  {Number(profile.balance ?? 0).toLocaleString('fr-FR')} FCFA
-                </td>
-
-                <td className="py-3 whitespace-nowrap">
-                  <Link
-                    href={`/admin/clients/${profile.id}/statement`}
-                    className="font-medium text-[#14283b] hover:text-[#d6a62c]"
-                  >
-                    Voir le relevé
-                  </Link>
-                </td>
-              </tr>
-            ))}
-
-            {filteredProfiles.length === 0 && (
-              <tr>
-                <td
-                  colSpan={6}
-                  className="py-8 text-center text-slate-500"
+            <div className="mt-4 border-t border-slate-100 pt-1">
+              <AdminUserActions profile={{ ...profile, email: profile.email ?? '' }} />
+              <div className="mt-3 border-t border-slate-100 pt-3">
+                <Link
+                  href={`/admin/clients/${profile.id}/statement`}
+                  className="inline-flex items-center justify-center rounded-lg bg-[#061B31] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#123653]"
                 >
-                  Aucun client ne correspond à votre recherche.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+                  Voir le relevé
+                </Link>
+              </div>
+            </div>
+          </article>
+        ))}
+
+        {filteredProfiles.length === 0 && (
+          <div className="rounded-xl border border-slate-200 bg-white p-8 text-center">
+            <p className="text-sm text-slate-500">
+              {profiles.length === 0
+                ? 'Aucun utilisateur trouvé.'
+                : 'Aucun client ne correspond à votre recherche.'}
+            </p>
+          </div>
+        )}
       </div>
-    </div>
+    </section>
   )
 }
